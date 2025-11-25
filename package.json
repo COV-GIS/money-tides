@@ -1,0 +1,24 @@
+{
+  "name": "money-tides",
+  "version": "0",
+  "type": "module",
+  "scripts": {
+    "build": "vite build --mode production",
+    "dev": "vite --mode development"
+  },
+  "dependencies": {
+    "@arcgis/core": "^4.34.8",
+    "luxon": "^3.7.2"
+  },
+  "devDependencies": {
+    "vite": "^7.2.4"
+  },
+  "prettier": {
+    "semi": true,
+    "singleQuote": true,
+    "trailingComma": "all",
+    "printWidth": 120,
+    "tabWidth": 2,
+    "endOfLine": "auto"
+  }
+}
