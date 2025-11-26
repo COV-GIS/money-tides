@@ -11,6 +11,8 @@
     "luxon": "^3.7.2"
   },
   "devDependencies": {
+    "@types/luxon": "^3.7.1",
+    "sass-embedded": "^1.93.3",
     "vite": "^7.2.4"
   },
   "prettier": {

@@ -1,0 +1,31 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-123.929533, 45.686923]
+      },
+      "properties": {
+        "money": "no",
+        "name": "Nehalem Bay",
+        "station": 9437908,
+        "url": "https://tidesandcurrents.noaa.gov/noaatidepredictions.html?id=9437908"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-124.022620, 44.922025]
+      },
+      "properties": {
+        "money": "no",
+        "name": "Siletz Bay",
+        "station": 9437908,
+        "url": "https://tidesandcurrents.noaa.gov/noaatidepredictions.html?id=9437908"
+      }
+    }
+  ]
+}
