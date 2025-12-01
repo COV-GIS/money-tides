@@ -1,77 +1,81 @@
 import esri = __esri;
 
+export interface Location {
+  station: number;
+  name: string;
+  latitude: number;
+  longitude: number;
+}
+
+export interface _Location extends Location {
+  predictions?: Predictions;
+  /**
+   * `0` - no money
+   * `1` - kinda money
+   * `2` - absolutely money
+   */
+  money?: 0 | 1 | 2;
+}
+
+interface Prediction {
+  // api
+  t: string;
+  v: string;
+  type: 'H' | 'L';
+  // app
+  time: string;
+}
+
+interface Predictions {
+  predictions: Prediction[];
+}
+
+import '@esri/calcite-components/dist/components/calcite-alert';
 import '@esri/calcite-components/dist/components/calcite-input-date-picker';
 import '@esri/calcite-components/dist/components/calcite-loader';
 import '@esri/calcite-components/dist/components/calcite-panel';
 import '@esri/calcite-components/dist/components/calcite-shell';
 import '@esri/calcite-components/dist/components/calcite-shell-panel';
 
+import { watch } from '@arcgis/core/core/reactiveUtils';
 import { subclass, property } from '@arcgis/core/core/accessorSupport/decorators';
 import Widget from '@arcgis/core/widgets/Widget';
 import { tsx } from '@arcgis/core/widgets/support/widget';
+import Collection from '@arcgis/core/core/Collection';
 
 import Map from '@arcgis/core/Map';
 import MapView from '@arcgis/core/views/MapView';
 import GraphicsLayer from '@arcgis/core/layers/GraphicsLayer';
+import Graphic from '@arcgis/core/Graphic';
+import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
+import TextSymbol from '@arcgis/core/symbols/TextSymbol';
+import Point from '@arcgis/core/geometry/Point';
 
 import { DateTime } from 'luxon';
 
 const CSS = {
-  datePicker: 'application-date-picker',
   header: 'application-header',
-  loader: 'application-loader',
-  panel: 'application-panel',
   view: 'application-view',
 };
 
-// const LOCATIONS = {
-//   type: 'FeatureCollection',
-//   features: [
-//     {
-//       type: 'Feature',
-//       geometry: {
-//         type: 'Point',
-//         coordinates: [-123.929533, 45.686923],
-//       },
-//       properties: {
-//         money: 'no',
-//         name: 'Nehalem Bay',
-//         station: 9437908,
-//       },
-//     },
-//     {
-//       type: 'Feature',
-//       geometry: {
-//         type: 'Point',
-//         coordinates: [-124.02262, 44.922025],
-//       },
-//       properties: {
-//         money: 'no',
-//         name: 'Siletz Bay',
-//         station: 9436101,
-//       },
-//     },
-//   ],
-// };
-
-const LOCATIONS = {
-  9437908: {
-    name: 'Nehalem Bay',
-    latitude: 45.686923,
-    longitude: -123.929533,
-  },
-  9436101: {
-    name: 'Siletz Bay',
-    latitude: 44.922025,
-    longitude: -124.02262,
-  },
+const GET_COLOR = (property: string): string => {
+  return getComputedStyle(document.documentElement).getPropertyValue(property).trim();
 };
 
+const COLORS = {
+  green: GET_COLOR('--calcite-color-status-success'),
+  orange: GET_COLOR('--calcite-color-status-warning'),
+  red: GET_COLOR('--calcite-color-status-danger'),
+};
+
+const GRAPHICS_HANDLES = 'graphics-handles';
+
+// https://tidesandcurrents.noaa.gov/noaatidepredictions.html?id=9437908&units=standard&bdate=20251208&edate=20251208&timezone=LST/LDT&clock=12hour&datum=MLLW&interval=hilo&action=dailychart
 const STATION_PREDICTION_URL = 'https://tidesandcurrents.noaa.gov/noaatidepredictions.html?id={STATION}';
 
 @subclass('Application')
 export default class Application extends Widget {
-  private _container = document.createElement('calcite-shell');
+  _container = document.createElement('calcite-shell');
 
   get container(): HTMLCalciteShellElement {
     return this._container;
@@ -81,90 +85,210 @@ export default class Application extends Widget {
     this._container = value;
   }
 
-  constructor(properties?: esri.WidgetProperties) {
+  constructor(properties: esri.WidgetProperties & { locations: esri.Collection<Location> | Location[] }) {
     super(properties);
 
     this.container = this._container;
 
     document.body.appendChild(this.container);
-
-    // setInterval(this._setTime.bind(this), 1000);
-
-    // setTimeout((): void => {
-    //   console.log(this.view?.extent.toJSON());
-    // }, 15000);
   }
 
-  override async postInitialize(): Promise<void> {
-    const x = await (
-      await fetch(
-        'https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=predictions&format=json&interval=hilo&time_zone=LST_LDT&units=english&datum=MLLW&station=9437908&begin_date=20251125&end_date=20251125',
-      )
-    ).json();
+  alerts: esri.Collection<tsx.JSX.Element> = new Collection();
 
-    console.log(x);
+  date = DateTime.now().setZone('America/Los_Angeles');
 
-    // const y = await (await fetch(
-    //   'https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=predictions&format=json&interval=hilo&time_zone=LST_LDT&units=english&datum=MLLW&station=9437908&begin_date=20251125&end_date=20251125',
-    // )).json();
+  @property({ type: Collection })
+  locations: esri.Collection<_Location> = new Collection();
 
-    // console.log(y);
+  graphics = new GraphicsLayer();
+
+  view!: esri.MapView;
+
+  addGraphics(location: _Location): void {
+    const { view } = this;
+
+    const { name, latitude, longitude, predictions, money } = location;
+
+    const color = money === 0 ? COLORS.red : money === 1 ? COLORS.orange : COLORS.green;
+
+    const geometry = new Point({
+      latitude,
+      longitude,
+    });
+
+    const tides = new Graphic({
+      geometry,
+      symbol: new TextSymbol({
+        text: predictions?.predictions
+          .map((prediction: Prediction): string => {
+            const { v, type, time } = prediction;
+            return `${time} - ${type === 'H' ? 'High' : 'Low'} ${Number(v).toFixed(2)} ft`;
+          })
+          .join('\n'),
+        color,
+        font: {
+          size: 10,
+        },
+        haloColor: 'white',
+        haloSize: 2,
+        horizontalAlignment: 'left',
+        xoffset: 10,
+        yoffset: -12,
+      }),
+      visible: view.scale < 240000,
+    });
+
+    this.addHandles(
+      watch(
+        (): number => view.scale,
+        (): void => {
+          tides.visible = view.scale < 240000;
+        },
+      ),
+      GRAPHICS_HANDLES,
+    );
+
+    this.graphics.addMany([
+      new Graphic({
+        geometry,
+        symbol: new SimpleMarkerSymbol({
+          style: money === 0 ? 'square' : 'circle',
+          color,
+          size: 8,
+          outline: {
+            color: 'white',
+            width: 2,
+          },
+        }),
+      }),
+      new Graphic({
+        geometry,
+        symbol: new TextSymbol({
+          text: `${name}`,
+          color,
+          font: {
+            size: 10,
+          },
+          haloColor: 'white',
+          haloSize: 2,
+          horizontalAlignment: 'left',
+          xoffset: 10,
+        }),
+      }),
+      tides,
+    ]);
   }
 
-  protected view?: esri.MapView;
+  dateChange(event: Event): void {
+    const value = (event.target as HTMLCalciteInputDatePickerElement).value as string;
 
-  private _date = DateTime.now().setZone('America/Los_Angeles');
+    this.date = DateTime.fromISO(value);
 
-  @property()
-  private _datePicker!: HTMLCalciteInputDatePickerElement;
+    this.graphics.removeAll();
 
-  private _graphics = new GraphicsLayer();
+    this.removeHandles(GRAPHICS_HANDLES);
 
-  @property()
-  private _loaded = false;
-
-  @property()
-  private _time = DateTime.now().setZone('America/Los_Angeles');
-
-  private _setTime(): void {
-    this._time = DateTime.now().setZone('America/Los_Angeles');
+    this.locations.forEach(this.locationPredictions.bind(this));
   }
 
-  override render(): tsx.JSX.Element {
-    return this._loaded ? (
-      <calcite-shell>
-        <calcite-loader class={CSS.loader} label="Loading money tides" text="Loading money tides"></calcite-loader>
-      </calcite-shell>
-    ) : (
+  async locationPredictions(location: _Location): Promise<void> {
+    try {
+      const date = this.date.toFormat('yyyyLLdd');
+
+      const predictions: Predictions = await (
+        await fetch(
+          `https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=predictions&format=json&interval=hilo&time_zone=LST_LDT&units=english&datum=MLLW&station=${location.station}&begin_date=${date}&end_date=${date}`,
+        )
+      ).json();
+
+      let highestHigh = {
+        height: 0,
+        date: DateTime.now(),
+      };
+
+      predictions.predictions.forEach((prediction: Prediction): void => {
+        const { t, v, type } = prediction;
+
+        const date = DateTime.fromSQL(t).setZone('America/Los_Angeles') as DateTime<true>;
+
+        const height = Number(v);
+
+        prediction.time = date.toFormat('h:mm a');
+
+        if (type === 'H' && height > highestHigh.height)
+          highestHigh = {
+            height,
+            date,
+          };
+      });
+
+      location.money = this.isMoney(highestHigh.date);
+
+      location.predictions = predictions;
+
+      this.addGraphics(location);
+    } catch (error) {
+      console.log(error);
+
+      this.alerts.add(
+        <calcite-alert icon="exclamation-mark-circle" kind="danger" open>
+          <div slot="message">Failed to load tides for {location.name}</div>
+        </calcite-alert>,
+      );
+    }
+  }
+
+  isMoney(date: DateTime): 0 | 1 | 2 {
+    const time = date.toMillis();
+
+    const moneyStart = date.set({ hour: 11, minute: 0, second: 0, millisecond: 0 }).toMillis();
+
+    const moneyEnd = date.set({ hour: 13, minute: 0, second: 0, millisecond: 0 }).toMillis();
+
+    const kindaMoneyStart = date.set({ hour: 9, minute: 0, second: 0, millisecond: 0 }).toMillis();
+
+    const kindaMoneyEnd = date.set({ hour: 15, minute: 0, second: 0, millisecond: 0 }).toMillis();
+
+    if (time >= moneyStart && time <= moneyEnd) {
+      return 2;
+    } else if (time >= kindaMoneyStart && time <= kindaMoneyEnd) {
+      return 1;
+    } else {
+      return 0;
+    }
+  }
+
+  render(): tsx.JSX.Element {
+    const { alerts } = this;
+
+    return (
       <calcite-shell>
         <div class={CSS.header} slot="header">
           <div>Money Tides</div>
+          <calcite-input-date-picker
+            overlay-positioning="fixed"
+            afterCreate={this.datePickerAfterCreate.bind(this)}
+          ></calcite-input-date-picker>
         </div>
 
-        <div class={CSS.view} afterCreate={this._viewAfterCreate.bind(this)}></div>
+        <div class={CSS.view} afterCreate={this.viewAfterCreate.bind(this)}></div>
 
-        <calcite-shell-panel slot="panel-end">
-          <calcite-panel class={CSS.panel}>
-            <div class={CSS.datePicker}>
-              <calcite-button appearance="transparent" icon-start="chevron-left"></calcite-button>
-              <calcite-input-date-picker
-                afterCreate={this._datePickerAfterCreate.bind(this)}
-              ></calcite-input-date-picker>
-              <calcite-button appearance="transparent" icon-start="chevron-right"></calcite-button>
-            </div>
-          </calcite-panel>
-        </calcite-shell-panel>
+        {alerts.length ? <div slot="alerts">{alerts.toArray()}</div> : null}
       </calcite-shell>
     );
   }
 
-  private _datePickerAfterCreate(datePicker: HTMLCalciteInputDatePickerElement): void {
-    datePicker.value = `${this._date.toISODate()}`;
+  datePickerAfterCreate(datePicker: HTMLCalciteInputDatePickerElement): void {
+    const today = this.date.toISODate() as string;
 
-    this._datePicker = datePicker;
+    datePicker.value = today;
+
+    datePicker.min = today;
+
+    datePicker.addEventListener('calciteInputDatePickerChange', this.dateChange.bind(this));
   }
 
-  private _viewAfterCreate(container: HTMLDivElement): void {
+  viewAfterCreate(container: HTMLDivElement): void {
     this.view = new MapView({
       container,
       extent: {
@@ -178,8 +302,20 @@ export default class Application extends Widget {
       },
       map: new Map({
         basemap: 'topo-vector',
-        layers: [this._graphics],
+        layers: [this.graphics],
       }),
     });
+
+    this.locations.forEach(this.locationPredictions.bind(this));
+
+    const loader = document.body.querySelector('calcite-loader') as HTMLCalciteLoaderElement;
+
+    setTimeout((): void => {
+      setTimeout((): void => {
+        document.body.removeChild(loader);
+      }, 3000);
+
+      loader.style.opacity = '0';
+    }, 2000);
   }
 }
