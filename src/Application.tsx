@@ -31,11 +31,14 @@ interface Predictions {
 }
 
 import '@esri/calcite-components/dist/components/calcite-alert';
+import '@esri/calcite-components/dist/components/calcite-dialog';
 import '@esri/calcite-components/dist/components/calcite-input-date-picker';
 import '@esri/calcite-components/dist/components/calcite-loader';
 import '@esri/calcite-components/dist/components/calcite-panel';
 import '@esri/calcite-components/dist/components/calcite-shell';
 import '@esri/calcite-components/dist/components/calcite-shell-panel';
+import '@esri/calcite-components/dist/components/calcite-table';
+import '@esri/calcite-components/dist/components/calcite-table-row';
 
 import { watch } from '@arcgis/core/core/reactiveUtils';
 import { subclass, property } from '@arcgis/core/core/accessorSupport/decorators';
@@ -62,7 +65,7 @@ const GET_COLOR = (property: string): string => {
   return getComputedStyle(document.documentElement).getPropertyValue(property).trim();
 };
 
-const COLORS = {
+export const COLORS = {
   green: GET_COLOR('--calcite-color-status-success'),
   orange: GET_COLOR('--calcite-color-status-warning'),
   red: GET_COLOR('--calcite-color-status-danger'),
@@ -71,7 +74,11 @@ const COLORS = {
 const GRAPHICS_HANDLES = 'graphics-handles';
 
 // https://tidesandcurrents.noaa.gov/noaatidepredictions.html?id=9437908&units=standard&bdate=20251208&edate=20251208&timezone=LST/LDT&clock=12hour&datum=MLLW&interval=hilo&action=dailychart
-const STATION_PREDICTION_URL = 'https://tidesandcurrents.noaa.gov/noaatidepredictions.html?id={STATION}';
+// const STATION_PREDICTION_URL = 'https://tidesandcurrents.noaa.gov/noaatidepredictions.html?id={STATION}';
+
+const NOAA_DATE = (date: DateTime): string => {
+  return date.toFormat('yyyyLLdd');
+};
 
 @subclass('Application')
 export default class Application extends Widget {
@@ -97,17 +104,21 @@ export default class Application extends Widget {
 
   date = DateTime.now().setZone('America/Los_Angeles');
 
+  dialog = new Dialog();
+
   @property({ type: Collection })
   locations: esri.Collection<_Location> = new Collection();
 
   graphics = new GraphicsLayer();
+
+  graphicsView!: esri.GraphicsLayerView;
 
   view!: esri.MapView;
 
   addGraphics(location: _Location): void {
     const { view } = this;
 
-    const { name, latitude, longitude, predictions, money } = location;
+    const { station, name, latitude, longitude, predictions, money } = location;
 
     const color = money === 0 ? COLORS.red : money === 1 ? COLORS.orange : COLORS.green;
 
@@ -116,7 +127,10 @@ export default class Application extends Widget {
       longitude,
     });
 
+    const attributes = { station };
+
     const tides = new Graphic({
+      attributes,
       geometry,
       symbol: new TextSymbol({
         text: predictions?.predictions
@@ -150,6 +164,7 @@ export default class Application extends Widget {
 
     this.graphics.addMany([
       new Graphic({
+        attributes,
         geometry,
         symbol: new SimpleMarkerSymbol({
           style: money === 0 ? 'square' : 'circle',
@@ -162,6 +177,7 @@ export default class Application extends Widget {
         }),
       }),
       new Graphic({
+        attributes,
         geometry,
         symbol: new TextSymbol({
           text: `${name}`,
@@ -180,9 +196,9 @@ export default class Application extends Widget {
   }
 
   dateChange(event: Event): void {
-    const value = (event.target as HTMLCalciteInputDatePickerElement).value as string;
+    this.dialog.close(); // TODO: check if dialog is open and rerender with new location and date data
 
-    this.date = DateTime.fromISO(value);
+    this.date = DateTime.fromISO((event.target as HTMLCalciteInputDatePickerElement).value as string);
 
     this.graphics.removeAll();
 
@@ -191,9 +207,19 @@ export default class Application extends Widget {
     this.locations.forEach(this.locationPredictions.bind(this));
   }
 
+  datePickerAfterCreate(datePicker: HTMLCalciteInputDatePickerElement): void {
+    const today = this.date.toISODate() as string;
+
+    datePicker.value = today;
+
+    datePicker.min = today;
+
+    datePicker.addEventListener('calciteInputDatePickerChange', this.dateChange.bind(this));
+  }
+
   async locationPredictions(location: _Location): Promise<void> {
     try {
-      const date = this.date.toFormat('yyyyLLdd');
+      const date = NOAA_DATE(this.date);
 
       const predictions: Predictions = await (
         await fetch(
@@ -258,6 +284,65 @@ export default class Application extends Widget {
     }
   }
 
+  async viewAfterCreate(container: HTMLDivElement): Promise<void> {
+    const { graphics } = this;
+
+    const view = (this.view = new MapView({
+      container,
+      extent: {
+        spatialReference: {
+          wkid: 102100,
+        },
+        xmin: -14063495.960129377,
+        ymin: 5428315.22728483,
+        xmax: -13322362.533876345,
+        ymax: 5954813.478113098,
+      },
+      map: new Map({
+        basemap: 'topo-vector',
+        layers: [graphics],
+      }),
+    }));
+
+    this.locations.forEach(this.locationPredictions.bind(this));
+
+    this.graphicsView = await view.whenLayerView(graphics);
+
+    this.addHandles(view.on('click', this.viewClick.bind(this)));
+
+    const loader = document.body.querySelector('calcite-loader') as HTMLCalciteLoaderElement;
+
+    setTimeout((): void => {
+      loader.style.opacity = '0';
+
+      setTimeout((): void => {
+        document.body.removeChild(loader);
+      }, 2500);
+    }, 2000);
+  }
+
+  async viewClick(event: esri.ViewClickEvent): Promise<void> {
+    event.stopPropagation();
+
+    const result = (await this.view.hitTest(event, { include: [this.graphics] })).results[0];
+
+    if (!result || result.type !== 'graphic') {
+      this.dialog.close();
+
+      return;
+    }
+
+    const location = this.locations.find((location: _Location): boolean => {
+      return location.station === result.graphic.attributes.station;
+    });
+
+    if (!location) return;
+
+    console.log(location);
+
+    this.dialog.show(location, this.date);
+  }
+
   render(): tsx.JSX.Element {
     const { alerts } = this;
 
@@ -277,45 +362,93 @@ export default class Application extends Widget {
       </calcite-shell>
     );
   }
+}
 
-  datePickerAfterCreate(datePicker: HTMLCalciteInputDatePickerElement): void {
-    const today = this.date.toISODate() as string;
+@subclass('Dialog')
+class Dialog extends Widget {
+  private _container = document.createElement('calcite-dialog');
 
-    datePicker.value = today;
-
-    datePicker.min = today;
-
-    datePicker.addEventListener('calciteInputDatePickerChange', this.dateChange.bind(this));
+  get container() {
+    return this._container;
   }
 
-  viewAfterCreate(container: HTMLDivElement): void {
-    this.view = new MapView({
-      container,
-      extent: {
-        spatialReference: {
-          wkid: 102100,
-        },
-        xmin: -14063495.960129377,
-        ymin: 5428315.22728483,
-        xmax: -13322362.533876345,
-        ymax: 5954813.478113098,
-      },
-      map: new Map({
-        basemap: 'topo-vector',
-        layers: [this.graphics],
-      }),
-    });
+  set container(value: HTMLCalciteDialogElement) {
+    this._container = value;
+  }
 
-    this.locations.forEach(this.locationPredictions.bind(this));
+  constructor(properties?: esri.WidgetProperties) {
+    super(properties);
 
-    const loader = document.body.querySelector('calcite-loader') as HTMLCalciteLoaderElement;
+    this.container = this._container;
 
-    setTimeout((): void => {
-      setTimeout((): void => {
-        document.body.removeChild(loader);
-      }, 3000);
+    document.body.appendChild(this.container);
+  }
 
-      loader.style.opacity = '0';
-    }, 2000);
+  // @property()
+  date!: DateTime;
+
+  // @property()
+  location!: _Location;
+
+  close(): void {
+    this.container.open = false;
+  }
+
+  show(location: _Location, date: DateTime): void {
+    this.location = location;
+
+    this.date = date;
+
+    this.renderNow();
+
+    this.container.open = true;
+  }
+
+  viewStation(): void {
+    const date = NOAA_DATE(this.date);
+
+    window.open(
+      `https://tidesandcurrents.noaa.gov/noaatidepredictions.html?id=${this.location.station}&units=standard&bdate=${date}&edate=${date}&timezone=LST/LDT&clock=12hour&datum=MLLW&interval=hilo&action=dailychart`,
+      '_blank',
+    );
+  }
+
+  render(): tsx.JSX.Element {
+    const { date, location } = this;
+
+    if (!date || !location) return <calcite-dialog></calcite-dialog>;
+
+    const { name, money } = location;
+
+    const heading = `${name} - ${date.toLocaleString(DateTime.DATE_FULL)}`;
+
+    const kind = money === 0 ? 'danger' : money === 1 ? 'warning' : 'success';
+
+    return (
+      <calcite-dialog heading={heading} kind={kind} placement="bottom-start" scale="s" width="s">
+        {this.renderTidesTable(location)}
+        <calcite-button scale="s" slot="footer-end" onclick={this.viewStation.bind(this)}>
+          View Station Page
+        </calcite-button>
+      </calcite-dialog>
+    );
+  }
+
+  renderTidesTable(location: _Location): tsx.JSX.Element {
+    return (
+      <calcite-table scale="s" striped>
+        {location.predictions?.predictions.map((prediction: Prediction): tsx.JSX.Element => {
+          const { v, type, time } = prediction;
+
+          return (
+            <calcite-table-row>
+              <calcite-table-cell>{time}</calcite-table-cell>
+              <calcite-table-cell>{type === 'H' ? 'High' : 'Low'}</calcite-table-cell>
+              <calcite-table-cell>{Number(v).toFixed(2)} ft</calcite-table-cell>
+            </calcite-table-row>
+          );
+        })}
+      </calcite-table>
+    );
   }
 }
