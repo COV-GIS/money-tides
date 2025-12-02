@@ -1,1 +1,0 @@
-import{eJ as o}from"./index-B5rfF_Rz.js";function p(t){t?.writtenProperties&&t.writtenProperties.forEach(({target:r,propName:e,newOrigin:i})=>{o(r)&&i&&r.originOf(e)!==i&&r.updateOrigin(e,i)})}export{p as i};
