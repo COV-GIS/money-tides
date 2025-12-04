@@ -3,20 +3,12 @@ import MoneyTides from './MoneyTides';
 new MoneyTides({
   stationInfos: [
     {
-      stationId: 9437908,
-      stationName: 'Nehalem Bay',
+      stationId: 9434939,
+      stationName: 'Alsea Bay',
     },
     {
-      stationId: 9436101,
-      stationName: 'Siletz Bay (Taft)',
-    },
-    {
-      stationId: 9435385,
-      stationName: 'Yaquina Bay (Newport)',
-    },
-    {
-      stationId: 9434132,
-      stationName: 'Siuslaw River (Florence)',
+      stationId: 9430104,
+      stationName: 'Chetco River',
     },
     {
       stationId: 9432845,
@@ -24,19 +16,47 @@ new MoneyTides({
     },
     {
       stationId: 9432373,
-      stationName: 'Coquille River (Bandon)',
+      stationName: 'Coquille River',
     },
     {
-      stationId: 9433501,
-      stationName: 'Umpqua Bay (Reedsport)',
-    },
-    {
-      stationId: 9434939,
-      stationName: 'Alsea Bay (Waldport)',
+      stationId: 9437908,
+      stationName: 'Nehalem Bay',
     },
     {
       stationId: 'TWC0857',
-      stationName: 'Nestucca Bay (Pacific City)',
+      stationName: 'Nestucca Bay',
+    },
+    {
+      stationId: 9437262,
+      stationName: 'Netarts Bay',
+    },
+    {
+      stationId: 9431011,
+      stationName: 'Rouge River',
+    },
+    {
+      stationId: 9436101,
+      stationName: 'Siletz Bay',
+    },
+    {
+      stationId: 9434132,
+      stationName: 'Siuslaw River',
+    },
+    {
+      stationId: 9437585,
+      stationName: 'Tillamook Bay',
+    },
+    {
+      stationId: 9433501,
+      stationName: 'Winchester Bay',
+    },
+    {
+      stationId: 9435385,
+      stationName: 'Yaquina Bay',
+    },
+    {
+      stationId: 9435827,
+      stationName: 'Depoe Bay',
     },
   ],
 });

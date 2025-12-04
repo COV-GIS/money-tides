@@ -1,3 +1,7 @@
+import esri = __esri;
+
+import type { DateTime } from 'luxon';
+
 /**
  * Api tide prediction
  */
@@ -66,6 +70,10 @@ export type Prediction = {
    */
   height: number;
   /**
+   * Tide date
+   */
+  date: DateTime;
+  /**
    * Tide time, e.g. 5:12 PM
    */
   time: string;
@@ -94,15 +102,15 @@ export type Station = {
   /**
    * Station name graphic
    */
-  graphicName: __esri.Graphic;
+  graphicName: esri.Graphic;
   /**
    * Station point graphic
    */
-  graphicPoint: __esri.Graphic;
+  graphicPoint: esri.Graphic;
   /**
    * Station tides graphic
    */
-  graphicTides: __esri.Graphic;
+  graphicTides: esri.Graphic;
   /**
    * Station latitude
    */
@@ -124,7 +132,7 @@ export type Station = {
    *
    * `2` - absolutely money
    */
-  money: 0 | 1 | 2;
+  money: 0 | 1 | 2 | 3 | 4;
   /**
    *  Tides for the date
    */
@@ -141,7 +149,7 @@ export type StationInfo = {
   stationId: number | string;
   /**
    * Station name (optional)
-   * 
+   *
    * Overrides noaa station name
    */
   stationName?: string;

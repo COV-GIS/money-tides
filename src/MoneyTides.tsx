@@ -2,6 +2,8 @@
 
 import '@esri/calcite-components/dist/calcite/calcite.css';
 import '@arcgis/core/assets/esri/css/main.css';
+import './AboutModal.scss';
+import './MapControls.scss';
 import './MoneyTides.scss';
 import './TidesDialog.scss';
 
@@ -47,8 +49,12 @@ import MapView from '@arcgis/core/views/MapView';
 import Graphic from '@arcgis/core/Graphic';
 import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
 import TextSymbol from '@arcgis/core/symbols/TextSymbol';
+import { byName } from '@arcgis/core/smartMapping/symbology/support/colorRamps';
+import Color from '@arcgis/core/Color';
 import Point from '@arcgis/core/geometry/Point';
 import { DateTime } from 'luxon';
+import AboutModal from './AboutModal';
+import MapControls from './MapControls';
 import TidesDialog from './TidesDialog';
 
 //#endregion
@@ -56,19 +62,9 @@ import TidesDialog from './TidesDialog';
 //#region constants
 
 const CSS = {
-  dialog: 'application-dialog',
-  header: 'application-header',
-  view: 'application-view',
-};
-
-const GET_COLOR = (property: string): string => {
-  return getComputedStyle(document.documentElement).getPropertyValue(property).trim();
-};
-
-const COLORS = {
-  green: GET_COLOR('--calcite-color-status-success'),
-  orange: GET_COLOR('--calcite-color-status-warning'),
-  red: GET_COLOR('--calcite-color-status-danger'),
+  dialog: 'money-tides_dialog',
+  header: 'money-tides_header',
+  view: 'money-tides_view',
 };
 
 let KEY = 0;
@@ -82,9 +78,10 @@ const SYMBOL_NAME = new TextSymbol({
   color: 'black',
   font: {
     size: 12,
+    weight: 'bold',
   },
   haloColor: 'white',
-  haloSize: 2,
+  haloSize: 1.5,
   horizontalAlignment: 'left',
   xoffset: 10,
 });
@@ -95,7 +92,7 @@ const SYMBOL_POINT = new SimpleMarkerSymbol({
   size: 10,
   outline: {
     color: 'white',
-    width: 1,
+    width: 1.25,
   },
 });
 
@@ -104,9 +101,10 @@ const SYMBOL_TIDES = new TextSymbol({
   color: 'black',
   font: {
     size: 12,
+    weight: 'bold',
   },
   haloColor: 'white',
-  haloSize: 2,
+  haloSize: 1.5,
   horizontalAlignment: 'left',
   xoffset: 10,
   yoffset: -14,
@@ -146,7 +144,12 @@ export default class MoneyTides extends Widget {
   //#endregion
 
   //#region private properties
+
+  private aboutModal = new AboutModal();
+
   private alerts: esri.Collection<tsx.JSX.Element> = new Collection();
+
+  private colors!: esri.supportColorRampsColorRamp;
 
   private date = DateTime.now().setZone('America/Los_Angeles');
 
@@ -162,11 +165,19 @@ export default class MoneyTides extends Widget {
 
   //#region private methods
 
+  private addZoomToItem(stationInfo: StationInfo): void {
+    this.zoomToDropDownItems.add(
+      <calcite-dropdown-item key={KEY++} onclick={this.zoomTo.bind(this, `${stationInfo.stationId}`)}>
+        {stationInfo.stationName}
+      </calcite-dropdown-item>,
+    );
+  }
+
   private createGraphics(
     id: string,
     latitude: number,
     longitude: number,
-    money: 0 | 1 | 2,
+    money: Station['money'],
     name: string,
     predictions: Prediction[],
   ): {
@@ -179,7 +190,7 @@ export default class MoneyTides extends Widget {
       view: { graphics },
     } = this;
 
-    const color = money === 0 ? COLORS.red : money === 1 ? COLORS.orange : COLORS.green;
+    const { color, haloColor } = this.moneyColors(money);
 
     const attributes = { id };
 
@@ -191,13 +202,16 @@ export default class MoneyTides extends Widget {
     const graphicName = new Graphic({
       attributes,
       geometry,
-      symbol: Object.assign(SYMBOL_NAME.clone(), { color, text: name }),
+      symbol: Object.assign(SYMBOL_NAME.clone(), { color, haloColor, text: name }),
     });
 
     const graphicPoint = new Graphic({
       attributes,
       geometry,
-      symbol: Object.assign(SYMBOL_POINT.clone(), { color }),
+      symbol: Object.assign(SYMBOL_POINT.clone(), {
+        color,
+        outline: { color: haloColor, width: SYMBOL_POINT.outline.width },
+      }),
     });
 
     const graphicTides = new Graphic({
@@ -205,6 +219,7 @@ export default class MoneyTides extends Widget {
       geometry,
       symbol: Object.assign(SYMBOL_TIDES.clone(), {
         color,
+        haloColor,
         text: this.tidesSymbolText(predictions),
       }),
       visible: view.scale < 240000,
@@ -227,14 +242,18 @@ export default class MoneyTides extends Widget {
   private updateGraphics(station: Station): void {
     const { money, predictions, graphicName, graphicPoint, graphicTides } = station;
 
-    const color = money === 0 ? COLORS.red : money === 1 ? COLORS.orange : COLORS.green;
+    const { color, haloColor } = this.moneyColors(money);
 
-    graphicName.symbol = Object.assign((graphicName.symbol as esri.TextSymbol).clone(), { color });
+    graphicName.symbol = Object.assign((graphicName.symbol as esri.TextSymbol).clone(), { color, haloColor });
 
-    graphicPoint.symbol = Object.assign((graphicPoint.symbol as esri.SimpleMarkerSymbol).clone(), { color });
+    graphicPoint.symbol = Object.assign((graphicPoint.symbol as esri.SimpleMarkerSymbol).clone(), {
+      color,
+      outline: { color: haloColor, width: SYMBOL_POINT.outline.width },
+    });
 
     graphicTides.symbol = Object.assign((graphicTides.symbol as esri.TextSymbol).clone(), {
       color,
+      haloColor,
       text: this.tidesSymbolText(predictions),
     });
   }
@@ -253,7 +272,7 @@ export default class MoneyTides extends Widget {
     this.stations.forEach(async (station: Station): Promise<void> => {
       const { id, name } = station;
 
-      const { money, predictions } = await this.getPredictions(dateNoaa, name, id);
+      const { money, predictions } = await this.getPredictions(dateNoaa, id);
 
       Object.assign(station, { dateIso, dateNoaa, money, predictions });
 
@@ -265,42 +284,42 @@ export default class MoneyTides extends Widget {
     });
   }
 
-  private getMoney(date: DateTime): 0 | 1 | 2 {
-    const time = date.toMillis();
+  private getMoney(predictions: Prediction[]): Station['money'] {
+    // sort by height
+    const _predictions: Prediction[] = predictions.toSorted((a: Prediction, b: Prediction): number => {
+      return b.height - a.height;
+    });
 
-    const moneyStart = date.set({ hour: 11, minute: 0, second: 0, millisecond: 0 }).toMillis();
+    const highestHigh: Prediction = _predictions[0];
 
-    const moneyEnd = date.set({ hour: 13, minute: 0, second: 0, millisecond: 0 }).toMillis();
+    // may or may not have two high tides per day
+    const lowestHigh: Prediction | null = _predictions[1].type === 'high' ? _predictions[1] : null;
 
-    const kindaMoneyStart = date.set({ hour: 9, minute: 0, second: 0, millisecond: 0 }).toMillis();
+    const highestIsMoney = this.isMoney(highestHigh.date);
 
-    const kindaMoneyEnd = date.set({ hour: 15, minute: 0, second: 0, millisecond: 0 }).toMillis();
+    const lowestIsMoney = this.isMoney(lowestHigh?.date);
 
-    if (time >= moneyStart && time <= moneyEnd) {
-      return 2;
-    } else if (time >= kindaMoneyStart && time <= kindaMoneyEnd) {
-      return 1;
-    } else {
-      return 0;
-    }
+    if (highestIsMoney === 'yes') return 4;
+
+    if (highestIsMoney === 'kinda') return 3;
+
+    if (lowestIsMoney === 'yes') return 2;
+
+    if (lowestIsMoney === 'kinda') return 1;
+
+    return 0;
   }
 
-  // TODO: return promise and handle error
+  // only invoke within try/catch statement
   private async getPredictions(
     dateNoaa: string,
-    name: string,
     id: number | string,
-  ): Promise<{ money: 0 | 1 | 2; predictions: Prediction[] }> {
+  ): Promise<{ money: Station['money']; predictions: Prediction[] }> {
     const predictionsResponse: ApiPredictionsResponse = await (
       await fetch(
         `https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=predictions&format=json&interval=hilo&time_zone=LST_LDT&units=english&datum=MLLW&station=${id}&begin_date=${dateNoaa}&end_date=${dateNoaa}`,
       )
     ).json();
-
-    let highestHigh = {
-      height: 0,
-      date: DateTime.now(),
-    };
 
     const predictions: Prediction[] = predictionsResponse.predictions.map((prediction: ApiPrediction): Prediction => {
       const { t, v, type } = prediction;
@@ -309,36 +328,38 @@ export default class MoneyTides extends Widget {
 
       const height = Number(Number(v).toFixed(2));
 
-      if (type === 'H' && height > highestHigh.height)
-        highestHigh = {
-          height,
-          date,
-        };
-
       return {
         height,
+        date,
         time: date.toFormat('h:mm a'),
         type: type === 'H' ? 'high' : 'low',
       };
     });
 
     return {
-      money: this.getMoney(highestHigh.date),
+      money: this.getMoney(predictions),
       predictions,
     };
+  }
 
-    // try {
-    // } catch (error) {
-    //   console.log(error);
+  private isMoney(date?: DateTime): 'no' | 'kinda' | 'yes' {
+    if (!date) return 'no';
 
-    //   this.alerts.add(
-    //     <calcite-alert auto-close="" icon="exclamation-mark-circle" key={KEY++} kind="danger" open>
-    //       <div slot="message">
-    //         Failed to load tide predictions for {name} ({id})
-    //       </div>
-    //     </calcite-alert>,
-    //   );
-    // }
+    const time = date.toMillis();
+
+    if (
+      time >= date.set({ hour: 11, minute: 0, second: 0, millisecond: 0 }).toMillis() &&
+      time <= date.set({ hour: 13, minute: 0, second: 0, millisecond: 0 }).toMillis()
+    )
+      return 'yes';
+
+    if (
+      time >= date.set({ hour: 10, minute: 0, second: 0, millisecond: 0 }).toMillis() &&
+      time <= date.set({ hour: 14, minute: 0, second: 0, millisecond: 0 }).toMillis()
+    )
+      return 'kinda';
+
+    return 'no';
   }
 
   private async loadStation(stationInfo: StationInfo): Promise<void> {
@@ -355,7 +376,7 @@ export default class MoneyTides extends Widget {
 
       const { id, lat: latitude, lng: longitude, name } = stationResponse.stations[0];
 
-      const { money, predictions } = await this.getPredictions(dateNoaa, name, id);
+      const { money, predictions } = await this.getPredictions(dateNoaa, id);
 
       const _name = stationName || name;
 
@@ -381,12 +402,6 @@ export default class MoneyTides extends Widget {
         graphicPoint,
         graphicTides,
       });
-
-      this.zoomToDropDownItems.add(
-        <calcite-dropdown-item key={KEY++} onclick={this.zoomTo.bind(this, id)}>
-          {_name}
-        </calcite-dropdown-item>,
-      );
     } catch (error) {
       console.log(error);
 
@@ -396,6 +411,15 @@ export default class MoneyTides extends Widget {
         </calcite-alert>,
       );
     }
+  }
+
+  private moneyColors(money: Station['money']): { color: esri.Color; haloColor: esri.Color } {
+    const color = this.colors.colors[money] as esri.Color & { isBright: boolean };
+
+    return {
+      color,
+      haloColor: new Color(color.isBright ? [0, 0, 0] : [255, 255, 255]),
+    };
   }
 
   private tidesSymbolText(predictions: Prediction[]): string {
@@ -464,7 +488,13 @@ export default class MoneyTides extends Widget {
           <calcite-dropdown width="m">
             <calcite-button icon-start="gear" slot="trigger"></calcite-button>
             <calcite-dropdown-group selection-mode="none">
-              <calcite-dropdown-item>About</calcite-dropdown-item>
+              <calcite-dropdown-item
+                onclick={(): void => {
+                  this.aboutModal.open();
+                }}
+              >
+                About
+              </calcite-dropdown-item>
             </calcite-dropdown-group>
             <calcite-dropdown-group group-title="Zoom to" selection-mode="none">
               {zoomToDropDownItems.toArray()}
@@ -478,12 +508,17 @@ export default class MoneyTides extends Widget {
         {/* dialogs */}
         <div slot="dialogs">
           <calcite-dialog afterCreate={this.tidesDialogAfterCreate.bind(this)}></calcite-dialog>
+          <calcite-dialog afterCreate={this.aboutModalAfterCreate.bind(this)}></calcite-dialog>
         </div>
 
         {/* alerts */}
         {alerts.length ? <div slot="alerts">{alerts.toArray()}</div> : null}
       </calcite-shell>
     );
+  }
+
+  private aboutModalAfterCreate(dialog: HTMLCalciteDialogElement): void {
+    this.aboutModal.container = dialog;
   }
 
   private datePickerAfterCreate(datePicker: HTMLCalciteInputDatePickerElement): void {
@@ -501,23 +536,34 @@ export default class MoneyTides extends Widget {
   }
 
   private async viewAfterCreate(container: HTMLDivElement): Promise<void> {
+    this.colors = byName('Red and Green 9') as esri.supportColorRampsColorRamp;
+
     const view = (this.view = new MapView({
       container,
+      constraints: {
+        rotationEnabled: false,
+      },
       extent: {
         spatialReference: {
           wkid: 102100,
         },
-        xmin: -14063495.960129377,
-        ymin: 5428315.22728483,
-        xmax: -13322362.533876345,
-        ymax: 5954813.478113098,
+        xmin: -14694016,
+        ymin: 4924845,
+        xmax: -12947583,
+        ymax: 5976619,
       },
       map: new Map({
         basemap: 'topo-vector',
       }),
     }));
 
+    view.ui.remove(['attribution', 'zoom']);
+
+    view.ui.add(new MapControls({ view }), 'top-left');
+
     this.stationInfos.forEach(this.loadStation.bind(this));
+
+    this.stationInfos.forEach(this.addZoomToItem.bind(this));
 
     this.addHandles(view.on('click', this.viewClick.bind(this)));
 

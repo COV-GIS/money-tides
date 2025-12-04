@@ -1,0 +1,41 @@
+.about-modal {
+  --calcite-dialog-content-space: 0;
+}
+
+.about-modal_content {
+  padding: 0 0.75rem;
+}
+
+.about-modal_heading {
+  font-size: var(--calcite-font-size-0);
+  font-weight: var(--calcite-font-weight-medium);
+}
+
+.about-modal_medium {
+  font-weight: var(--calcite-font-weight-medium);
+
+  &[money="0"] {
+    color: #d7191cff;
+  }
+
+  &[money="1"] {
+    color: #fdae61ff;
+  }
+
+  &[money="2"] {
+    color: #ffffbfff;
+    text-shadow:
+      -1px -1px 1px black,
+      1px -1px 1px black,
+      -1px 1px 1px black,
+      1px 1px 1px black;
+  }
+
+  &[money="3"] {
+    color: #a6d96aff;
+  }
+
+  &[money="4"] {
+    color: #1a9641ff;
+  }
+}

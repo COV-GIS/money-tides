@@ -1,4 +1,4 @@
-.application-header {
+.money-tides_header {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
@@ -13,7 +13,7 @@
   }
 }
 
-.application-loader {
+.money-tides_loader {
   position: absolute;
   top: 0;
   right: 0;
@@ -25,21 +25,46 @@
   transition: opacity 1s;
 }
 
-.application-view {
+.money-tides_view {
   width: 100%;
   height: 100%;
 }
 
-calcite-dialog {
-  &[kind="danger"] {
-    --calcite-dialog-heading-text-color: var(--calcite-color-status-danger);
-  }
-
-  &[kind="warning"] {
-    --calcite-dialog-heading-text-color: var(--calcite-color-status-warning);
-  }
-
-  &[kind="success"] {
-    --calcite-dialog-heading-text-color: var(--calcite-color-status-success);
-  }
+.esri-view .esri-view-surface::after {
+  outline: none !important;
+  outline-offset: 0;
 }
+
+.esri-ui-top-right {
+  top: -5px;
+  right: -5px;
+}
+
+.esri-ui-top-left {
+  top: -5px;
+  left: -5px;
+}
+
+.esri-ui-bottom-left {
+  bottom: -20px;
+  left: -5px;
+}
+
+.esri-ui-bottom-right {
+  bottom: -20px;
+  right: -5px;
+}
+
+// calcite-dialog {
+//   &[kind="danger"] {
+//     --calcite-dialog-heading-text-color: var(--calcite-color-status-danger);
+//   }
+
+//   &[kind="warning"] {
+//     --calcite-dialog-heading-text-color: var(--calcite-color-status-warning);
+//   }
+
+//   &[kind="success"] {
+//     --calcite-dialog-heading-text-color: var(--calcite-color-status-success);
+//   }
+// }
