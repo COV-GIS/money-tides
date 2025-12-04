@@ -144,19 +144,31 @@ export default class TidesDialog extends Widget {
         {/* prediction table */}
         <calcite-table class={CSS.table} striped>
           {predictions.map((prediction: Prediction): tsx.JSX.Element => {
-            const { height, time, type } = prediction;
+            const { height, money, moneyType, time, type } = prediction;
 
             return (
-              <calcite-table-row key={KEY++}>
-                <calcite-table-cell>{time}</calcite-table-cell>
-                <calcite-table-cell>{type}</calcite-table-cell>
-                <calcite-table-cell>{height} ft</calcite-table-cell>
+              <calcite-table-row key={KEY++} class={moneyType}>
+                <calcite-table-cell>{this.cellContent(time, money, moneyType)}</calcite-table-cell>
+                <calcite-table-cell>{this.cellContent(type, money, moneyType)}</calcite-table-cell>
+                <calcite-table-cell>{this.cellContent(height, money, moneyType)}</calcite-table-cell>
               </calcite-table-row>
             );
           })}
         </calcite-table>
       </calcite-dialog>
     );
+  }
+
+  private cellContent(
+    value: number | string,
+    money: Prediction['money'],
+    moneyType: Prediction['moneyType'],
+  ): string | tsx.JSX.Element {
+    value = typeof value === 'number' ? `${value} ft` : value;
+
+    if (!money) return value;
+
+    return <span class={moneyType}>{value}</span>;
   }
 
   //#endregion

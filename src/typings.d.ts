@@ -2,11 +2,11 @@ import esri = __esri;
 
 import type { DateTime } from 'luxon';
 
-type I = {
+export type I = {
   /**
-   * Is the tide money
+   * Money types
    */
-  money: 0 | 1 | 2 | 3 | 4;
+  moneyType: 'not-money' | 'potentially-money' | 'kinda-money' | 'mostly-money' | 'money';
 };
 
 /**
@@ -83,7 +83,11 @@ export type Prediction = {
   /**
    * Is the tide money
    */
-  // money: I['money'];
+  money: boolean;
+  /**
+   * Money tide type
+   */
+  moneyType: I['moneyType'];
   /**
    * Tide time, e.g. 5:12 PM
    */
@@ -135,9 +139,9 @@ export type Station = {
    */
   name: string;
   /**
-   * Is the tide money
+   * Is the day money
    */
-  money: I['money'];
+  moneyType: I['moneyType'];
   /**
    *  Tides for the date
    */

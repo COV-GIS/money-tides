@@ -1,8 +1,41 @@
+@use "styles" as styles;
+
 .tides-dialog {
   --calcite-dialog-min-size-y: 0;
   --calcite-dialog-content-space: 0;
 }
 
+.tides-dialog_money {
+}
+
 .tides-dialog_table {
   --calcite-table-border-color: none;
+
+  calcite-table-row {
+    &.money {
+      --calcite-table-row-background-color: #{styles.$money};
+    }
+
+    &.mostly-money {
+      --calcite-table-row-background-color: #{styles.$mostly-money};
+    }
+
+    &.kinda-money {
+      --calcite-table-row-background-color: #{styles.$kinda-money};
+    }
+
+    &.potentially-money {
+      --calcite-table-row-background-color: #{styles.$potentially-money};
+    }
+  }
+
+  calcite-table-cell span {
+    &.money, &.mostly-money, &.kinda-money, &.potentially-money {
+      font-weight: var(--calcite-font-weight-medium);
+    }
+
+    &.money {
+      color: #fff;
+    }
+  }
 }

@@ -1,8 +1,4 @@
-$text-shadow:
-  -1px -1px 1px rgba(0, 0, 0, 192),
-  1px -1px 1px rgba(0, 0, 0, 192),
-  -1px 1px 1px rgba(0, 0, 0, 192),
-  1px 1px 1px rgba(0, 0, 0, 192);
+@use 'styles' as styles;
 
 .about-modal {
   --calcite-dialog-content-space: 0;
@@ -21,25 +17,25 @@ $text-shadow:
   font-weight: var(--calcite-font-weight-medium);
 
   &[money="0"] {
-    color: #d7191cff;
+    color: styles.$not-money;
   }
 
   &[money="1"] {
-    color: #fdae61ff;
-    text-shadow: $text-shadow;
+    color: styles.$potentially-money;
+    text-shadow: styles.$text-shadow;
   }
 
   &[money="2"] {
-    color: #ffffbfff;
-    text-shadow: $text-shadow;
+    color: styles.$kinda-money;
+    text-shadow: styles.$text-shadow;
   }
 
   &[money="3"] {
-    color: #a6d96aff;
-    text-shadow: $text-shadow;
+    color: styles.$mostly-money;
+    text-shadow: styles.$text-shadow;
   }
 
   &[money="4"] {
-    color: #1a9641ff;
+    color: styles.$money;
   }
 }
