@@ -6,14 +6,12 @@ import type { Prediction, Station } from './typings';
 
 //#region components
 
+import '@esri/calcite-components/dist/components/calcite-action';
+import '@esri/calcite-components/dist/components/calcite-action-group';
 import '@esri/calcite-components/dist/components/calcite-dialog';
 import '@esri/calcite-components/dist/components/calcite-link';
 import '@esri/calcite-components/dist/components/calcite-table';
 import '@esri/calcite-components/dist/components/calcite-table-row';
-
-import '@esri/calcite-components/dist/components/calcite-dropdown';
-import '@esri/calcite-components/dist/components/calcite-dropdown-group';
-import '@esri/calcite-components/dist/components/calcite-dropdown-item';
 
 //#endregion
 
@@ -23,6 +21,7 @@ import { subclass } from '@arcgis/core/core/accessorSupport/decorators';
 import Widget from '@arcgis/core/widgets/Widget';
 import { tsx } from '@arcgis/core/widgets/support/widget';
 import { DateTime } from 'luxon';
+import { NOAA_DATE } from './MoneyTides';
 
 //#endregion
 
@@ -77,6 +76,30 @@ export default class TidesDialog extends Widget {
 
   //#endregion
 
+  //#region private methods
+
+  private openUrl(type: 'home' | 1 | 7 | 30): void {
+    const { id, dateIso, dateNoaa } = this.station;
+
+    if (type === 'home') {
+      window.open(`https://tidesandcurrents.noaa.gov/stationhome.html?id=${id}`, '_blank');
+    } else if (type === 1) {
+      window.open(
+        `https://tidesandcurrents.noaa.gov/noaatidepredictions.html?id=${id}&units=standard&bdate=${dateNoaa}&edate=${dateNoaa}&timezone=LST/LDT&clock=12hour&datum=MLLW&interval=hilo&action=dailychart`,
+        '_blank',
+      );
+    } else {
+      window.open(
+        `https://tidesandcurrents.noaa.gov/noaatidepredictions.html?id=${id}&units=standard&bdate=${dateNoaa}&edate=${NOAA_DATE(
+          DateTime.fromISO(dateIso).set({ day: type }),
+        )}&timezone=LST/LDT&clock=12hour&datum=MLLW&interval=hilo&action=dailychart`,
+        '_blank',
+      );
+    }
+  }
+
+  //#endregion
+
   //#region render
 
   render(): tsx.JSX.Element {
@@ -84,7 +107,7 @@ export default class TidesDialog extends Widget {
 
     if (!station) return <calcite-dialog></calcite-dialog>;
 
-    const { dateIso, dateNoaa, id, money, name, predictions } = station;
+    const { dateIso, name, predictions } = station;
 
     const heading = `${name} - ${DateTime.fromISO(dateIso).toLocaleString(DateTime.DATE_FULL)}`;
 
@@ -96,22 +119,26 @@ export default class TidesDialog extends Widget {
             scale="s"
             text="Home"
             text-enabled=""
-            onclick={(): void => {
-              window.open(`https://tidesandcurrents.noaa.gov/stationhome.html?id=${id}`, '_blank');
-            }}
+            onclick={this.openUrl.bind(this, 'home')}
           ></calcite-action>
           <calcite-action
             scale="s"
-            text="Predictions"
+            text="Daily Plot"
             text-enabled=""
-            onclick={(): void => {
-              window.open(
-                `https://tidesandcurrents.noaa.gov/noaatidepredictions.html?id=${id}&units=standard&bdate=${dateNoaa}&edate=${dateNoaa}&timezone=LST/LDT&clock=12hour&datum=MLLW&interval=hilo&action=dailychart`,
-                '_blank',
-              );
-            }}
+            onclick={this.openUrl.bind(this, 1)}
           ></calcite-action>
-          <calcite-action scale="s" text="30 Day Plot" text-enabled="" onclick={(): void => {}}></calcite-action>
+          <calcite-action
+            scale="s"
+            text="7 Day Plot"
+            text-enabled=""
+            onclick={this.openUrl.bind(this, 7)}
+          ></calcite-action>
+          <calcite-action
+            scale="s"
+            text="30 Day Plot"
+            text-enabled=""
+            onclick={this.openUrl.bind(this, 30)}
+          ></calcite-action>
         </calcite-action-bar>
 
         {/* prediction table */}

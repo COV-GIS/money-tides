@@ -54,6 +54,7 @@ import Color from '@arcgis/core/Color';
 import Point from '@arcgis/core/geometry/Point';
 import { DateTime } from 'luxon';
 import AboutModal from './AboutModal';
+import AddStationModal from './AddStationModal';
 import MapControls from './MapControls';
 import TidesDialog from './TidesDialog';
 
@@ -64,12 +65,14 @@ import TidesDialog from './TidesDialog';
 const CSS = {
   dialog: 'money-tides_dialog',
   header: 'money-tides_header',
+  headerButtons: 'money-tides_header--buttons',
+  headerTitle: 'money-tides_header--title',
   view: 'money-tides_view',
 };
 
 let KEY = 0;
 
-const NOAA_DATE = (date: DateTime): string => {
+export const NOAA_DATE = (date: DateTime): string => {
   return date.toFormat('yyyyLLdd');
 };
 
@@ -146,6 +149,8 @@ export default class MoneyTides extends Widget {
   //#region private properties
 
   private aboutModal = new AboutModal();
+
+  private addStationModal = new AddStationModal();
 
   private alerts: esri.Collection<tsx.JSX.Element> = new Collection();
 
@@ -331,6 +336,7 @@ export default class MoneyTides extends Widget {
       return {
         height,
         date,
+        // money: this.isMoney(date),
         time: date.toFormat('h:mm a'),
         type: type === 'H' ? 'high' : 'low',
       };
@@ -362,7 +368,7 @@ export default class MoneyTides extends Widget {
     return 'no';
   }
 
-  private async loadStation(stationInfo: StationInfo): Promise<void> {
+  private async loadStation(stationInfo: StationInfo): Promise<Station | void> {
     const { stationId, stationName } = stationInfo;
 
     try {
@@ -389,7 +395,7 @@ export default class MoneyTides extends Widget {
         predictions,
       );
 
-      this.stations.add({
+      const station = {
         id,
         dateIso,
         dateNoaa,
@@ -401,7 +407,11 @@ export default class MoneyTides extends Widget {
         graphicName,
         graphicPoint,
         graphicTides,
-      });
+      };
+
+      this.stations.add(station);
+
+      return station;
     } catch (error) {
       console.log(error);
 
@@ -480,26 +490,41 @@ export default class MoneyTides extends Widget {
       <calcite-shell>
         {/* header */}
         <div class={CSS.header} slot="header">
-          <div>Money Tides</div>
+          <div class={CSS.headerTitle}>Money Tides</div>
+
           <calcite-input-date-picker
             overlay-positioning="fixed"
             afterCreate={this.datePickerAfterCreate.bind(this)}
           ></calcite-input-date-picker>
-          <calcite-dropdown width="m">
-            <calcite-button icon-start="gear" slot="trigger"></calcite-button>
-            <calcite-dropdown-group selection-mode="none">
-              <calcite-dropdown-item
-                onclick={(): void => {
-                  this.aboutModal.open();
-                }}
-              >
-                About
-              </calcite-dropdown-item>
-            </calcite-dropdown-group>
-            <calcite-dropdown-group group-title="Zoom to" selection-mode="none">
-              {zoomToDropDownItems.toArray()}
-            </calcite-dropdown-group>
-          </calcite-dropdown>
+
+          <div class={CSS.headerButtons}>
+            <calcite-dropdown width="m">
+              <calcite-button icon-start="zoom-to-object" slot="trigger"></calcite-button>
+              <calcite-dropdown-group group-title="Zoom to" selection-mode="none">
+                {zoomToDropDownItems.toArray()}
+              </calcite-dropdown-group>
+            </calcite-dropdown>
+
+            <calcite-dropdown width="m">
+              <calcite-button icon-start="gear" slot="trigger"></calcite-button>
+              <calcite-dropdown-group selection-mode="none">
+                <calcite-dropdown-item
+                  onclick={(): void => {
+                    this.aboutModal.open();
+                  }}
+                >
+                  About
+                </calcite-dropdown-item>
+                <calcite-dropdown-item
+                  onclick={(): void => {
+                    this.addStationModal.open();
+                  }}
+                >
+                  Add Station
+                </calcite-dropdown-item>
+              </calcite-dropdown-group>
+            </calcite-dropdown>
+          </div>
         </div>
 
         {/* view */}
@@ -509,6 +534,7 @@ export default class MoneyTides extends Widget {
         <div slot="dialogs">
           <calcite-dialog afterCreate={this.tidesDialogAfterCreate.bind(this)}></calcite-dialog>
           <calcite-dialog afterCreate={this.aboutModalAfterCreate.bind(this)}></calcite-dialog>
+          <calcite-dialog afterCreate={this.addStationModalAfterCreate.bind(this)}></calcite-dialog>
         </div>
 
         {/* alerts */}
@@ -519,6 +545,23 @@ export default class MoneyTides extends Widget {
 
   private aboutModalAfterCreate(dialog: HTMLCalciteDialogElement): void {
     this.aboutModal.container = dialog;
+  }
+
+  private addStationModalAfterCreate(dialog: HTMLCalciteDialogElement): void {
+    this.addStationModal.container = dialog;
+
+    this.addStationModal.on('add-station', async (stationInfo: StationInfo): Promise<void> => {
+      const station = await this.loadStation(stationInfo);
+
+      if (!station) return;
+
+      this.addZoomToItem({
+        stationId: station.id,
+        stationName: station.name,
+      });
+
+      this.zoomTo(station.id);
+    });
   }
 
   private datePickerAfterCreate(datePicker: HTMLCalciteInputDatePickerElement): void {
@@ -547,10 +590,10 @@ export default class MoneyTides extends Widget {
         spatialReference: {
           wkid: 102100,
         },
-        xmin: -14694016,
-        ymin: 4924845,
-        xmax: -12947583,
-        ymax: 5976619,
+        xmin: -13955940.166008195,
+        ymin: 5182285.156662469,
+        xmax: -13655084.022677755,
+        ymax: 5708171.911264456,
       },
       map: new Map({
         basemap: 'topo-vector',
