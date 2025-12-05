@@ -1,4 +1,8 @@
-import MoneyTides from './MoneyTides';
+import '@esri/calcite-components/dist/calcite/calcite.css';
+import '@arcgis/core/assets/esri/css/main.css';
+import './main.scss';
+
+import MoneyTides from './components/MoneyTides';
 
 new MoneyTides({
   stationInfos: [

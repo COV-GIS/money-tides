@@ -6,13 +6,45 @@ import { byName } from '@arcgis/core/smartMapping/symbology/support/colorRamps';
 import Color from '@arcgis/core/Color';
 import { DateTime } from 'luxon';
 
+//#region constants
+
 /**
- * Get primary and secondary tide colors by tide type. 
- * 
- * @param tideType - the type of tide
+ * Array of money colors.
  */
-export const getTideTypeColor = (tideType: I['tideType']): { primary: esri.Color; secondary: esri.Color } => {
-  const primary = tideColors[tideTypes.indexOf(tideType)] as esri.Color & { isBright: boolean };
+export const moneyColors = (byName('Red and Green 9') as esri.supportColorRampsColorRamp).colors;
+
+/**
+ * Array of money types.
+ */
+export const moneyTypes: I['money'][] = ['not-money', 'potentially-money', 'kinda-money', 'mostly-money', 'money'];
+
+//#endregion
+
+//#region methods
+
+/**
+ * Create a URL.
+ * 
+ * @param base - base URL
+ * @param params - query string params
+ */
+export const createURL = (base: string, params: { [key: string]: string | number }): string => {
+  const url = new URL(base);
+
+  Object.entries(params).forEach(([key, value]): void => {
+    url.searchParams.append(key, String(value));
+  });
+
+  return url.toString();
+};
+
+/**
+ * Get primary and secondary tide colors by money type.
+ *
+ * @param money - money type
+ */
+export const getMoneyColors = (money: I['money']): { primary: esri.Color; secondary: esri.Color } => {
+  const primary = moneyColors[moneyTypes.indexOf(money)] as esri.Color & { isBright: boolean };
 
   return {
     primary,
@@ -57,16 +89,6 @@ export const stationPredictions = (id: number | string, date: string, days: numb
 };
 
 /**
- * Array of tide colors.
- */
-export const tideColors = (byName('Red and Green 9') as esri.supportColorRampsColorRamp).colors;
-
-/**
- * Array of tide types.
- */
-export const tideTypes: I['tideType'][] = ['not-money', 'potentially-money', 'kinda-money', 'mostly-money', 'money'];
-
-/**
  * Return a date formatted for NOAA api requests, e.g. YYYYMMDD (2021204).
  *
  * @param date DateTime instance to format
@@ -74,3 +96,5 @@ export const tideTypes: I['tideType'][] = ['not-money', 'potentially-money', 'ki
 export const toNOAADate = (date: DateTime): string => {
   return date.toFormat('yyyyLLdd');
 };
+
+//#endregion

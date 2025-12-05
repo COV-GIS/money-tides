@@ -83,7 +83,7 @@ export default class AboutModal extends Widget {
             &nbsp;&nbsp;&nbsp;
             <span>Neither the highest high tide or lowest high tide occurs between 10:00 AM and 2:00 PM</span>
           </p>
-          {/* <p class={CSS.heading}>A caveat about tides</p>
+          <p class={CSS.heading}>A caveat about tides</p>
           <p>
             The Oregon coast experiences semi-diurnal tides (two high and two low tides per solar day). The rotation of
             the earth and the earth's positional relationship to the sun and moon as the earth orbits the sun results in
@@ -92,9 +92,10 @@ export default class AboutModal extends Widget {
             days when a location only experiences three tides (two high tides and one low tide OR one high tide and two
             low tides). On such an occasion when a location experiences one high tide and two low tides in a calendar
             day, the single high tide will always occur between 10:00 AM and 2:00 PM, and so is a{' '}
-            <span class="money">Money</span> or <span class="mostly-money">Mostly Money</span> tide. It may be a low
-            high tide in relation to the proceeding and upcoming high tides.
-          </p> */}
+            <span class="money">Money</span> or <span class="mostly-money">Mostly Money</span> tide. But, it may be a
+            low high tide in relation to the proceeding and upcoming high tides. So you might want to check to see if if
+            the single calendar day high tide is a high high tide.
+          </p>
         </div>
       </calcite-dialog>
     );

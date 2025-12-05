@@ -1,14 +1,3 @@
-//#region styles
-
-import '@esri/calcite-components/dist/calcite/calcite.css';
-import '@arcgis/core/assets/esri/css/main.css';
-import './AboutModal.scss';
-import './MapControls.scss';
-import './MoneyTides.scss';
-import './TidesDialog.scss';
-
-//#endregion
-
 //#region types
 
 import esri = __esri;
@@ -21,7 +10,7 @@ import type {
   Prediction,
   Station,
   StationInfo,
-} from './typings';
+} from '../typings';
 
 //#endregion
 
@@ -52,9 +41,7 @@ import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
 import TextSymbol from '@arcgis/core/symbols/TextSymbol';
 import Point from '@arcgis/core/geometry/Point';
 import { DateTime } from 'luxon';
-
-import { getTideTypeColor, toNOAADate } from './support';
-
+import { createURL, getMoneyColors, moneyTypes, toNOAADate } from '../support';
 import AboutModal from './AboutModal';
 import AddStationModal from './AddStationModal';
 import MapControls from './MapControls';
@@ -177,21 +164,11 @@ export default class MoneyTides extends Widget {
     );
   }
 
-  private dateChangeButtonClick(event: Event) {
-    const type = (event.target as HTMLCalciteButtonElement).iconStart as 'chevron-left' | 'chevron-right';
-
-    const date = (this.date = type === 'chevron-right' ? this.date.plus({ days: 1 }) : this.date.minus({ days: 1 }));
-
-    this.datePicker.value = date.toISODate() as string;
-
-    this.datePicker.dispatchEvent(new Event('calciteInputDatePickerChange'));
-  }
-
   private createGraphics(
     id: string,
     latitude: number,
     longitude: number,
-    moneyType: I['tideType'],
+    money: I['money'],
     name: string,
     predictions: Prediction[],
   ): {
@@ -204,7 +181,7 @@ export default class MoneyTides extends Widget {
       view: { graphics },
     } = this;
 
-    const { primary, secondary } = getTideTypeColor(moneyType);
+    const { primary, secondary } = getMoneyColors(money);
 
     const attributes = { id };
 
@@ -253,10 +230,193 @@ export default class MoneyTides extends Widget {
     return { graphicName, graphicPoint, graphicTides };
   }
 
-  private updateGraphics(station: Station): void {
-    const { moneyType, predictions, graphicName, graphicPoint, graphicTides } = station;
+  private getMoney(predictions: Prediction[]): { money: I['money']; moneyTideIndex: number } {
+    // sort by height
+    const _predictions: Prediction[] = predictions.toSorted((a: Prediction, b: Prediction): number => {
+      return b.height - a.height;
+    });
 
-    const { primary, secondary } = getTideTypeColor(moneyType);
+    const highestHigh: Prediction = _predictions[0];
+
+    // may or may not have two high tides per day
+    const lowestHigh: Prediction | null = _predictions[1].type === 'high' ? _predictions[1] : null;
+
+    const highestRange = this.getTimeRange(highestHigh.date);
+
+    const lowestRange = this.getTimeRange(lowestHigh?.date);
+
+    const highestIndex = predictions.indexOf(highestHigh);
+
+    const lowestIndex = lowestHigh ? predictions.indexOf(lowestHigh) : -1;
+
+    if (highestRange === 2)
+      return {
+        money: moneyTypes[4],
+        moneyTideIndex: highestIndex,
+      };
+
+    if (highestRange === 1)
+      return {
+        money: moneyTypes[3],
+        moneyTideIndex: highestIndex,
+      };
+
+    if (lowestRange === 2)
+      return {
+        money: moneyTypes[2],
+        moneyTideIndex: lowestIndex,
+      };
+
+    if (lowestRange === 1)
+      return {
+        money: moneyTypes[1],
+        moneyTideIndex: lowestIndex,
+      };
+
+    return {
+      money: moneyTypes[0],
+      moneyTideIndex: -1,
+    };
+  }
+
+  private async getPredictions(
+    id: number | string,
+    date: DateTime,
+  ): Promise<{ money: I['money']; predictions: Prediction[] }> {
+    const noaaDate = toNOAADate(date);
+
+    const url = createURL('https://api.tidesandcurrents.noaa.gov/api/prod/datagetter', {
+      product: 'predictions',
+      format: 'json',
+      interval: 'hilo', // only high and low tides
+      time_zone: 'lst_ldt', // station local time adjusted for DST
+      units: 'english',
+      datum: 'mllw', // must use 'mean lower low water' b/c most stations are subordinate
+      station: id,
+      begin_date: noaaDate,
+      end_date: noaaDate,
+    });
+
+    const predictionsResponse: ApiPredictionsResponse = await (await fetch(url)).json();
+
+    const predictions: Prediction[] = predictionsResponse.predictions.map((prediction: ApiPrediction): Prediction => {
+      const { t, v, type } = prediction;
+
+      const date = DateTime.fromSQL(t).setZone('America/Los_Angeles') as DateTime<true>;
+
+      const height = Number(Number(v).toFixed(2));
+
+      const time = date.toFormat('h:mm a');
+
+      return {
+        height,
+        date,
+        isMoney: false,
+        money: 'not-money',
+        time,
+        type: type === 'H' ? 'high' : 'low',
+      };
+    });
+
+    const { money, moneyTideIndex } = this.getMoney(predictions);
+
+    if (moneyTideIndex !== -1) {
+      predictions[moneyTideIndex].isMoney = true;
+
+      predictions[moneyTideIndex].money = money;
+    }
+
+    return {
+      money,
+      predictions,
+    };
+  }
+
+  private getTimeRange(date?: DateTime): 0 | 1 | 2 {
+    if (!date) return 0;
+
+    const time = date.toMillis();
+
+    if (
+      time >= date.set({ hour: 11, minute: 0, second: 0, millisecond: 0 }).toMillis() &&
+      time <= date.set({ hour: 13, minute: 0, second: 0, millisecond: 0 }).toMillis()
+    )
+      return 2; // between 11 AM and 1 PM
+
+    if (
+      time >= date.set({ hour: 10, minute: 0, second: 0, millisecond: 0 }).toMillis() &&
+      time <= date.set({ hour: 14, minute: 0, second: 0, millisecond: 0 }).toMillis()
+    )
+      return 1; // between 10 AM and 2 PM
+
+    return 0;
+  }
+
+  private async loadStation(stationInfo: StationInfo): Promise<Station | void> {
+    const { stationId, stationName } = stationInfo;
+
+    const date = this.date;
+
+    try {
+      const stationResponse: ApiStationResponse = await (
+        await fetch(`https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations/${stationId}.json`)
+      ).json();
+
+      const { id, lat: latitude, lng: longitude, name } = stationResponse.stations[0];
+
+      const _name = stationName || name;
+
+      const { money, predictions } = await this.getPredictions(id, date);
+
+      const { graphicName, graphicPoint, graphicTides } = this.createGraphics(
+        id,
+        latitude,
+        longitude,
+        money,
+        _name,
+        predictions,
+      );
+
+      const station = {
+        id,
+        date,
+        latitude,
+        longitude,
+        name: _name,
+        money,
+        predictions,
+        graphicName,
+        graphicPoint,
+        graphicTides,
+      };
+
+      this.stations.add(station);
+
+      return station;
+    } catch (error) {
+      console.log(error);
+
+      this.alerts.add(
+        <calcite-alert auto-close="" icon="exclamation-mark-circle" key={KEY++} kind="danger" open>
+          <div slot="message">Failed to load station data for {stationName}</div>
+        </calcite-alert>,
+      );
+    }
+  }
+
+  private tidesSymbolText(predictions: Prediction[]): string {
+    return predictions
+      .map((prediction: Prediction): string => {
+        const { height, time, type } = prediction;
+        return `${time} ${type} ${height} ft`;
+      })
+      .join('\n');
+  }
+
+  private updateSymbols(station: Station): void {
+    const { money, predictions, graphicName, graphicPoint, graphicTides } = station;
+
+    const { primary, secondary } = getMoneyColors(money);
 
     graphicName.symbol = Object.assign((graphicName.symbol as esri.TextSymbol).clone(), {
       color: primary,
@@ -275,25 +435,41 @@ export default class MoneyTides extends Widget {
     });
   }
 
-  private dateChange(event: Event): void {
+  private zoomTo(id: string): void {
+    const { view } = this;
+
+    const station = this.stations.find((station: Station): boolean => {
+      return station.id === id;
+    });
+
+    if (!station) return;
+
+    view.goTo(station.graphicPoint);
+
+    view.scale = 60000;
+
+    this.tidesDialog.show(station);
+  }
+
+  //#endregion
+
+  //#region events
+
+  private dateChangeEvent(event: Event): void {
     const { tidesDialog } = this;
 
     const date = (this.date = DateTime.fromISO(
       (event.target as HTMLCalciteInputDatePickerElement).value as string,
     ).setZone('America/Los_Angeles'));
 
-    const dateIso = date.toISODate() as string;
-
-    const dateNoaa = toNOAADate(date);
-
     this.stations.forEach(async (station: Station): Promise<void> => {
-      const { id, name } = station;
+      const { id } = station;
 
-      const { moneyType, predictions } = await this.getPredictions(id, dateNoaa, name);
+      const { money, predictions } = await this.getPredictions(id, date);
 
-      Object.assign(station, { dateIso, dateNoaa, moneyType, predictions });
+      Object.assign(station, { date, money, predictions });
 
-      this.updateGraphics(station);
+      this.updateSymbols(station);
 
       if (tidesDialog.container.open && tidesDialog.station.id === id) {
         tidesDialog.show(station);
@@ -301,181 +477,17 @@ export default class MoneyTides extends Widget {
     });
   }
 
-  private getMoney(predictions: Prediction[]): { moneyType: I['tideType']; moneyIndex: number } {
-    // sort by height
-    const _predictions: Prediction[] = predictions.toSorted((a: Prediction, b: Prediction): number => {
-      return b.height - a.height;
-    });
+  private dateButtonClickEvent(event: Event) {
+    const type = (event.target as HTMLCalciteButtonElement).iconStart as 'chevron-left' | 'chevron-right';
 
-    const highestHigh: Prediction = _predictions[0];
+    const date = (this.date = type === 'chevron-right' ? this.date.plus({ days: 1 }) : this.date.minus({ days: 1 }));
 
-    // may or may not have two high tides per day
-    const lowestHigh: Prediction | null = _predictions[1].type === 'high' ? _predictions[1] : null;
+    this.datePicker.value = date.toISODate() as string;
 
-    const highestIsMoney = this.isMoney(highestHigh.date);
-
-    const lowestIsMoney = this.isMoney(lowestHigh?.date);
-
-    if (highestIsMoney === 'yes')
-      return {
-        moneyType: 'money',
-        moneyIndex: predictions.indexOf(highestHigh),
-      };
-
-    if (highestIsMoney === 'kinda')
-      return {
-        moneyType: 'mostly-money',
-        moneyIndex: predictions.indexOf(highestHigh),
-      };
-
-    if (lowestIsMoney === 'yes')
-      return {
-        moneyType: 'kinda-money',
-        moneyIndex: lowestHigh ? predictions.indexOf(lowestHigh) : -1,
-      };
-
-    if (lowestIsMoney === 'kinda')
-      return {
-        moneyType: 'potentially-money',
-        moneyIndex: lowestHigh ? predictions.indexOf(lowestHigh) : -1,
-      };
-
-    return {
-      moneyType: 'not-money',
-      moneyIndex: -1,
-    };
+    this.datePicker.dispatchEvent(new Event('calciteInputDatePickerChange'));
   }
 
-  // only invoke within try/catch statement
-  private async getPredictions(
-    id: number | string,
-    dateNoaa: string,
-    name: string,
-  ): Promise<{ moneyType: I['tideType']; predictions: Prediction[] }> {
-    const predictionsResponse: ApiPredictionsResponse = await (
-      await fetch(
-        `https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=predictions&format=json&interval=hilo&time_zone=LST_LDT&units=english&datum=MLLW&station=${id}&begin_date=${dateNoaa}&end_date=${dateNoaa}`,
-      )
-    ).json();
-
-    const predictions: Prediction[] = predictionsResponse.predictions.map((prediction: ApiPrediction): Prediction => {
-      const { t, v, type } = prediction;
-
-      const date = DateTime.fromSQL(t).setZone('America/Los_Angeles') as DateTime<true>;
-
-      const height = Number(Number(v).toFixed(2));
-
-      const time = date.toFormat('h:mm a');
-
-      return {
-        height,
-        date,
-        money: false,
-        moneyType: 'not-money',
-        time,
-        type: type === 'H' ? 'high' : 'low',
-      };
-    });
-
-    const { moneyType, moneyIndex } = this.getMoney(predictions);
-
-    if (moneyIndex !== -1) {
-      predictions[moneyIndex].money = true;
-
-      predictions[moneyIndex].moneyType = moneyType;
-    }
-
-    return {
-      moneyType,
-      predictions,
-    };
-  }
-
-  private isMoney(date?: DateTime): 'no' | 'kinda' | 'yes' {
-    if (!date) return 'no';
-
-    const time = date.toMillis();
-
-    if (
-      time >= date.set({ hour: 11, minute: 0, second: 0, millisecond: 0 }).toMillis() &&
-      time <= date.set({ hour: 13, minute: 0, second: 0, millisecond: 0 }).toMillis()
-    )
-      return 'yes';
-
-    if (
-      time >= date.set({ hour: 10, minute: 0, second: 0, millisecond: 0 }).toMillis() &&
-      time <= date.set({ hour: 14, minute: 0, second: 0, millisecond: 0 }).toMillis()
-    )
-      return 'kinda';
-
-    return 'no';
-  }
-
-  private async loadStation(stationInfo: StationInfo): Promise<Station | void> {
-    const { stationId, stationName } = stationInfo;
-
-    try {
-      const dateIso = this.date.toISODate() as string;
-
-      const dateNoaa = toNOAADate(this.date);
-
-      const stationResponse: ApiStationResponse = await (
-        await fetch(`https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations/${stationId}.json`)
-      ).json();
-
-      const { id, lat: latitude, lng: longitude, name } = stationResponse.stations[0];
-
-      const _name = stationName || name;
-
-      const { moneyType, predictions } = await this.getPredictions(id, dateNoaa, name);
-
-      const { graphicName, graphicPoint, graphicTides } = this.createGraphics(
-        id,
-        latitude,
-        longitude,
-        moneyType,
-        _name,
-        predictions,
-      );
-
-      const station = {
-        id,
-        dateIso,
-        dateNoaa,
-        latitude,
-        longitude,
-        name: _name,
-        moneyType,
-        predictions,
-        graphicName,
-        graphicPoint,
-        graphicTides,
-      };
-
-      this.stations.add(station);
-
-      return station;
-    } catch (error) {
-      console.log(error);
-
-      this.alerts.add(
-        <calcite-alert auto-close="" icon="exclamation-mark-circle" key={KEY++} kind="danger" open>
-          <div slot="message">Failed to load station data for {stationName || stationId}</div>
-        </calcite-alert>,
-      );
-    }
-  }
-
-  private tidesSymbolText(predictions: Prediction[]): string {
-    return predictions
-      .map((prediction: Prediction): string => {
-        const { height, time, type } = prediction;
-        return `${time} ${type} ${height} ft`;
-      })
-      .join('\n');
-  }
-
-  private async viewClick(event: esri.ViewClickEvent): Promise<void> {
+  private async viewClickEvent(event: esri.ViewClickEvent): Promise<void> {
     event.stopPropagation();
 
     const { tidesDialog } = this;
@@ -497,22 +509,6 @@ export default class MoneyTides extends Widget {
     tidesDialog.show(station);
   }
 
-  private zoomTo(id: string): void {
-    const { view } = this;
-
-    const station = this.stations.find((station: Station): boolean => {
-      return station.id === id;
-    });
-
-    if (!station) return;
-
-    view.goTo(station.graphicPoint);
-
-    view.scale = 60000;
-
-    this.tidesDialog.show(station);
-  }
-
   //#endregion
 
   //#region render
@@ -527,12 +523,12 @@ export default class MoneyTides extends Widget {
           <div class={CSS.headerTitle}>Money Tides</div>
 
           <div class={CSS.headerDate}>
-            <calcite-button icon-start="chevron-left" onclick={this.dateChangeButtonClick.bind(this)}></calcite-button>
+            <calcite-button icon-start="chevron-left" onclick={this.dateButtonClickEvent.bind(this)}></calcite-button>
             <calcite-input-date-picker
               overlay-positioning="fixed"
               afterCreate={this.datePickerAfterCreate.bind(this)}
             ></calcite-input-date-picker>
-            <calcite-button icon-start="chevron-right" onclick={this.dateChangeButtonClick.bind(this)}></calcite-button>
+            <calcite-button icon-start="chevron-right" onclick={this.dateButtonClickEvent.bind(this)}></calcite-button>
           </div>
 
           <div class={CSS.headerButtons}>
@@ -607,7 +603,7 @@ export default class MoneyTides extends Widget {
 
     datePicker.value = today;
 
-    datePicker.addEventListener('calciteInputDatePickerChange', this.dateChange.bind(this));
+    datePicker.addEventListener('calciteInputDatePickerChange', this.dateChangeEvent.bind(this));
 
     this.datePicker = datePicker;
   }
@@ -644,7 +640,7 @@ export default class MoneyTides extends Widget {
 
     this.stationInfos.forEach(this.addZoomToItem.bind(this));
 
-    this.addHandles(view.on('click', this.viewClick.bind(this)));
+    this.addHandles(view.on('click', this.viewClickEvent.bind(this)));
 
     const loader = document.body.querySelector('calcite-loader') as HTMLCalciteLoaderElement;
 

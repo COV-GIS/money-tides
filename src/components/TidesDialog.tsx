@@ -1,6 +1,6 @@
 //#region types
 
-import type { Prediction, Station } from './typings';
+import type { I, Prediction, Station } from '../typings';
 
 //#endregion
 
@@ -20,7 +20,7 @@ import { subclass } from '@arcgis/core/core/accessorSupport/decorators';
 import Widget from '@arcgis/core/widgets/Widget';
 import { tsx } from '@arcgis/core/widgets/support/widget';
 import { DateTime } from 'luxon';
-import { stationHome, stationPredictions } from './support';
+import { stationHome, stationPredictions } from '../support';
 
 //#endregion
 
@@ -78,7 +78,7 @@ export default class TidesDialog extends Widget {
   //#region private methods
 
   private openUrl(type: 'home' | number): void {
-    const { id, dateIso } = this.station;
+    const { id, date } = this.station;
 
     if (type === 'home') {
       stationHome(id, true);
@@ -86,7 +86,7 @@ export default class TidesDialog extends Widget {
       return;
     }
 
-    stationPredictions(id, dateIso, type, true);
+    stationPredictions(id, date.toISODate() as string, type, true);
   }
 
   //#endregion
@@ -98,9 +98,9 @@ export default class TidesDialog extends Widget {
 
     if (!station) return <calcite-dialog></calcite-dialog>;
 
-    const { dateIso, name, predictions } = station;
+    const { date, name, predictions } = station;
 
-    const heading = `${name} - ${DateTime.fromISO(dateIso).toLocaleString(DateTime.DATE_FULL)}`;
+    const heading = `${name} - ${date.toLocaleString(DateTime.DATE_FULL)}`;
 
     return (
       <calcite-dialog class={CSS.base} heading={heading} placement="bottom-start" width="s">
@@ -135,13 +135,13 @@ export default class TidesDialog extends Widget {
         {/* prediction table */}
         <calcite-table class={CSS.table} striped>
           {predictions.map((prediction: Prediction): tsx.JSX.Element => {
-            const { height, money, moneyType, time, type } = prediction;
+            const { height, isMoney, money, time, type } = prediction;
 
             return (
-              <calcite-table-row key={KEY++} class={moneyType}>
-                <calcite-table-cell>{this.cellContent(time, money, moneyType)}</calcite-table-cell>
-                <calcite-table-cell>{this.cellContent(type, money, moneyType)}</calcite-table-cell>
-                <calcite-table-cell>{this.cellContent(height, money, moneyType)}</calcite-table-cell>
+              <calcite-table-row key={KEY++} class={money}>
+                <calcite-table-cell>{this.cellContent(time, isMoney, money)}</calcite-table-cell>
+                <calcite-table-cell>{this.cellContent(type, isMoney, money)}</calcite-table-cell>
+                <calcite-table-cell>{this.cellContent(height, isMoney, money)}</calcite-table-cell>
               </calcite-table-row>
             );
           })}
@@ -152,14 +152,14 @@ export default class TidesDialog extends Widget {
 
   private cellContent(
     value: number | string,
-    money: Prediction['money'],
-    moneyType: Prediction['moneyType'],
+    isMoney: Prediction['isMoney'],
+    money: I['money'],
   ): string | tsx.JSX.Element {
     value = typeof value === 'number' ? `${value} ft` : value;
 
-    if (!money) return value;
+    if (!isMoney) return value;
 
-    return <span class={moneyType}>{value}</span>;
+    return <span class={money}>{value}</span>;
   }
 
   //#endregion
