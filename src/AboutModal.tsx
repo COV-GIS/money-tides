@@ -19,7 +19,6 @@ const CSS_BASE = 'about-modal';
 const CSS = {
   content: `${CSS_BASE}_content`,
   heading: `${CSS_BASE}_heading`,
-  medium: `${CSS_BASE}_medium`,
 };
 
 //#endregion
@@ -40,9 +39,13 @@ export default class AboutModal extends Widget {
 
   //#endregion
 
+  //#region public methods
+
   public open() {
     this.container.open = true;
   }
+
+  //#endregion
 
   //#region render
 
@@ -51,51 +54,47 @@ export default class AboutModal extends Widget {
       <calcite-dialog class={CSS_BASE} heading="About" modal>
         <div class={CSS.content}>
           <p class={CSS.heading}>What is a money tide?</p>
-          <p>Strictly speaking...a money tide is when the highest high tide of the day occurs at noon.</p>
+          <p>A money tide is when the highest high tide of the calendar day (12:00 AM to 12:00 AM) occurs at noon.</p>
+          <p class={CSS.heading}>Why are money tides important?</p>
+          <p>If you have to ask...you will never know.</p>
           <p class={CSS.heading}>How money is a high tide?</p>
           <p>
-            <span class={CSS.medium} money="4">
-              Money
-            </span>
+            <span class="money">Money</span>
             &nbsp;&nbsp;&nbsp;
-            <span>Highest high tide falls between 11 AM and 1 PM</span>
+            <span>Highest high tide occurs between 11:00 AM and 1:00 PM</span>
           </p>
           <p>
-            <span class={CSS.medium} money="3">
-              Mostly Money
-            </span>
+            <span class="mostly-money">Mostly Money</span>
             &nbsp;&nbsp;&nbsp;
-            <span>Highest high tide falls between 10 AM and 11 AM or between 1 PM and 2 PM</span>
+            <span>Highest high tide occurs between 10:00 AM and 11:00 AM or between 1:00 PM and 2:00 PM</span>
           </p>
           <p>
-            <span class={CSS.medium} money="2">
-              Kinda Money
-            </span>
+            <span class="kinda-money">Kinda Money</span>
             &nbsp;&nbsp;&nbsp;
-            <span>Lowest high tide falls between 11 AM and 1 PM</span>
+            <span>Lowest high tide occurs between 11:00 AM and 1:00 PM</span>
           </p>
           <p>
-            <span class={CSS.medium} money="1">
-              Potentially Money
-            </span>
+            <span class="potentially-money">Potentially Money</span>
             &nbsp;&nbsp;&nbsp;
-            <span>Lowest high tide falls between 10 AM and 11 AM or between 1 PM and 2 PM</span>
+            <span>Lowest high tide occurs between 10:00 AM and 11:00 AM or between 1:00 PM and 2:00 PM</span>
           </p>
           <p>
-            <span class={CSS.medium} money="0">
-              Not Money
-            </span>
+            <span class="not-money">Not Money</span>
             &nbsp;&nbsp;&nbsp;
-            <span>None of the above</span>
+            <span>Neither the highest high tide or lowest high tide occurs between 10:00 AM and 2:00 PM</span>
           </p>
+          {/* <p class={CSS.heading}>A caveat about tides</p>
           <p>
-            <span class={CSS.medium}>Note: </span>
-            Only one high tide may occur within a 24 hour period (12 AM to 12 AM). In such a scenario the single high tide is{' '}
-            <span class={CSS.medium} money="4">
-              Money
-            </span>{' '}
-            by default. However, the proceeding and upcoming high tides may be higher.
-          </p>
+            The Oregon coast experiences semi-diurnal tides (two high and two low tides per solar day). The rotation of
+            the earth and the earth's positional relationship to the sun and moon as the earth orbits the sun results in
+            a highest high tide, a lowest high tide, a highest low tide, and a lowest low tide per solar day. However,
+            the sun and moon do not care about you or how you keep track of time. As a result, there will be calendar
+            days when a location only experiences three tides (two high tides and one low tide OR one high tide and two
+            low tides). On such an occasion when a location experiences one high tide and two low tides in a calendar
+            day, the single high tide will always occur between 10:00 AM and 2:00 PM, and so is a{' '}
+            <span class="money">Money</span> or <span class="mostly-money">Mostly Money</span> tide. It may be a low
+            high tide in relation to the proceeding and upcoming high tides.
+          </p> */}
         </div>
       </calcite-dialog>
     );

@@ -15,18 +15,6 @@ import { tsx } from '@arcgis/core/widgets/support/widget';
 
 //#endregion
 
-//#region constants
-
-const CSS_BASE = 'add-station-modal';
-
-const CSS = {
-  content: `${CSS_BASE}_content`,
-  heading: `${CSS_BASE}_heading`,
-  medium: `${CSS_BASE}_medium`,
-};
-
-//#endregion
-
 @subclass('AddStationModal')
 export default class AddStationModal extends Widget {
   //#region lifecycle
@@ -43,9 +31,15 @@ export default class AddStationModal extends Widget {
 
   //#endregion
 
+  //#region public methods
+
   public open() {
     this.container.open = true;
   }
+
+  //#endregion
+
+  //#region private methods
 
   private formSubmit(event: Event): void {
     event.preventDefault();
@@ -59,21 +53,23 @@ export default class AddStationModal extends Widget {
     this.container.querySelector('form')?.reset();
   }
 
+  //#endregion
+
   //#region render
 
   render(): tsx.JSX.Element {
     const id = `add-station-form_${this.id}`;
 
     return (
-      <calcite-dialog class={CSS_BASE} heading="Add Station" modal width="s">
+      <calcite-dialog heading="Add Station" modal width="s">
         <form id={id} onsubmit={this.formSubmit.bind(this)}>
           <calcite-label>
             Station id
             <calcite-input-text autocomplete="off" name="stationId" required></calcite-input-text>
           </calcite-label>
           <calcite-label>
-            Station name (optional)
-            <calcite-input-text autocomplete="off" name="stationName"></calcite-input-text>
+            Station name
+            <calcite-input-text autocomplete="off" name="stationName" required></calcite-input-text>
           </calcite-label>
         </form>
         <calcite-button

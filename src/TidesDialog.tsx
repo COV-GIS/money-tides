@@ -9,7 +9,6 @@ import type { Prediction, Station } from './typings';
 import '@esri/calcite-components/dist/components/calcite-action';
 import '@esri/calcite-components/dist/components/calcite-action-group';
 import '@esri/calcite-components/dist/components/calcite-dialog';
-import '@esri/calcite-components/dist/components/calcite-link';
 import '@esri/calcite-components/dist/components/calcite-table';
 import '@esri/calcite-components/dist/components/calcite-table-row';
 
@@ -21,7 +20,7 @@ import { subclass } from '@arcgis/core/core/accessorSupport/decorators';
 import Widget from '@arcgis/core/widgets/Widget';
 import { tsx } from '@arcgis/core/widgets/support/widget';
 import { DateTime } from 'luxon';
-import { NOAA_DATE } from './MoneyTides';
+import { stationHome, stationPredictions } from './support';
 
 //#endregion
 
@@ -78,24 +77,16 @@ export default class TidesDialog extends Widget {
 
   //#region private methods
 
-  private openUrl(type: 'home' | 1 | 7 | 30): void {
-    const { id, dateIso, dateNoaa } = this.station;
+  private openUrl(type: 'home' | number): void {
+    const { id, dateIso } = this.station;
 
     if (type === 'home') {
-      window.open(`https://tidesandcurrents.noaa.gov/stationhome.html?id=${id}`, '_blank');
-    } else if (type === 1) {
-      window.open(
-        `https://tidesandcurrents.noaa.gov/noaatidepredictions.html?id=${id}&units=standard&bdate=${dateNoaa}&edate=${dateNoaa}&timezone=LST/LDT&clock=12hour&datum=MLLW&interval=hilo&action=dailychart`,
-        '_blank',
-      );
-    } else {
-      window.open(
-        `https://tidesandcurrents.noaa.gov/noaatidepredictions.html?id=${id}&units=standard&bdate=${dateNoaa}&edate=${NOAA_DATE(
-          DateTime.fromISO(dateIso).set({ day: type }),
-        )}&timezone=LST/LDT&clock=12hour&datum=MLLW&interval=hilo&action=dailychart`,
-        '_blank',
-      );
+      stationHome(id, true);
+
+      return;
     }
+
+    stationPredictions(id, dateIso, type, true);
   }
 
   //#endregion

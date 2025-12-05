@@ -6,7 +6,7 @@ export type I = {
   /**
    * Money types
    */
-  moneyType: 'not-money' | 'potentially-money' | 'kinda-money' | 'mostly-money' | 'money';
+  tideType: 'not-money' | 'potentially-money' | 'kinda-money' | 'mostly-money' | 'money';
 };
 
 /**
@@ -87,7 +87,7 @@ export type Prediction = {
   /**
    * Money tide type
    */
-  moneyType: I['moneyType'];
+  moneyType: I['tideType'];
   /**
    * Tide time, e.g. 5:12 PM
    */
@@ -141,7 +141,7 @@ export type Station = {
   /**
    * Is the day money
    */
-  moneyType: I['moneyType'];
+  moneyType: I['tideType'];
   /**
    *  Tides for the date
    */
@@ -157,9 +157,7 @@ export type StationInfo = {
    */
   stationId: number | string;
   /**
-   * Station name (optional)
-   *
-   * Overrides noaa station name
+   * Station name
    */
-  stationName?: string;
+  stationName: string;
 };

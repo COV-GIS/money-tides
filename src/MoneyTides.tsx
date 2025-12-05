@@ -50,10 +50,11 @@ import MapView from '@arcgis/core/views/MapView';
 import Graphic from '@arcgis/core/Graphic';
 import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
 import TextSymbol from '@arcgis/core/symbols/TextSymbol';
-import { byName } from '@arcgis/core/smartMapping/symbology/support/colorRamps';
-import Color from '@arcgis/core/Color';
 import Point from '@arcgis/core/geometry/Point';
 import { DateTime } from 'luxon';
+
+import { getTideTypeColor, toNOAADate } from './support';
+
 import AboutModal from './AboutModal';
 import AddStationModal from './AddStationModal';
 import MapControls from './MapControls';
@@ -73,12 +74,6 @@ const CSS = {
 };
 
 let KEY = 0;
-
-export const MONEY_TYPES: I['moneyType'][] = ['not-money', 'potentially-money', 'kinda-money', 'mostly-money', 'money'];
-
-export const NOAA_DATE = (date: DateTime): string => {
-  return date.toFormat('yyyyLLdd');
-};
 
 const SYMBOL_NAME = new TextSymbol({
   text: '',
@@ -158,8 +153,6 @@ export default class MoneyTides extends Widget {
 
   private alerts: esri.Collection<tsx.JSX.Element> = new Collection();
 
-  private colors!: esri.supportColorRampsColorRamp;
-
   private date = DateTime.now().setZone('America/Los_Angeles');
 
   private datePicker!: HTMLCalciteInputDatePickerElement;
@@ -184,11 +177,21 @@ export default class MoneyTides extends Widget {
     );
   }
 
+  private dateChangeButtonClick(event: Event) {
+    const type = (event.target as HTMLCalciteButtonElement).iconStart as 'chevron-left' | 'chevron-right';
+
+    const date = (this.date = type === 'chevron-right' ? this.date.plus({ days: 1 }) : this.date.minus({ days: 1 }));
+
+    this.datePicker.value = date.toISODate() as string;
+
+    this.datePicker.dispatchEvent(new Event('calciteInputDatePickerChange'));
+  }
+
   private createGraphics(
     id: string,
     latitude: number,
     longitude: number,
-    moneyType: I['moneyType'],
+    moneyType: I['tideType'],
     name: string,
     predictions: Prediction[],
   ): {
@@ -201,7 +204,7 @@ export default class MoneyTides extends Widget {
       view: { graphics },
     } = this;
 
-    const { color, haloColor } = this.moneyColors(moneyType);
+    const { primary, secondary } = getTideTypeColor(moneyType);
 
     const attributes = { id };
 
@@ -213,15 +216,15 @@ export default class MoneyTides extends Widget {
     const graphicName = new Graphic({
       attributes,
       geometry,
-      symbol: Object.assign(SYMBOL_NAME.clone(), { color, haloColor, text: name }),
+      symbol: Object.assign(SYMBOL_NAME.clone(), { color: primary, haloColor: secondary, text: name }),
     });
 
     const graphicPoint = new Graphic({
       attributes,
       geometry,
       symbol: Object.assign(SYMBOL_POINT.clone(), {
-        color,
-        outline: { color: haloColor, width: SYMBOL_POINT.outline.width },
+        color: primary,
+        outline: { color: secondary, width: SYMBOL_POINT.outline.width },
       }),
     });
 
@@ -229,8 +232,8 @@ export default class MoneyTides extends Widget {
       attributes,
       geometry,
       symbol: Object.assign(SYMBOL_TIDES.clone(), {
-        color,
-        haloColor,
+        color: primary,
+        haloColor: secondary,
         text: this.tidesSymbolText(predictions),
       }),
       visible: view.scale < 240000,
@@ -253,18 +256,21 @@ export default class MoneyTides extends Widget {
   private updateGraphics(station: Station): void {
     const { moneyType, predictions, graphicName, graphicPoint, graphicTides } = station;
 
-    const { color, haloColor } = this.moneyColors(moneyType);
+    const { primary, secondary } = getTideTypeColor(moneyType);
 
-    graphicName.symbol = Object.assign((graphicName.symbol as esri.TextSymbol).clone(), { color, haloColor });
+    graphicName.symbol = Object.assign((graphicName.symbol as esri.TextSymbol).clone(), {
+      color: primary,
+      haloColor: secondary,
+    });
 
     graphicPoint.symbol = Object.assign((graphicPoint.symbol as esri.SimpleMarkerSymbol).clone(), {
-      color,
-      outline: { color: haloColor, width: SYMBOL_POINT.outline.width },
+      color: primary,
+      outline: { color: secondary, width: SYMBOL_POINT.outline.width },
     });
 
     graphicTides.symbol = Object.assign((graphicTides.symbol as esri.TextSymbol).clone(), {
-      color,
-      haloColor,
+      color: primary,
+      haloColor: secondary,
       text: this.tidesSymbolText(predictions),
     });
   }
@@ -278,7 +284,7 @@ export default class MoneyTides extends Widget {
 
     const dateIso = date.toISODate() as string;
 
-    const dateNoaa = NOAA_DATE(date);
+    const dateNoaa = toNOAADate(date);
 
     this.stations.forEach(async (station: Station): Promise<void> => {
       const { id, name } = station;
@@ -295,7 +301,7 @@ export default class MoneyTides extends Widget {
     });
   }
 
-  private getMoney(predictions: Prediction[]): { moneyType: I['moneyType']; moneyIndex: number } {
+  private getMoney(predictions: Prediction[]): { moneyType: I['tideType']; moneyIndex: number } {
     // sort by height
     const _predictions: Prediction[] = predictions.toSorted((a: Prediction, b: Prediction): number => {
       return b.height - a.height;
@@ -345,14 +351,12 @@ export default class MoneyTides extends Widget {
     id: number | string,
     dateNoaa: string,
     name: string,
-  ): Promise<{ moneyType: I['moneyType']; predictions: Prediction[] }> {
+  ): Promise<{ moneyType: I['tideType']; predictions: Prediction[] }> {
     const predictionsResponse: ApiPredictionsResponse = await (
       await fetch(
         `https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=predictions&format=json&interval=hilo&time_zone=LST_LDT&units=english&datum=MLLW&station=${id}&begin_date=${dateNoaa}&end_date=${dateNoaa}`,
       )
     ).json();
-
-    let noon = false;
 
     const predictions: Prediction[] = predictionsResponse.predictions.map((prediction: ApiPrediction): Prediction => {
       const { t, v, type } = prediction;
@@ -362,8 +366,6 @@ export default class MoneyTides extends Widget {
       const height = Number(Number(v).toFixed(2));
 
       const time = date.toFormat('h:mm a');
-
-      if (time === '12:00 PM') noon = true;
 
       return {
         height,
@@ -381,26 +383,6 @@ export default class MoneyTides extends Widget {
       predictions[moneyIndex].money = true;
 
       predictions[moneyIndex].moneyType = moneyType;
-    }
-
-    if (moneyType === 'money' && noon) {
-      const alertId = `money-tide-alert_${KEY++}`;
-
-      this.alerts.add(
-        <calcite-alert icon="exclamation-point-f" id={alertId} key={KEY++} kind="success">
-          <div slot="title">Money Tide</div>
-          <div slot="message">{name} is having it's hightest high tide at noon!</div>
-          <calcite-link
-            slot="link"
-            onclick={(): void => {
-              this.zoomTo(`${id}`);
-              (this._container.querySelector(`#${alertId}`) as HTMLCalciteAlertElement).open = false;
-            }}
-          >
-            View tides
-          </calcite-link>
-        </calcite-alert>,
-      );
     }
 
     return {
@@ -435,7 +417,7 @@ export default class MoneyTides extends Widget {
     try {
       const dateIso = this.date.toISODate() as string;
 
-      const dateNoaa = NOAA_DATE(this.date);
+      const dateNoaa = toNOAADate(this.date);
 
       const stationResponse: ApiStationResponse = await (
         await fetch(`https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations/${stationId}.json`)
@@ -482,25 +464,6 @@ export default class MoneyTides extends Widget {
         </calcite-alert>,
       );
     }
-  }
-
-  private moneyColors(moneyType: I['moneyType']): { color: esri.Color; haloColor: esri.Color } {
-    const color = this.colors.colors[MONEY_TYPES.indexOf(moneyType)] as esri.Color & { isBright: boolean };
-
-    return {
-      color,
-      haloColor: new Color(color.isBright ? [0, 0, 0] : [255, 255, 255]),
-    };
-  }
-
-  private setDate(go: 'forward' | 'backward') {
-    const date = (this.date = go === 'forward' ? this.date.plus({ days: 1 }) : this.date.minus({ days: 1 }));
-
-    this.datePicker.value = date.toISODate() as string;
-
-    console.log(this.datePicker);
-
-    this.datePicker.dispatchEvent(new Event('calciteInputDatePickerChange'));
   }
 
   private tidesSymbolText(predictions: Prediction[]): string {
@@ -564,12 +527,12 @@ export default class MoneyTides extends Widget {
           <div class={CSS.headerTitle}>Money Tides</div>
 
           <div class={CSS.headerDate}>
-            <calcite-button icon-start="chevron-left" onclick={this.setDate.bind(this, 'backward')}></calcite-button>
+            <calcite-button icon-start="chevron-left" onclick={this.dateChangeButtonClick.bind(this)}></calcite-button>
             <calcite-input-date-picker
               overlay-positioning="fixed"
               afterCreate={this.datePickerAfterCreate.bind(this)}
             ></calcite-input-date-picker>
-            <calcite-button icon-start="chevron-right" onclick={this.setDate.bind(this, 'forward')}></calcite-button>
+            <calcite-button icon-start="chevron-right" onclick={this.dateChangeButtonClick.bind(this)}></calcite-button>
           </div>
 
           <div class={CSS.headerButtons}>
@@ -644,8 +607,6 @@ export default class MoneyTides extends Widget {
 
     datePicker.value = today;
 
-    datePicker.min = today;
-
     datePicker.addEventListener('calciteInputDatePickerChange', this.dateChange.bind(this));
 
     this.datePicker = datePicker;
@@ -656,8 +617,6 @@ export default class MoneyTides extends Widget {
   }
 
   private async viewAfterCreate(container: HTMLDivElement): Promise<void> {
-    this.colors = byName('Red and Green 9') as esri.supportColorRampsColorRamp;
-
     const view = (this.view = new MapView({
       container,
       constraints: {
@@ -667,10 +626,10 @@ export default class MoneyTides extends Widget {
         spatialReference: {
           wkid: 102100,
         },
-        xmin: -13955940.166008195,
-        ymin: 5182285.156662469,
-        xmax: -13655084.022677755,
-        ymax: 5708171.911264456,
+        xmin: -13955940,
+        ymin: 5182285,
+        xmax: -13655084,
+        ymax: 5708171,
       },
       map: new Map({
         basemap: 'topo-vector',

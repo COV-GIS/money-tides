@@ -1,7 +1,40 @@
-@use 'styles' as styles;
+@use "styles" as styles;
 
 .about-modal {
   --calcite-dialog-content-space: 0;
+
+  span {
+    &.money,
+    &.mostly-money,
+    &.kinda-money,
+    &.potentially-money,
+    &.not-money {
+      font-weight: var(--calcite-font-weight-medium);
+    }
+
+    &.money {
+      color: styles.$money;
+    }
+
+    &.mostly-money {
+      color: styles.$mostly-money;
+      text-shadow: styles.$text-shadow;
+    }
+
+    &.kinda-money {
+      color: styles.$kinda-money;
+      text-shadow: styles.$text-shadow;
+    }
+
+    &.potentially-money {
+      color: styles.$potentially-money;
+      text-shadow: styles.$text-shadow;
+    }
+
+    &.not-money {
+      color: styles.$not-money;
+    }
+  }
 }
 
 .about-modal_content {
@@ -11,31 +44,4 @@
 .about-modal_heading {
   font-size: var(--calcite-font-size-0);
   font-weight: var(--calcite-font-weight-medium);
-}
-
-.about-modal_medium {
-  font-weight: var(--calcite-font-weight-medium);
-
-  &[money="0"] {
-    color: styles.$not-money;
-  }
-
-  &[money="1"] {
-    color: styles.$potentially-money;
-    text-shadow: styles.$text-shadow;
-  }
-
-  &[money="2"] {
-    color: styles.$kinda-money;
-    text-shadow: styles.$text-shadow;
-  }
-
-  &[money="3"] {
-    color: styles.$mostly-money;
-    text-shadow: styles.$text-shadow;
-  }
-
-  &[money="4"] {
-    color: styles.$money;
-  }
 }
