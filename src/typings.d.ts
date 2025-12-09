@@ -3,6 +3,8 @@ import esri = __esri;
 import type { DateTime } from 'luxon';
 
 export type I = {
+  closest: { index: number; minDiff: number; date: DateTime };
+
   /**
    * Money types
    */
@@ -110,6 +112,9 @@ export type Station = {
    * Date of predictions
    */
   date: DateTime;
+
+  graphicHeatmap: esri.Graphic;
+
   /**
    * Station name graphic
    */
@@ -134,6 +139,11 @@ export type Station = {
    * Station name
    */
   name: string;
+
+  noonLinearHeight: number;
+
+  noonSinusoidalHeight: number;
+
   /**
    * Day money type
    */

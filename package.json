@@ -8,10 +8,12 @@
   },
   "dependencies": {
     "@arcgis/core": "^4.34.8",
-    "luxon": "^3.7.2"
+    "luxon": "^3.7.2",
+    "suncalc": "^1.9.0"
   },
   "devDependencies": {
     "@types/luxon": "^3.7.1",
+    "@types/suncalc": "^1.9.2",
     "sass-embedded": "^1.93.3",
     "vite": "^7.2.6"
   },

@@ -14,6 +14,12 @@ import { DateTime } from 'luxon';
 export const moneyColors = (byName('Red and Green 9') as esri.supportColorRampsColorRamp).colors;
 
 /**
+ * Array of money colors for heatmaps.
+ */
+export const moneyColorsHeatmap = (byName('Blue 2') as esri.supportColorRampsColorRamp).colorsForClassBreaks[9]
+  .colors as esri.Color[];
+
+/**
  * Array of money types.
  */
 export const moneyTypes: I['money'][] = ['not-money', 'potentially-money', 'kinda-money', 'mostly-money', 'money'];
@@ -24,7 +30,7 @@ export const moneyTypes: I['money'][] = ['not-money', 'potentially-money', 'kind
 
 /**
  * Create a URL.
- * 
+ *
  * @param base - base URL
  * @param params - query string params
  */
