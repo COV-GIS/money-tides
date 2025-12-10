@@ -30,7 +30,16 @@ export const moneyTypeIndex: MoneyTypeIndex = [
 ];
 
 /**
- * Get primary and secondary tide colors by money type.
+ * Return tide color by money type in hex.
+ *
+ * @param moneyType - money type
+ */
+export const moneyTypeColorHex = (moneyType: MoneyType): string => {
+  return (moneyColors[moneyTypeIndex.indexOf(moneyType)] as esri.Color).toHex();
+};
+
+/**
+ * Return primary and secondary tide colors by money type.
  *
  * @param moneyType - money type
  */
