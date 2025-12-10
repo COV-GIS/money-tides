@@ -588,7 +588,7 @@ export default class MoneyTides extends Widget {
       .map((prediction: Prediction): string => {
         const { height, time, tideType } = prediction;
 
-        return `${time} - ${tideType} - ${height} ft`;
+        return `${time} ${tideType} ${height} ft`;
       })
       .join('\n');
   }
@@ -718,13 +718,21 @@ export default class MoneyTides extends Widget {
           <div class={CSS.headerTitle}>Money Tides</div>
 
           <div class={CSS.headerDate}>
-            <calcite-button icon-start="chevron-left" scale="s" onclick={this.dateButtonClickEvent.bind(this)}></calcite-button>
+            <calcite-button
+              icon-start="chevron-left"
+              scale="s"
+              onclick={this.dateButtonClickEvent.bind(this)}
+            ></calcite-button>
             <calcite-input-date-picker
               overlay-positioning="fixed"
               scale="s"
               afterCreate={this.datePickerAfterCreate.bind(this)}
             ></calcite-input-date-picker>
-            <calcite-button icon-start="chevron-right" scale="s" onclick={this.dateButtonClickEvent.bind(this)}></calcite-button>
+            <calcite-button
+              icon-start="chevron-right"
+              scale="s"
+              onclick={this.dateButtonClickEvent.bind(this)}
+            ></calcite-button>
           </div>
 
           <div class={CSS.headerButtons}>
@@ -789,10 +797,10 @@ export default class MoneyTides extends Widget {
         spatialReference: {
           wkid: 102100,
         },
-        xmin: -13955940,
-        ymin: 5182285,
-        xmax: -13655084,
-        ymax: 5708171,
+        xmin: -13927811,
+        ymin: 5308864,
+        xmax: -13626955,
+        ymax: 5844535,
       },
       map: new Map({
         basemap: 'topo-vector',
@@ -801,7 +809,6 @@ export default class MoneyTides extends Widget {
 
     view.ui.remove(['attribution', 'zoom']);
 
-    // view.ui.add(new MapControls({ view }), 'top-left');
     view.ui.add(new Attribution({ container: document.createElement('calcite-action-bar'), view }), 'bottom-right');
 
     stationInfos.forEach((stationInfo: StationInfo): void => {
@@ -813,6 +820,10 @@ export default class MoneyTides extends Widget {
     this.addHandles(view.on('click', this.viewClickEvent.bind(this)));
 
     this.emit('loaded');
+
+    setTimeout((): void => {
+      console.log(view.extent.toJSON());
+    }, 10000);
   }
 
   //#endregion

@@ -14,6 +14,10 @@ const moneyTides = new MoneyTides({
       stationName: 'Alsea Bay',
     },
     {
+      stationId: 9439040,
+      stationName: 'Astoria',
+    },
+    {
       stationId: 9430104,
       stationName: 'Chetco River',
     },
@@ -56,6 +60,10 @@ const moneyTides = new MoneyTides({
     {
       stationId: 9437585,
       stationName: 'Tillamook Bay',
+    },
+    {
+      stationId: 9440747,
+      stationName: 'Willapa Bay',
     },
     {
       stationId: 9433501,

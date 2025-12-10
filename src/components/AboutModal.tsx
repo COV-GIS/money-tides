@@ -48,7 +48,7 @@ export default class AboutModal extends Widget {
       'text-shadow: -1px -1px 2px rgba(0, 0, 0, 128), 1px -1px 2px rgba(0, 0, 0, 128), -1px 1px 2px rgba(0, 0, 0, 128), 1px 1px 2px rgba(0, 0, 0, 128);';
 
     return (
-      <calcite-dialog heading="About" modal scale="s">
+      <calcite-dialog heading="About" modal scale="s" width="s">
         <div style="display: flex; flex-direction: column; gap: 0.5rem; line-height: var(--calcite-font-line-height-relative-snug);">
           <div style={heading}>What is a money tide?</div>
           <div>A money tide is when the highest high tide of the day occurs at noon.</div>
