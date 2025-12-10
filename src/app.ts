@@ -2,9 +2,12 @@ import '@esri/calcite-components/dist/calcite/calcite.css';
 import '@arcgis/core/assets/esri/css/main.css';
 import './main.scss';
 
+import Loader from './components/Loader';
 import MoneyTides from './components/MoneyTides';
 
-new MoneyTides({
+const loader = new Loader();
+
+const moneyTides = new MoneyTides({
   stationInfos: [
     {
       stationId: 9434939,
@@ -21,6 +24,10 @@ new MoneyTides({
     {
       stationId: 9432373,
       stationName: 'Coquille River',
+    },
+    {
+      stationId: 9435827,
+      stationName: 'Depoe Bay',
     },
     {
       stationId: 9437908,
@@ -58,9 +65,9 @@ new MoneyTides({
       stationId: 9435385,
       stationName: 'Yaquina Bay',
     },
-    {
-      stationId: 9435827,
-      stationName: 'Depoe Bay',
-    },
   ],
+});
+
+moneyTides.on('loaded', (): void => {
+  loader.end();
 });

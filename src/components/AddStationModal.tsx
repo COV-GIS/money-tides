@@ -81,7 +81,7 @@ export default class AddStationModal extends Widget {
             this.container.querySelector('form')?.requestSubmit();
           }}
         >
-          Add Station
+          Add
         </calcite-button>
       </calcite-dialog>
     );

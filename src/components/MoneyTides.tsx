@@ -843,15 +843,7 @@ export default class MoneyTides extends Widget {
 
     this.addHandles(view.on('click', this.viewClickEvent.bind(this)));
 
-    const loader = document.body.querySelector('calcite-loader') as HTMLCalciteLoaderElement;
-
-    setTimeout((): void => {
-      loader.style.opacity = '0';
-    }, 2000);
-
-    setTimeout((): void => {
-      document.body.removeChild(loader);
-    }, 3000);
+    this.emit('loaded');
   }
 
   //#endregion
