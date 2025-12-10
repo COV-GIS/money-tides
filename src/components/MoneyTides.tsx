@@ -48,7 +48,7 @@ import { getTimes, getMoonTimes, getMoonIllumination } from 'suncalc';
 import { moneyTypeColors, moneyColorsHeatmap } from './colorUtils';
 import AboutModal from './AboutModal';
 import AddStationModal from './AddStationModal';
-import MapControls from './MapControls';
+import Attribution from './Attribution';
 import TidesDialog from './TidesDialog';
 
 //#endregion
@@ -833,7 +833,8 @@ export default class MoneyTides extends Widget {
 
     view.ui.remove(['attribution', 'zoom']);
 
-    view.ui.add(new MapControls({ view }), 'top-left');
+    // view.ui.add(new MapControls({ view }), 'top-left');
+    view.ui.add(new Attribution({ container: document.createElement('calcite-action-bar'), view }), 'bottom-right');
 
     stationInfos.forEach((stationInfo: StationInfo): void => {
       this.loadStation(stationInfo);
