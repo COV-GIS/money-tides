@@ -47,7 +47,6 @@ import { DateTime } from 'luxon';
 import { getTimes, getMoonTimes, getMoonIllumination } from 'suncalc';
 import { moneyTypeColors, moneyColorsHeatmap } from './colorUtils';
 import AboutModal from './AboutModal';
-import AddStationModal from './AddStationModal';
 import Attribution from './Attribution';
 import TidesDialog from './TidesDialog';
 
@@ -185,8 +184,6 @@ export default class MoneyTides extends Widget {
   //#region private properties
 
   private aboutModal = new AboutModal();
-
-  private addStationModal = new AddStationModal();
 
   private alerts: esri.Collection<tsx.JSX.Element> = new Collection();
 
@@ -721,40 +718,29 @@ export default class MoneyTides extends Widget {
           <div class={CSS.headerTitle}>Money Tides</div>
 
           <div class={CSS.headerDate}>
-            <calcite-button icon-start="chevron-left" onclick={this.dateButtonClickEvent.bind(this)}></calcite-button>
+            <calcite-button icon-start="chevron-left" scale="s" onclick={this.dateButtonClickEvent.bind(this)}></calcite-button>
             <calcite-input-date-picker
               overlay-positioning="fixed"
+              scale="s"
               afterCreate={this.datePickerAfterCreate.bind(this)}
             ></calcite-input-date-picker>
-            <calcite-button icon-start="chevron-right" onclick={this.dateButtonClickEvent.bind(this)}></calcite-button>
+            <calcite-button icon-start="chevron-right" scale="s" onclick={this.dateButtonClickEvent.bind(this)}></calcite-button>
           </div>
 
           <div class={CSS.headerButtons}>
-            <calcite-dropdown width="m">
-              <calcite-button icon-start="zoom-to-object" slot="trigger"></calcite-button>
+            <calcite-dropdown scale="s">
+              <calcite-button icon-start="zoom-to-object" scale="s" slot="trigger"></calcite-button>
               <calcite-dropdown-group group-title="Zoom to" selection-mode="none">
                 {zoomToDropdownItems.toArray()}
               </calcite-dropdown-group>
             </calcite-dropdown>
-            <calcite-dropdown width="m">
-              <calcite-button icon-start="gear" slot="trigger"></calcite-button>
-              <calcite-dropdown-group selection-mode="none">
-                <calcite-dropdown-item
-                  onclick={(): void => {
-                    this.addStationModal.open();
-                  }}
-                >
-                  Add Station
-                </calcite-dropdown-item>
-                <calcite-dropdown-item
-                  onclick={(): void => {
-                    this.aboutModal.open();
-                  }}
-                >
-                  About
-                </calcite-dropdown-item>
-              </calcite-dropdown-group>
-            </calcite-dropdown>
+            <calcite-button
+              icon-start="information"
+              scale="s"
+              onclick={(): void => {
+                this.aboutModal.open();
+              }}
+            ></calcite-button>
           </div>
         </div>
 
@@ -765,7 +751,6 @@ export default class MoneyTides extends Widget {
         <div slot="dialogs">
           <calcite-dialog afterCreate={this.tidesDialogAfterCreate.bind(this)}></calcite-dialog>
           <calcite-dialog afterCreate={this.aboutModalAfterCreate.bind(this)}></calcite-dialog>
-          <calcite-dialog afterCreate={this.addStationModalAfterCreate.bind(this)}></calcite-dialog>
         </div>
 
         {/* alerts */}
@@ -776,23 +761,6 @@ export default class MoneyTides extends Widget {
 
   private aboutModalAfterCreate(dialog: HTMLCalciteDialogElement): void {
     this.aboutModal.container = dialog;
-  }
-
-  private addStationModalAfterCreate(dialog: HTMLCalciteDialogElement): void {
-    this.addStationModal.container = dialog;
-
-    this.addStationModal.on('add-station', async (stationInfo: StationInfo): Promise<void> => {
-      const station = await this.loadStation(stationInfo);
-
-      if (!station || !station.id) return;
-
-      this.addZoomToItem({
-        stationId: station.id,
-        stationName: station.name,
-      });
-
-      this.zoomTo(station.id);
-    });
   }
 
   private datePickerAfterCreate(datePicker: HTMLCalciteInputDatePickerElement): void {
