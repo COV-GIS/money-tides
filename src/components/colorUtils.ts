@@ -1,0 +1,44 @@
+import esri = __esri;
+
+import type { MoneyType, MoneyTypeIndex } from '../typings';
+
+import { byName } from '@arcgis/core/smartMapping/symbology/support/colorRamps';
+import Color from '@arcgis/core/Color';
+
+/**
+ * Array of money colors.
+ */
+export const moneyColors = (byName('Red and Green 9') as esri.supportColorRampsColorRamp).colors;
+
+/**
+ * Array of money colors for heatmap.
+ */
+export const moneyColorsHeatmap = (byName('Blue 2') as esri.supportColorRampsColorRamp).colorsForClassBreaks[9]
+  .colors as esri.Color[];
+
+/**
+ * Array of money types by array index; `not-money = 0`, `potentially-money = 1`, etc.
+ *
+ * Useful for getting money colors by index.
+ */
+export const moneyTypeIndex: MoneyTypeIndex = [
+  'not-money',
+  'potentially-money',
+  'kinda-money',
+  'mostly-money',
+  'money',
+];
+
+/**
+ * Get primary and secondary tide colors by money type.
+ *
+ * @param moneyType - money type
+ */
+export const moneyTypeColors = (moneyType: MoneyType): { primary: esri.Color; secondary: esri.Color } => {
+  const primary = moneyColors[moneyTypeIndex.indexOf(moneyType)] as esri.Color & { isBright: boolean };
+
+  return {
+    primary,
+    secondary: new Color(primary.isBright ? [0, 0, 0] : [255, 255, 255]),
+  };
+};

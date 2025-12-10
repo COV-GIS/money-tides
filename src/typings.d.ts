@@ -1,15 +1,19 @@
 import esri = __esri;
 
 import type { DateTime } from 'luxon';
+import type { GetTimesResult, GetMoonTimes, GetMoonIlluminationResult } from 'suncalc';
 
-export type I = {
-  closest: { index: number; minDiff: number; date: DateTime };
+/**
+ * Money types;
+ */
+export type MoneyType = 'not-money' | 'potentially-money' | 'kinda-money' | 'mostly-money' | 'money';
 
-  /**
-   * Money types
-   */
-  money: 'not-money' | 'potentially-money' | 'kinda-money' | 'mostly-money' | 'money';
-};
+/**
+ * Array of money types by array index; `not-money = 0`, `potentially-money = 1`, etc.
+ *
+ * Useful for getting money colors by index.
+ */
+export type MoneyTypeIndex = ['not-money', 'potentially-money', 'kinda-money', 'mostly-money', 'money'];
 
 /**
  * Api tide prediction
@@ -83,21 +87,17 @@ export type Prediction = {
    */
   date: DateTime;
   /**
-   * Is the tide money
-   */
-  isMoney: boolean;
-  /**
    * Tide money type
    */
-  money: I['money'];
+  moneyType: MoneyType;
+  /**
+   * Tide type
+   */
+  tideType: 'high' | 'low' | 'noon';
   /**
    * Tide time, e.g. 5:12 PM
    */
   time: string;
-  /**
-   * Tide type
-   */
-  type: 'high' | 'low';
 };
 
 /**
@@ -112,9 +112,10 @@ export type Station = {
    * Date of predictions
    */
   date: DateTime;
-
+  /**
+   * Station noon height graphic for heatmap.
+   */
   graphicHeatmap: esri.Graphic;
-
   /**
    * Station name graphic
    */
@@ -139,19 +140,36 @@ export type Station = {
    * Station name
    */
   name: string;
-
-  noonLinearHeight: number;
-
-  noonSinusoidalHeight: number;
-
+  /**
+   * Tide height at noon (linear).
+   */
+  noonHeight: number;
   /**
    * Day money type
    */
-  money: I['money'];
+  moneyType: MoneyType;
   /**
    *  Tide predictions for the date
    */
   predictions: Prediction[];
+  /**
+   * Sun times.
+   *
+   * https://github.com/mourner/suncalc?tab=readme-ov-file#sunlight-times
+   */
+  sunTimes: GetTimesResult;
+  /**
+   * Moon times.
+   *
+   * https://github.com/mourner/suncalc?tab=readme-ov-file#moon-rise-and-set-times
+   */
+  moonTimes: GetMoonTimes;
+  /**
+   * Moon illumination (from earth).
+   *
+   * https://github.com/mourner/suncalc?tab=readme-ov-file#moon-illumination
+   */
+  moonIllumination: GetMoonIlluminationResult;
 };
 
 /**

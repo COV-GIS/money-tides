@@ -1,6 +1,6 @@
 //#region types
 
-import type { I, Prediction, Station } from '../typings';
+import type { MoneyType, Prediction, Station } from '../typings';
 
 //#endregion
 
@@ -16,11 +16,14 @@ import '@esri/calcite-components/dist/components/calcite-table-row';
 
 //#region modules
 
-import { subclass } from '@arcgis/core/core/accessorSupport/decorators';
+import { property, subclass } from '@arcgis/core/core/accessorSupport/decorators';
 import Widget from '@arcgis/core/widgets/Widget';
 import { tsx } from '@arcgis/core/widgets/support/widget';
 import { DateTime } from 'luxon';
-import { stationHome, stationPredictions } from '../support';
+
+import { createURL, formatNOAADate, twelveHourTime } from './MoneyTides';
+
+// import { stationHome, stationPredictions } from '../support';
 
 //#endregion
 
@@ -29,7 +32,6 @@ import { stationHome, stationPredictions } from '../support';
 const CSS_BASE = 'tides-dialog';
 
 const CSS = {
-  base: CSS_BASE,
   table: `${CSS_BASE}_table`,
 };
 
@@ -51,6 +53,12 @@ export default class TidesDialog extends Widget {
     this._container = value;
   }
 
+  postInitialize(): void {
+    this.container.addEventListener('calciteDialogClose', (): void => {
+      this.content = 'tides';
+    });
+  }
+
   //#endregion
 
   //#region public properties
@@ -58,6 +66,9 @@ export default class TidesDialog extends Widget {
   public station!: Station;
 
   //#endregion
+
+  @property()
+  private content: 'tides' | 'sun' | 'moon' = 'tides';
 
   //#region public methods
 
@@ -77,16 +88,33 @@ export default class TidesDialog extends Widget {
 
   //#region private methods
 
-  private openUrl(type: 'home' | number): void {
-    const { id, date } = this.station;
+  private openStationUrl(type: 'home' | number): void {
+    const { date, id } = this.station;
 
     if (type === 'home') {
-      stationHome(id, true);
+      window.open(createURL('https://tidesandcurrents.noaa.gov/stationhome.html', { id }), '_blank');
 
       return;
     }
 
-    stationPredictions(id, date.toISODate() as string, type, true);
+    const start = date;
+
+    const end = type === 1 ? start : start.plus({ days: type - 1 });
+
+    window.open(
+      createURL('https://tidesandcurrents.noaa.gov/noaatidepredictions.html', {
+        action: 'dailychart',
+        bdate: formatNOAADate(start),
+        clock: 12,
+        datum: 'MLLW',
+        edate: formatNOAADate(end),
+        id,
+        interval: 'hilo',
+        timezone: 'LST/LDT',
+        units: 'standard',
+      }),
+      '_blank',
+    );
   }
 
   //#endregion
@@ -94,67 +122,118 @@ export default class TidesDialog extends Widget {
   //#region render
 
   render(): tsx.JSX.Element {
-    const { station } = this;
+    const { content, station } = this;
 
     if (!station) return <calcite-dialog></calcite-dialog>;
 
-    const { date, name, predictions } = station;
+    const { date, name, predictions, sunTimes } = station;
 
     const heading = `${name} - ${date.toLocaleString(DateTime.DATE_FULL)}`;
 
     return (
-      <calcite-dialog class={CSS.base} heading={heading} placement="bottom-start" width="s">
-        {/* actions */}
-        <calcite-action-bar expand-disabled="horizontal" layout="" scale="s" slot="action-bar">
+      <calcite-dialog class={CSS_BASE} heading={heading} placement="bottom-start" width="s">
+        {/* header menu actions */}
+        <calcite-action
+          slot="header-menu-actions"
+          text="Home"
+          text-enabled=""
+          onclick={this.openStationUrl.bind(this, 'home')}
+        ></calcite-action>
+        <calcite-action
+          slot="header-menu-actions"
+          text="Daily Plot"
+          text-enabled=""
+          onclick={this.openStationUrl.bind(this, 1)}
+        ></calcite-action>
+        <calcite-action
+          slot="header-menu-actions"
+          text="7 Day Plot"
+          text-enabled=""
+          onclick={this.openStationUrl.bind(this, 7)}
+        ></calcite-action>
+
+        <calcite-action-bar expand-disabled="horizontal" layout="" slot="action-bar">
           <calcite-action
-            scale="s"
-            text="Home"
+            active={content === 'tides'}
+            text="Tides"
             text-enabled=""
-            onclick={this.openUrl.bind(this, 'home')}
+            onclick={(): void => {
+              this.content = 'tides';
+            }}
           ></calcite-action>
           <calcite-action
-            scale="s"
-            text="Daily Plot"
+            active={content === 'sun'}
+            text="Sun"
             text-enabled=""
-            onclick={this.openUrl.bind(this, 1)}
+            onclick={(): void => {
+              this.content = 'sun';
+            }}
           ></calcite-action>
           <calcite-action
-            scale="s"
-            text="7 Day Plot"
+            active={content === 'moon'}
+            text="Moon"
             text-enabled=""
-            onclick={this.openUrl.bind(this, 7)}
-          ></calcite-action>
-          <calcite-action
-            scale="s"
-            text="30 Day Plot"
-            text-enabled=""
-            onclick={this.openUrl.bind(this, 30)}
+            onclick={(): void => {
+              this.content = 'moon';
+            }}
           ></calcite-action>
         </calcite-action-bar>
 
-        {/* prediction table */}
-        <calcite-table class={CSS.table} striped>
+        {/* tides table */}
+        <calcite-table class={CSS.table} hidden={content !== 'tides'} striped>
           {predictions.map((prediction: Prediction): tsx.JSX.Element => {
-            const { height, isMoney, money, time, type } = prediction;
+            const { height, moneyType, tideType, time } = prediction;
+
+            const isMoney = moneyType !== 'not-money';
 
             return (
-              <calcite-table-row key={KEY++} class={money}>
-                <calcite-table-cell>{this.cellContent(time, isMoney, money)}</calcite-table-cell>
-                <calcite-table-cell>{this.cellContent(type, isMoney, money)}</calcite-table-cell>
-                <calcite-table-cell>{this.cellContent(height, isMoney, money)}</calcite-table-cell>
+              <calcite-table-row key={KEY++} class={moneyType}>
+                <calcite-table-cell>{this.tideCellContent(time, isMoney, moneyType)}</calcite-table-cell>
+                <calcite-table-cell>
+                  {this.tideCellContent(
+                    tideType === 'high' && time === '12:00 PM' ? 'high/noon' : tideType,
+                    isMoney,
+                    moneyType,
+                  )}
+                </calcite-table-cell>
+                <calcite-table-cell>{this.tideCellContent(height, isMoney, moneyType)}</calcite-table-cell>
               </calcite-table-row>
             );
           })}
+        </calcite-table>
+
+        {/* sun table */}
+        <calcite-table class={CSS.table} hidden={content !== 'sun'} striped>
+          <calcite-table-row>
+            <calcite-table-cell>Dawn</calcite-table-cell>
+            <calcite-table-cell>{twelveHourTime(sunTimes.dawn)}</calcite-table-cell>
+          </calcite-table-row>
+
+          <calcite-table-row>
+            <calcite-table-cell>Sunrise</calcite-table-cell>
+            <calcite-table-cell>{twelveHourTime(sunTimes.sunrise)}</calcite-table-cell>
+          </calcite-table-row>
+
+          <calcite-table-row>
+            <calcite-table-cell>Solar noon</calcite-table-cell>
+            <calcite-table-cell>{twelveHourTime(sunTimes.solarNoon)}</calcite-table-cell>
+          </calcite-table-row>
+
+          <calcite-table-row>
+            <calcite-table-cell>Sunset</calcite-table-cell>
+            <calcite-table-cell>{twelveHourTime(sunTimes.sunset)}</calcite-table-cell>
+          </calcite-table-row>
+
+          <calcite-table-row>
+            <calcite-table-cell>Dusk</calcite-table-cell>
+            <calcite-table-cell>{twelveHourTime(sunTimes.dusk)}</calcite-table-cell>
+          </calcite-table-row>
         </calcite-table>
       </calcite-dialog>
     );
   }
 
-  private cellContent(
-    value: number | string,
-    isMoney: Prediction['isMoney'],
-    money: I['money'],
-  ): string | tsx.JSX.Element {
+  private tideCellContent(value: number | string, isMoney: boolean, money: MoneyType): string | tsx.JSX.Element {
     value = typeof value === 'number' ? `${value} ft` : value;
 
     if (!isMoney) return value;

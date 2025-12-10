@@ -186,7 +186,10 @@ $text-shadow:
   }
 
   calcite-table-cell span {
-    &.money, &.mostly-money, &.kinda-money, &.potentially-money {
+    &.money,
+    &.mostly-money,
+    &.kinda-money,
+    &.potentially-money {
       font-weight: var(--calcite-font-weight-medium);
     }
 
