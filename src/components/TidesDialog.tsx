@@ -151,7 +151,7 @@ export default class TidesDialog extends Widget {
           onclick={this.openStationUrl.bind(this, 7)}
         ></calcite-action>
 
-        <calcite-action-bar expand-disabled="horizontal" layout="" slot="action-bar">
+        <calcite-action-bar expand-disabled="" layout="horizontal" slot="action-bar">
           <calcite-action
             active={content === 'tides'}
             text="Tides"
