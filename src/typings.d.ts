@@ -4,18 +4,6 @@ import type { DateTime } from 'luxon';
 import type { GetTimesResult, GetMoonTimes, GetMoonIlluminationResult } from 'suncalc';
 
 /**
- * Money types;
- */
-export type MoneyType = 'not-money' | 'potentially-money' | 'kinda-money' | 'mostly-money' | 'money';
-
-/**
- * Array of money types by array index; `not-money = 0`, `potentially-money = 1`, etc.
- *
- * Useful for getting money colors by index.
- */
-export type MoneyTypeIndex = ['not-money', 'potentially-money', 'kinda-money', 'mostly-money', 'money'];
-
-/**
  * Api tide prediction
  */
 export type ApiPrediction = {
@@ -73,6 +61,18 @@ export type ApiStationResponse = {
     name: string;
   }[];
 };
+
+/**
+ * Money types.
+ */
+export type MoneyType = 'not-money' | 'potentially-money' | 'kinda-money' | 'mostly-money' | 'money';
+
+/**
+ * Array of money types by array index; `not-money = 0`, `potentially-money = 1`, etc.
+ *
+ * Useful for getting money colors by index.
+ */
+export type MoneyTypeIndex = ['not-money', 'potentially-money', 'kinda-money', 'mostly-money', 'money'];
 
 /**
  * Tide prediction
@@ -184,4 +184,30 @@ export type StationInfo = {
    * Station name
    */
   stationName: string;
+};
+
+/**
+ * Time info
+ */
+export type TimeInfo = {
+  /**
+   * Date/time of event
+   */
+  date: DateTime;
+  /**
+   * Description of event
+   */
+  description: string;
+  /**
+   * Table row style
+   */
+  style?: string;
+  /**
+   * Event time, e.g. 5:12 PM
+   */
+  time: string;
+  /**
+   * Event value
+   */
+  value?: string;
 };

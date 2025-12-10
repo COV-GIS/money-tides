@@ -1,6 +1,8 @@
 //#region types
 
-import type { MoneyType, Prediction, Station } from '../typings';
+import esri = __esri;
+
+import type { Prediction, Station, TimeInfo } from '../typings';
 
 //#endregion
 
@@ -9,6 +11,7 @@ import type { MoneyType, Prediction, Station } from '../typings';
 import '@esri/calcite-components/dist/components/calcite-action';
 import '@esri/calcite-components/dist/components/calcite-action-group';
 import '@esri/calcite-components/dist/components/calcite-dialog';
+import '@esri/calcite-components/dist/components/calcite-notice';
 import '@esri/calcite-components/dist/components/calcite-table';
 import '@esri/calcite-components/dist/components/calcite-table-row';
 
@@ -19,6 +22,7 @@ import '@esri/calcite-components/dist/components/calcite-table-row';
 import { property, subclass } from '@arcgis/core/core/accessorSupport/decorators';
 import Widget from '@arcgis/core/widgets/Widget';
 import { tsx } from '@arcgis/core/widgets/support/widget';
+import Collection from '@arcgis/core/core/Collection';
 import { DateTime } from 'luxon';
 import { createURL, formatNOAADate, twelveHourTime } from './MoneyTides';
 import { moneyTypeColorHex } from './colorUtils';
@@ -61,8 +65,14 @@ export default class TidesDialog extends Widget {
 
   //#endregion
 
+  //#region private properties
+
   @property()
   private content: 'tides' | 'sun' | 'moon' = 'tides';
+
+  private timeInfos: esri.Collection<TimeInfo> = new Collection();
+
+  //#endregion
 
   //#region public methods
 
@@ -72,6 +82,82 @@ export default class TidesDialog extends Widget {
 
   show(station: Station): void {
     this.station = station;
+
+    const {
+      // moonTimes: { rise: moonrise, set: moonset },
+      predictions,
+      // sunTimes: { dawn, dusk, solarNoon, sunrise, sunset },
+      sunTimes: { solarNoon, sunrise, sunset },
+    } = station;
+
+    const timeInfos: esri.Collection<TimeInfo> = new Collection(
+      predictions.map((prediction: Prediction): TimeInfo => {
+        const { date, height, moneyType, tideType, time } = prediction;
+
+        return {
+          date,
+          description: `${tideType} tide`,
+          style: [
+            moneyType !== 'not-money'
+              ? `--calcite-table-row-background-color: ${moneyTypeColorHex(
+                  moneyType,
+                )}; font-weight: var(--calcite-font-weight-medium);`
+              : '',
+            moneyType === 'money' ? '--calcite-table-cell-text-color: #ffffff' : '',
+          ].join(' '),
+          time,
+          value: `${height} ft`,
+        };
+      }),
+    );
+
+    timeInfos.addMany([
+      // {
+      //   date: DateTime.fromJSDate(dawn),
+      //   description: 'dawn',
+      //   time: twelveHourTime(dawn),
+      // },
+      // {
+      //   date: DateTime.fromJSDate(dusk),
+      //   description: 'dusk',
+      //   time: twelveHourTime(dusk),
+      // },
+      {
+        date: DateTime.fromJSDate(solarNoon),
+        description: 'solar noon',
+        time: twelveHourTime(solarNoon),
+      },
+      {
+        date: DateTime.fromJSDate(sunrise),
+        description: 'sunrise',
+        time: twelveHourTime(sunrise),
+      },
+      {
+        date: DateTime.fromJSDate(sunset),
+        description: 'sunset',
+        time: twelveHourTime(sunset),
+      },
+    ]);
+
+    // if (moonrise)
+    //   timeInfos.add({
+    //     date: DateTime.fromJSDate(moonrise),
+    //     description: 'moonrise',
+    //     time: twelveHourTime(moonrise),
+    //   });
+
+    // if (moonset)
+    //   timeInfos.add({
+    //     date: DateTime.fromJSDate(moonset),
+    //     description: 'moonset',
+    //     time: twelveHourTime(moonset),
+    //   });
+
+    timeInfos.sort((a: TimeInfo, b: TimeInfo): number => {
+      return a.date.toMillis() - b.date.toMillis();
+    });
+
+    this.timeInfos = timeInfos;
 
     this.renderNow();
 
@@ -116,11 +202,11 @@ export default class TidesDialog extends Widget {
   //#region render
 
   render(): tsx.JSX.Element {
-    const { content, station } = this;
+    const { content, station, timeInfos } = this;
 
     if (!station) return <calcite-dialog></calcite-dialog>;
 
-    const { date, name, predictions, sunTimes } = station;
+    const { date, name } = station;
 
     const heading = `${name} - ${date.toLocaleString(DateTime.DATE_FULL)}`;
 
@@ -128,23 +214,32 @@ export default class TidesDialog extends Widget {
       <calcite-dialog
         heading={heading}
         placement="bottom-start"
-        style="--calcite-dialog-min-size-y: 0; --calcite-dialog-content-space: 0;"
+        scale="s"
+        style={`--calcite-dialog-min-size-y: 0; --calcite-dialog-max-size-x: 420px; ${
+          content === 'tides' ? '--calcite-dialog-content-space: 0;' : ''
+        }`}
         width="s"
       >
         {/* header menu actions */}
         <calcite-action
+          icon="home"
+          scale="s"
           slot="header-menu-actions"
           text="Home"
           text-enabled=""
           onclick={this.openStationUrl.bind(this, 'home')}
         ></calcite-action>
         <calcite-action
+          icon="graph-time-series"
+          scale="s"
           slot="header-menu-actions"
           text="Daily Plot"
           text-enabled=""
           onclick={this.openStationUrl.bind(this, 1)}
         ></calcite-action>
         <calcite-action
+          icon="graph-time-series"
+          scale="s"
           slot="header-menu-actions"
           text="7 Day Plot"
           text-enabled=""
@@ -154,6 +249,8 @@ export default class TidesDialog extends Widget {
         <calcite-action-bar expand-disabled="" layout="horizontal" slot="action-bar">
           <calcite-action
             active={content === 'tides'}
+            icon="graph-time-series"
+            scale="s"
             text="Tides"
             text-enabled=""
             onclick={(): void => {
@@ -162,6 +259,8 @@ export default class TidesDialog extends Widget {
           ></calcite-action>
           <calcite-action
             active={content === 'sun'}
+            icon="brightness"
+            scale="s"
             text="Sun"
             text-enabled=""
             onclick={(): void => {
@@ -170,6 +269,8 @@ export default class TidesDialog extends Widget {
           ></calcite-action>
           <calcite-action
             active={content === 'moon'}
+            icon="moon"
+            scale="s"
             text="Moon"
             text-enabled=""
             onclick={(): void => {
@@ -179,59 +280,37 @@ export default class TidesDialog extends Widget {
         </calcite-action-bar>
 
         {/* tides table */}
-        <calcite-table hidden={content !== 'tides'} striped style="--calcite-table-border-color: none;">
-          {predictions.map((prediction: Prediction): tsx.JSX.Element => {
-            const { height, moneyType, tideType, time } = prediction;
+        <calcite-table hidden={content !== 'tides'} striped scale="s" style="--calcite-table-border-color: none;">
+          {timeInfos
+            .map((timeInfo: TimeInfo): tsx.JSX.Element => {
+              const { description, style, time, value } = timeInfo;
 
-            return (
-              <calcite-table-row
-                key={KEY++}
-                style={[
-                  moneyType !== 'not-money'
-                    ? `--calcite-table-row-background-color: ${moneyTypeColorHex(
-                        moneyType,
-                      )}; font-weight: var(--calcite-font-weight-medium);`
-                    : '',
-                  moneyType === 'money' ? '--calcite-table-cell-text-color: #ffffff' : '',
-                ].join(' ')}
-              >
-                <calcite-table-cell>{time}</calcite-table-cell>
-                <calcite-table-cell>
-                  {tideType === 'high' && time === '12:00 PM' ? 'high/noon' : tideType}
-                </calcite-table-cell>
-                <calcite-table-cell>{height} ft</calcite-table-cell>
-              </calcite-table-row>
-            );
-          })}
+              return (
+                <calcite-table-row key={KEY++} style={style}>
+                  <calcite-table-cell>{time}</calcite-table-cell>
+                  <calcite-table-cell>{description}</calcite-table-cell>
+                  <calcite-table-cell>{value}</calcite-table-cell>
+                </calcite-table-row>
+              );
+            })
+            .toArray()}
         </calcite-table>
 
-        {/* sun table */}
-        <calcite-table hidden={content !== 'sun'} striped style="--calcite-table-border-color: none;">
-          <calcite-table-row>
-            <calcite-table-cell>Dawn</calcite-table-cell>
-            <calcite-table-cell>{twelveHourTime(sunTimes.dawn)}</calcite-table-cell>
-          </calcite-table-row>
+        {/* sun */}
+        <div hidden={content !== 'sun'}>
+          <calcite-notice icon="brightness" open scale="s">
+            <div slot="title">Coming soon</div>
+            <div slot="message">Information about the position of the sun at high and low tides</div>
+          </calcite-notice>
+        </div>
 
-          <calcite-table-row>
-            <calcite-table-cell>Sunrise</calcite-table-cell>
-            <calcite-table-cell>{twelveHourTime(sunTimes.sunrise)}</calcite-table-cell>
-          </calcite-table-row>
-
-          <calcite-table-row>
-            <calcite-table-cell>Solar noon</calcite-table-cell>
-            <calcite-table-cell>{twelveHourTime(sunTimes.solarNoon)}</calcite-table-cell>
-          </calcite-table-row>
-
-          <calcite-table-row>
-            <calcite-table-cell>Sunset</calcite-table-cell>
-            <calcite-table-cell>{twelveHourTime(sunTimes.sunset)}</calcite-table-cell>
-          </calcite-table-row>
-
-          <calcite-table-row>
-            <calcite-table-cell>Dusk</calcite-table-cell>
-            <calcite-table-cell>{twelveHourTime(sunTimes.dusk)}</calcite-table-cell>
-          </calcite-table-row>
-        </calcite-table>
+        {/* moon */}
+        <div hidden={content !== 'moon'}>
+          <calcite-notice icon="moon" open scale="s">
+            <div slot="title">Coming soon</div>
+            <div slot="message">Information about the phase of the moon and its position at high and low tides</div>
+          </calcite-notice>
+        </div>
       </calcite-dialog>
     );
   }

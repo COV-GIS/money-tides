@@ -190,7 +190,7 @@ export default class MoneyTides extends Widget {
 
   private alerts: esri.Collection<tsx.JSX.Element> = new Collection();
 
-  private date = DateTime.now().setZone('America/Los_Angeles');
+  private date = getDateAtHour(DateTime.now().setZone('America/Los_Angeles'), 12);
 
   private datePicker!: HTMLCalciteInputDatePickerElement;
 
@@ -591,7 +591,7 @@ export default class MoneyTides extends Widget {
       .map((prediction: Prediction): string => {
         const { height, time, tideType } = prediction;
 
-        return `${time} ${tideType === 'high' && time === '12:00 PM' ? 'high/noon' : tideType} ${height} ft`;
+        return `${time} - ${tideType} - ${height} ft`;
       })
       .join('\n');
   }
@@ -647,9 +647,12 @@ export default class MoneyTides extends Widget {
   private dateChangeEvent(event: Event): void {
     const { tidesDialog } = this;
 
-    const date = (this.date = DateTime.fromISO(
-      (event.target as HTMLCalciteInputDatePickerElement).value as string,
-    ).setZone('America/Los_Angeles'));
+    const date = (this.date = getDateAtHour(
+      DateTime.fromISO((event.target as HTMLCalciteInputDatePickerElement).value as string).setZone(
+        'America/Los_Angeles',
+      ),
+      12,
+    ));
 
     this.stations.forEach(async (station: Station): Promise<void> => {
       const { id, latitude, longitude } = station;
