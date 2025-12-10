@@ -30,12 +30,17 @@ export const moneyTypeIndex: MoneyTypeIndex = [
 ];
 
 /**
- * Return tide color by money type in hex.
+ * Return tide color by money type in hex or a style.
  *
  * @param moneyType - money type
+ * @param className - optional class name
  */
-export const moneyTypeColorHex = (moneyType: MoneyType): string => {
-  return (moneyColors[moneyTypeIndex.indexOf(moneyType)] as esri.Color).toHex();
+export const moneyTypeColorHex = (moneyType: MoneyType, className?: string): string => {
+  const hex = (moneyColors[moneyTypeIndex.indexOf(moneyType)] as esri.Color).toHex();
+
+  if (className) return `${className}: ${hex};`;
+
+  return hex;
 };
 
 /**

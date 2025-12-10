@@ -1,19 +1,3 @@
-$money: #1a9641;
-
-$mostly-money: #a6d96a;
-
-$kinda-money: #ffffbf;
-
-$potentially-money: #fdae61;
-
-$not-money: #d7191c;
-
-$text-shadow:
-  -1px -1px 2px rgba(0, 0, 0, 128),
-  1px -1px 2px rgba(0, 0, 0, 128),
-  -1px 1px 2px rgba(0, 0, 0, 128),
-  1px 1px 2px rgba(0, 0, 0, 128);
-
 .esri-view .esri-view-surface::after {
   outline: none !important;
   outline-offset: 0;
@@ -37,52 +21,6 @@ $text-shadow:
 .esri-ui-bottom-right {
   bottom: -20px;
   right: -5px;
-}
-
-.about-modal {
-  --calcite-dialog-content-space: 0;
-
-  span {
-    &.money,
-    &.mostly-money,
-    &.kinda-money,
-    &.potentially-money,
-    &.not-money {
-      font-weight: var(--calcite-font-weight-medium);
-    }
-
-    &.money {
-      color: $money;
-    }
-
-    &.mostly-money {
-      color: $mostly-money;
-      text-shadow: $text-shadow;
-    }
-
-    &.kinda-money {
-      color: $kinda-money;
-      text-shadow: $text-shadow;
-    }
-
-    &.potentially-money {
-      color: $potentially-money;
-      text-shadow: $text-shadow;
-    }
-
-    &.not-money {
-      color: $not-money;
-    }
-  }
-}
-
-.about-modal_content {
-  padding: 0 0.75rem;
-}
-
-.about-modal_heading {
-  font-size: var(--calcite-font-size-0);
-  font-weight: var(--calcite-font-weight-medium);
 }
 
 .map-controls {
