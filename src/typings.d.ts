@@ -153,6 +153,10 @@ export type Station = {
    */
   predictions: Prediction[];
   /**
+   * Last prediction update failed if `true`
+   */
+  predictionUpdateError: boolean;
+  /**
    * Sun times.
    *
    * https://github.com/mourner/suncalc?tab=readme-ov-file#sunlight-times
@@ -175,7 +179,7 @@ export type Station = {
 /**
  * Station info
  */
-export type StationInfo = {
+export interface StationInfo {
   /**
    * Station id
    */
@@ -184,7 +188,11 @@ export type StationInfo = {
    * Station name
    */
   stationName: string;
-};
+}
+
+export interface _StationInfo extends StationInfo {
+  loaded?: boolean;
+}
 
 /**
  * Time info
@@ -210,4 +218,9 @@ export type TimeInfo = {
    * Event value
    */
   value?: string;
+};
+
+export type ZoomToItem = {
+  name: string;
+  element: esri.widget.tsx.JSX.Element;
 };

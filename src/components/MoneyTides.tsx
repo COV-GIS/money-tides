@@ -10,6 +10,8 @@ import type {
   Prediction,
   Station,
   StationInfo,
+  _StationInfo,
+  ZoomToItem,
 } from '../typings';
 
 import type { GetTimesResult, GetMoonTimes, GetMoonIlluminationResult } from 'suncalc';
@@ -23,6 +25,7 @@ import '@esri/calcite-components/dist/components/calcite-button';
 import '@esri/calcite-components/dist/components/calcite-dropdown';
 import '@esri/calcite-components/dist/components/calcite-dropdown-group';
 import '@esri/calcite-components/dist/components/calcite-dropdown-item';
+import '@esri/calcite-components/dist/components/calcite-link';
 import '@esri/calcite-components/dist/components/calcite-input-date-picker';
 import '@esri/calcite-components/dist/components/calcite-shell';
 
@@ -42,6 +45,7 @@ import { createRenderer } from '@arcgis/core/smartMapping/renderers/heatmap';
 import Graphic from '@arcgis/core/Graphic';
 import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
 import TextSymbol from '@arcgis/core/symbols/TextSymbol';
+import Color from '@arcgis/core/Color';
 import Point from '@arcgis/core/geometry/Point';
 import { DateTime } from 'luxon';
 import { getTimes, getMoonTimes, getMoonIllumination } from 'suncalc';
@@ -170,6 +174,20 @@ export default class MoneyTides extends Widget {
     this.container = this._container;
 
     document.body.appendChild(this.container);
+
+    const { zoomToDropdownItems } = this;
+
+    this.addHandles(
+      zoomToDropdownItems.on('after-add', (): void => {
+        zoomToDropdownItems.sort((a: ZoomToItem, b: ZoomToItem): number => {
+          if (a.name < b.name) return -1;
+
+          if (a.name > b.name) return 1;
+
+          return 0;
+        });
+      }),
+    );
   }
 
   //#endregion
@@ -177,7 +195,7 @@ export default class MoneyTides extends Widget {
   //#region public properties
 
   @property({ type: Collection })
-  public stationInfos: esri.Collection<StationInfo> = new Collection();
+  public stationInfos: esri.Collection<_StationInfo> = new Collection();
 
   //#endregion
 
@@ -199,18 +217,21 @@ export default class MoneyTides extends Widget {
 
   private view!: esri.MapView;
 
-  private zoomToDropdownItems: esri.Collection<tsx.JSX.Element> = new Collection();
+  private zoomToDropdownItems: esri.Collection<ZoomToItem> = new Collection();
 
   //#endregion
 
   //#region private methods
 
-  private addZoomToItem(stationInfo: StationInfo): void {
-    this.zoomToDropdownItems.add(
-      <calcite-dropdown-item key={KEY++} onclick={this.zoomTo.bind(this, `${stationInfo.stationId}`)}>
-        {stationInfo.stationName}
-      </calcite-dropdown-item>,
-    );
+  private addZoomToItem(id: string, name: string): void {
+    this.zoomToDropdownItems.add({
+      name,
+      element: (
+        <calcite-dropdown-item key={KEY++} onclick={this.zoomTo.bind(this, `${id}`)}>
+          {name}
+        </calcite-dropdown-item>
+      ),
+    });
   }
 
   private createGraphics(
@@ -542,7 +563,7 @@ export default class MoneyTides extends Widget {
     return 0;
   }
 
-  private async loadStation(stationInfo: StationInfo): Promise<Station | void> {
+  private async loadStation(stationInfo: _StationInfo): Promise<Station | void> {
     const { stationId, stationName: name } = stationInfo;
 
     const date = this.date;
@@ -564,6 +585,7 @@ export default class MoneyTides extends Widget {
         moneyType,
         name,
         predictions,
+        predictionUpdateError: false,
         noonHeight,
         ...this.createGraphics(id, latitude, longitude, moneyType, name, predictions, noonHeight),
         ...this.getSunAndMoon(date, latitude, longitude),
@@ -571,15 +593,33 @@ export default class MoneyTides extends Widget {
 
       this.stations.add(station);
 
+      stationInfo.loaded = true;
+
+      this.addZoomToItem(id, name);
+
       return station;
     } catch (error) {
       console.log(error);
 
+      const alertId = `error-alert${this.id}-${KEY++}`;
+
       this.alerts.add(
-        <calcite-alert auto-close="" icon="exclamation-mark-circle" key={KEY++} kind="danger" open>
+        <calcite-alert icon="exclamation-mark-circle" id={alertId} key={KEY++} kind="danger" open scale="s">
           <div slot="message">Failed to load station data for {name}</div>
+          <calcite-link
+            slot="link"
+            onclick={(): void => {
+              this.loadStation(stationInfo);
+
+              (document.getElementById(alertId) as HTMLCalciteAlertElement).open = false;
+            }}
+          >
+            Try again
+          </calcite-link>
         </calcite-alert>,
       );
+
+      stationInfo.loaded = false;
     }
   }
 
@@ -593,10 +633,76 @@ export default class MoneyTides extends Widget {
       .join('\n');
   }
 
-  private updateSymbols(station: Station): void {
-    const { moneyType, predictions, graphicHeatmap, graphicName, graphicPoint, graphicTides, noonHeight } = station;
+  private async updatePredictions(station: Station): Promise<void> {
+    const { date, tidesDialog } = this;
 
-    const { primary, secondary } = moneyTypeColors(moneyType);
+    const { id, latitude, longitude, name } = station;
+
+    try {
+      const { moneyType, predictions, noonHeight } = await this.getPredictions(id, date);
+
+      station.predictionUpdateError = false;
+
+      Object.assign(station, {
+        date,
+        noonHeight,
+        moneyType,
+        predictions,
+        ...this.getSunAndMoon(date, latitude, longitude),
+      });
+
+      this.updateSymbols(station);
+
+      if (tidesDialog.container.open && tidesDialog.station.id === id) {
+        tidesDialog.show(station);
+      }
+    } catch (error) {
+      const alertId = `error-alert${this.id}-${KEY++}`;
+
+      this.alerts.add(
+        <calcite-alert icon="exclamation-mark-circle" id={alertId} key={KEY++} kind="danger" open scale="s">
+          <div slot="message">Failed to update predictions for {name}</div>
+          <calcite-link
+            slot="link"
+            onclick={(): void => {
+              this.updatePredictions(station);
+              (document.getElementById(alertId) as HTMLCalciteAlertElement).open = false;
+            }}
+          >
+            Try again
+          </calcite-link>
+        </calcite-alert>,
+      );
+
+      station.predictionUpdateError = true;
+
+      this.updateSymbols(station);
+
+      if (tidesDialog.container.open && tidesDialog.station.id === id) {
+        tidesDialog.close();
+      }
+    }
+  }
+
+  private updateSymbols(station: Station): void {
+    const {
+      moneyType,
+      predictions,
+      graphicHeatmap,
+      graphicName,
+      graphicPoint,
+      graphicTides,
+      noonHeight,
+      predictionUpdateError,
+    } = station;
+
+    let { primary, secondary } = moneyTypeColors(moneyType);
+
+    if (predictionUpdateError) {
+      primary = new Color('black');
+
+      secondary = new Color('white');
+    }
 
     graphicName.symbol = Object.assign((graphicName.symbol as esri.TextSymbol).clone(), {
       color: primary,
@@ -609,11 +715,12 @@ export default class MoneyTides extends Widget {
     });
 
     graphicTides.symbol = Object.assign((graphicTides.symbol as esri.TextSymbol).clone(), {
-      color: primary,
-      haloColor: secondary,
+      color: predictionUpdateError ? null : primary,
+      haloColor: predictionUpdateError ? null : secondary,
       text: this.tidesSymbolText(predictions),
     });
 
+    // TODO handle error for heatmap layer
     Object.assign(graphicHeatmap.attributes, { height: noonHeight });
 
     this.heatmapLayer.applyEdits({
@@ -642,34 +749,18 @@ export default class MoneyTides extends Widget {
   //#region events
 
   private dateChangeEvent(event: Event): void {
-    const { tidesDialog } = this;
-
-    const date = (this.date = getDateAtHour(
+    this.date = getDateAtHour(
       DateTime.fromISO((event.target as HTMLCalciteInputDatePickerElement).value as string).setZone(
         'America/Los_Angeles',
       ),
       12,
-    ));
+    );
 
-    this.stations.forEach(async (station: Station): Promise<void> => {
-      const { id, latitude, longitude } = station;
-
-      const { moneyType, predictions, noonHeight } = await this.getPredictions(id, date);
-
-      Object.assign(station, {
-        date,
-        noonHeight,
-        moneyType,
-        predictions,
-        ...this.getSunAndMoon(date, latitude, longitude),
-      });
-
-      this.updateSymbols(station);
-
-      if (tidesDialog.container.open && tidesDialog.station.id === id) {
-        tidesDialog.show(station);
-      }
+    this.stationInfos.forEach((stationInfo: _StationInfo): void => {
+      if (!stationInfo.loaded) this.loadStation(stationInfo);
     });
+
+    this.stations.forEach(this.updatePredictions.bind(this));
   }
 
   private dateButtonClickEvent(event: Event) {
@@ -699,7 +790,7 @@ export default class MoneyTides extends Widget {
       return station.id === result.graphic.attributes.id;
     });
 
-    if (!station) return;
+    if (!station || (station && station.predictionUpdateError)) return;
 
     tidesDialog.show(station);
   }
@@ -739,7 +830,11 @@ export default class MoneyTides extends Widget {
             <calcite-dropdown scale="s">
               <calcite-button icon-start="zoom-to-object" scale="s" slot="trigger"></calcite-button>
               <calcite-dropdown-group group-title="Zoom to" selection-mode="none">
-                {zoomToDropdownItems.toArray()}
+                {zoomToDropdownItems
+                  .map((zoomToItem: ZoomToItem): tsx.JSX.Element => {
+                    return zoomToItem.element;
+                  })
+                  .toArray()}
               </calcite-dropdown-group>
             </calcite-dropdown>
             <calcite-button
@@ -814,16 +909,16 @@ export default class MoneyTides extends Widget {
     stationInfos.forEach((stationInfo: StationInfo): void => {
       this.loadStation(stationInfo);
 
-      this.addZoomToItem(stationInfo);
+      // this.addZoomToItem(stationInfo);
     });
 
     this.addHandles(view.on('click', this.viewClickEvent.bind(this)));
 
     this.emit('loaded');
 
-    setTimeout((): void => {
-      console.log(view.extent.toJSON());
-    }, 10000);
+    // setTimeout((): void => {
+    //   console.log(view.extent.toJSON());
+    // }, 10000);
   }
 
   //#endregion
