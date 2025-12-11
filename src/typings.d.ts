@@ -157,6 +157,10 @@ export type Station = {
    */
   predictionUpdateError: boolean;
   /**
+   * Number of consecutive update errors
+   */
+  predictionUpdateErrorCount: number;
+  /**
    * Sun times.
    *
    * https://github.com/mourner/suncalc?tab=readme-ov-file#sunlight-times
@@ -192,6 +196,10 @@ export interface StationInfo {
 
 export interface _StationInfo extends StationInfo {
   loaded?: boolean;
+  /**
+   * Number of consecutive load errors
+   */
+  loadErrorCount: number;
 }
 
 /**

@@ -586,6 +586,7 @@ export default class MoneyTides extends Widget {
         name,
         predictions,
         predictionUpdateError: false,
+        predictionUpdateErrorCount: 0,
         noonHeight,
         ...this.createGraphics(id, latitude, longitude, moneyType, name, predictions, noonHeight),
         ...this.getSunAndMoon(date, latitude, longitude),
@@ -600,6 +601,16 @@ export default class MoneyTides extends Widget {
       return station;
     } catch (error) {
       console.log(error);
+
+      if (stationInfo.loadErrorCount !== 3) {
+        stationInfo.loadErrorCount++;
+
+        this.loadStation(stationInfo);
+
+        return;
+      }
+
+      stationInfo.loadErrorCount = 0;
 
       const alertId = `error-alert${this.id}-${KEY++}`;
 
@@ -657,6 +668,18 @@ export default class MoneyTides extends Widget {
         tidesDialog.show(station);
       }
     } catch (error) {
+      console.log(error);
+
+      if (station.predictionUpdateErrorCount !== 3) {
+        station.predictionUpdateErrorCount++;
+
+        this.updatePredictions(station);
+
+        return;
+      }
+
+      station.predictionUpdateErrorCount = 0;
+
       const alertId = `error-alert${this.id}-${KEY++}`;
 
       this.alerts.add(
@@ -907,9 +930,7 @@ export default class MoneyTides extends Widget {
     view.ui.add(new Attribution({ container: document.createElement('calcite-action-bar'), view }), 'bottom-right');
 
     stationInfos.forEach((stationInfo: StationInfo): void => {
-      this.loadStation(stationInfo);
-
-      // this.addZoomToItem(stationInfo);
+      this.loadStation({ ...stationInfo, loadErrorCount: 0 });
     });
 
     this.addHandles(view.on('click', this.viewClickEvent.bind(this)));
