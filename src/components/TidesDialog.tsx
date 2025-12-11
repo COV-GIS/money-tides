@@ -24,10 +24,9 @@ import Widget from '@arcgis/core/widgets/Widget';
 import { tsx } from '@arcgis/core/widgets/support/widget';
 import Collection from '@arcgis/core/core/Collection';
 import { DateTime } from 'luxon';
-import { createURL, formatNOAADate, twelveHourTime } from './MoneyTides';
-import { moneyTypeColorHex } from './colorUtils';
-
-// import { stationHome, stationPredictions } from '../support';
+import createURL from '../utils/createURL';
+import { NOAADate, twelveHourTime } from '../utils/dateAndTimeUtils';
+import { moneyTypeColorHex } from '../utils/colorUtils';
 
 //#endregion
 
@@ -80,13 +79,11 @@ export default class TidesDialog extends Widget {
     this.container.open = false;
   }
 
-  show(station: Station): void {
+  open(station: Station): void {
     this.station = station;
 
     const {
-      // moonTimes: { rise: moonrise, set: moonset },
       predictions,
-      // sunTimes: { dawn, dusk, solarNoon, sunrise, sunset },
       sunTimes: { solarNoon, sunrise, sunset },
     } = station;
 
@@ -112,16 +109,6 @@ export default class TidesDialog extends Widget {
     );
 
     timeInfos.addMany([
-      // {
-      //   date: DateTime.fromJSDate(dawn),
-      //   description: 'dawn',
-      //   time: twelveHourTime(dawn),
-      // },
-      // {
-      //   date: DateTime.fromJSDate(dusk),
-      //   description: 'dusk',
-      //   time: twelveHourTime(dusk),
-      // },
       {
         date: DateTime.fromJSDate(solarNoon),
         description: 'solar noon',
@@ -138,20 +125,6 @@ export default class TidesDialog extends Widget {
         time: twelveHourTime(sunset),
       },
     ]);
-
-    // if (moonrise)
-    //   timeInfos.add({
-    //     date: DateTime.fromJSDate(moonrise),
-    //     description: 'moonrise',
-    //     time: twelveHourTime(moonrise),
-    //   });
-
-    // if (moonset)
-    //   timeInfos.add({
-    //     date: DateTime.fromJSDate(moonset),
-    //     description: 'moonset',
-    //     time: twelveHourTime(moonset),
-    //   });
 
     timeInfos.sort((a: TimeInfo, b: TimeInfo): number => {
       return a.date.toMillis() - b.date.toMillis();
@@ -179,15 +152,15 @@ export default class TidesDialog extends Widget {
 
     const start = date;
 
-    const end = type === 1 ? start : start.plus({ days: type - 1 });
+    const end = type === 1 ? start : start.plus({ days: type });
 
     window.open(
       createURL('https://tidesandcurrents.noaa.gov/noaatidepredictions.html', {
         action: 'dailychart',
-        bdate: formatNOAADate(start),
+        bdate: NOAADate(start),
         clock: 12,
         datum: 'MLLW',
-        edate: formatNOAADate(end),
+        edate: NOAADate(end),
         id,
         interval: 'hilo',
         timezone: 'LST/LDT',

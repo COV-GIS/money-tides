@@ -9,7 +9,7 @@ import '@esri/calcite-components/dist/components/calcite-dialog';
 import { subclass } from '@arcgis/core/core/accessorSupport/decorators';
 import Widget from '@arcgis/core/widgets/Widget';
 import { tsx } from '@arcgis/core/widgets/support/widget';
-import { moneyTypeColorHex } from './colorUtils';
+import { moneyTypeColorHex } from '../utils/colorUtils';
 
 //#endregion
 

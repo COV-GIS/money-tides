@@ -49,7 +49,9 @@ import Color from '@arcgis/core/Color';
 import Point from '@arcgis/core/geometry/Point';
 import { DateTime } from 'luxon';
 import { getTimes, getMoonTimes, getMoonIllumination } from 'suncalc';
-import { moneyTypeColors, moneyColorsHeatmap } from './colorUtils';
+import { moneyTypeColors, moneyColorsHeatmap } from '../utils/colorUtils';
+import { NOAADate, setNoon, setTime, twelveHourTime } from '../utils/dateAndTimeUtils';
+import createURL from '../utils/createURL';
 import AboutModal from './AboutModal';
 import Attribution from './Attribution';
 import TidesDialog from './TidesDialog';
@@ -108,52 +110,6 @@ const SYMBOL_TIDES = new TextSymbol({
 
 //#endregion
 
-//#region helpers
-
-/**
- * Create a URL.
- *
- * @param base - base URL
- * @param params - query string params
- */
-export const createURL = (base: string, params: { [key: string]: string | number }): string => {
-  const url = new URL(base);
-
-  Object.entries(params).forEach(([key, value]): void => {
-    url.searchParams.append(key, String(value));
-  });
-
-  return url.toString();
-};
-
-/**
- * Return a date formatted for NOAA api requests, e.g. `2021204`.
- *
- * @param date Date or DateTime instance
- */
-export const formatNOAADate = (date: Date | DateTime): string => {
-  const _date = date instanceof Date ? DateTime.fromJSDate(date) : date;
-
-  return _date.toFormat('yyyyLLdd');
-};
-
-export const getDateAtHour = (date: DateTime, hour: number): DateTime => {
-  return date.set({ hour, minute: 0, second: 0, millisecond: 0 });
-};
-
-/**
- * Return a time of day string, e.g. `5:12 PM`
- *
- * @param date Date or DateTime instance
- */
-export const twelveHourTime = (date: Date | DateTime): string => {
-  const _date = date instanceof Date ? DateTime.fromJSDate(date) : date;
-
-  return _date.toFormat('h:mm a');
-};
-
-//#endregion
-
 @subclass('MoneyTides')
 export default class MoneyTides extends Widget {
   //#region lifecycle
@@ -205,7 +161,7 @@ export default class MoneyTides extends Widget {
 
   private alerts: esri.Collection<tsx.JSX.Element> = new Collection();
 
-  private date = getDateAtHour(DateTime.now().setZone('America/Los_Angeles'), 12);
+  private date = setNoon(DateTime.now().setZone('America/Los_Angeles'));
 
   private datePicker!: HTMLCalciteInputDatePickerElement;
 
@@ -462,7 +418,7 @@ export default class MoneyTides extends Widget {
     id: number | string,
     date: DateTime,
   ): Promise<{ moneyType: MoneyType; predictions: Prediction[]; noonHeight: number }> {
-    const noaaDate = formatNOAADate(date);
+    const noaaDate = NOAADate(date);
 
     const url = createURL('https://api.tidesandcurrents.noaa.gov/api/prod/datagetter', {
       product: 'predictions',
@@ -481,7 +437,7 @@ export default class MoneyTides extends Widget {
     const predictions: Prediction[] = predictionsResponse.predictions.map((prediction: ApiPrediction): Prediction => {
       const { t, v, type } = prediction;
 
-      const date = DateTime.fromSQL(t).setZone('America/Los_Angeles') as DateTime<true>;
+      const date = DateTime.fromSQL(t).setZone('America/Los_Angeles') as DateTime;
 
       return {
         date,
@@ -506,7 +462,7 @@ export default class MoneyTides extends Widget {
 
     if (!noonPrediction) {
       predictions.push({
-        date: getDateAtHour(date, 12),
+        date: setNoon(date),
         height: noonHeight,
         moneyType: 'not-money',
         time: '12:00 PM',
@@ -548,17 +504,11 @@ export default class MoneyTides extends Widget {
 
     const time = date.toMillis();
 
-    if (
-      time >= date.set({ hour: 11, minute: 0, second: 0, millisecond: 0 }).toMillis() &&
-      time <= date.set({ hour: 13, minute: 0, second: 0, millisecond: 0 }).toMillis()
-    )
-      return 2; // between 11 AM and 1 PM
+    // between 11 AM and 1 PM
+    if (time >= setTime(date, { hour: 11 }).toMillis() && time <= setTime(date, { hour: 13 }).toMillis()) return 2;
 
-    if (
-      time >= date.set({ hour: 10, minute: 0, second: 0, millisecond: 0 }).toMillis() &&
-      time <= date.set({ hour: 14, minute: 0, second: 0, millisecond: 0 }).toMillis()
-    )
-      return 1; // between 10 AM and 2 PM
+    // between 10 AM and 2 PM
+    if (time >= setTime(date, { hour: 10 }).toMillis() && time <= setTime(date, { hour: 14 }).toMillis()) return 1;
 
     return 0;
   }
@@ -595,6 +545,8 @@ export default class MoneyTides extends Widget {
       this.stations.add(station);
 
       stationInfo.loaded = true;
+
+      stationInfo.loadErrorCount = 0;
 
       this.addZoomToItem(id, name);
 
@@ -654,6 +606,8 @@ export default class MoneyTides extends Widget {
 
       station.predictionUpdateError = false;
 
+      station.predictionUpdateErrorCount = 0;
+
       Object.assign(station, {
         date,
         noonHeight,
@@ -665,15 +619,19 @@ export default class MoneyTides extends Widget {
       this.updateSymbols(station);
 
       if (tidesDialog.container.open && tidesDialog.station.id === id) {
-        tidesDialog.show(station);
+        tidesDialog.open(station);
       }
     } catch (error) {
       console.log(error);
 
       if (station.predictionUpdateErrorCount !== 3) {
-        station.predictionUpdateErrorCount++;
+        
+
+        setTimeout((): void => {
+          station.predictionUpdateErrorCount++;
 
         this.updatePredictions(station);
+        });
 
         return;
       }
@@ -764,7 +722,7 @@ export default class MoneyTides extends Widget {
 
     view.scale = 60000;
 
-    this.tidesDialog.show(station);
+    this.tidesDialog.open(station);
   }
 
   //#endregion
@@ -772,11 +730,10 @@ export default class MoneyTides extends Widget {
   //#region events
 
   private dateChangeEvent(event: Event): void {
-    this.date = getDateAtHour(
+    this.date = setNoon(
       DateTime.fromISO((event.target as HTMLCalciteInputDatePickerElement).value as string).setZone(
         'America/Los_Angeles',
       ),
-      12,
     );
 
     this.stationInfos.forEach((stationInfo: _StationInfo): void => {
@@ -815,7 +772,7 @@ export default class MoneyTides extends Widget {
 
     if (!station || (station && station.predictionUpdateError)) return;
 
-    tidesDialog.show(station);
+    tidesDialog.open(station);
   }
 
   //#endregion
