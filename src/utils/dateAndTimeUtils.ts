@@ -1,5 +1,7 @@
 import { DateTime } from 'luxon';
 
+export default DateTime;
+
 /**
  * Return a date formatted for NOAA api requests, e.g. `2021204`.
  *

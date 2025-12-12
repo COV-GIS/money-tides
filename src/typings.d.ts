@@ -1,7 +1,13 @@
 import esri = __esri;
 
 import type { DateTime } from 'luxon';
-import type { GetTimesResult, GetMoonTimes, GetMoonIlluminationResult } from 'suncalc';
+import type {
+  GetSunPositionResult,
+  GetTimesResult,
+  GetMoonPositionResult,
+  GetMoonTimes,
+  GetMoonIlluminationResult,
+} from 'suncalc';
 
 /**
  * Api tide prediction
@@ -77,7 +83,7 @@ export type MoneyTypeIndex = ['not-money', 'potentially-money', 'kinda-money', '
 /**
  * Tide prediction
  */
-export type Prediction = {
+export interface Prediction {
   /**
    * Tide height
    */
@@ -91,6 +97,14 @@ export type Prediction = {
    */
   moneyType: MoneyType;
   /**
+   * Position of the moon
+   */
+  moonPosition: GetMoonPositionResult;
+  /**
+   * Sun position
+   */
+  sunPosition: GetSunPositionResult;
+  /**
    * Tide type
    */
   tideType: 'high' | 'low' | 'noon';
@@ -98,7 +112,7 @@ export type Prediction = {
    * Tide time, e.g. 5:12 PM
    */
   time: string;
-};
+}
 
 /**
  * Station
@@ -167,6 +181,10 @@ export type Station = {
    */
   sunTimes: GetTimesResult;
   /**
+   * Three days of tides for the day in question and the days either side
+   */
+  tides: Tide[];
+  /**
    * Moon times.
    *
    * https://github.com/mourner/suncalc?tab=readme-ov-file#moon-rise-and-set-times
@@ -202,31 +220,57 @@ export interface _StationInfo extends StationInfo {
   loadErrorCount: number;
 }
 
-/**
- * Time info
- */
-export type TimeInfo = {
+export type Tide = {
+  /**
+   * Date/time of time
+   */
+  date: DateTime;
+  /**
+   * Height of tide
+   */
+  height: number;
+};
+
+export interface TideSunAndMoonPositionInfo extends Prediction {
+  sunPosition: GetSunPositionResult;
+  moonPosition: GetMoonPositionResult;
+}
+
+interface TimeInfo {
   /**
    * Date/time of event
    */
   date: DateTime;
   /**
-   * Description of event
+   * Event time, e.g. 5:12 PM
    */
-  description: string;
+  time: string;
+}
+
+export interface SunTimeInfo extends TimeInfo {
+  /**
+   * Tidal event
+   */
+  event: string;
+}
+
+/**
+ * Time info
+ */
+export interface TideTimeInfo extends TimeInfo {
+  /**
+   * Tidal event
+   */
+  event: string;
+  /**
+   * Tide height
+   */
+  height: string;
   /**
    * Table row style
    */
   style?: string;
-  /**
-   * Event time, e.g. 5:12 PM
-   */
-  time: string;
-  /**
-   * Event value
-   */
-  value?: string;
-};
+}
 
 export type ZoomToItem = {
   name: string;

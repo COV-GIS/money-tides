@@ -2,7 +2,7 @@
 
 import esri = __esri;
 
-import type { Prediction, Station, TimeInfo } from '../typings';
+import type { Prediction, Station, TideTimeInfo, TideSunAndMoonPositionInfo } from '../typings';
 
 //#endregion
 
@@ -27,6 +27,8 @@ import { DateTime } from 'luxon';
 import createURL from '../utils/createURL';
 import { NOAADate, twelveHourTime } from '../utils/dateAndTimeUtils';
 import { moneyTypeColorHex } from '../utils/colorUtils';
+import { sunAndMoonPosition } from '../utils/sunAndMoonUtils';
+import { tideHeightAtTime } from '../utils/tideUtils';
 
 //#endregion
 
@@ -69,7 +71,9 @@ export default class TidesDialog extends Widget {
   @property()
   private content: 'tides' | 'sun' | 'moon' = 'tides';
 
-  private timeInfos: esri.Collection<TimeInfo> = new Collection();
+  private tideTimeInfos: esri.Collection<TideTimeInfo> = new Collection();
+
+  private tideSunAndMoonPositions: esri.Collection<TideSunAndMoonPositionInfo> = new Collection();
 
   //#endregion
 
@@ -82,55 +86,34 @@ export default class TidesDialog extends Widget {
   open(station: Station): void {
     this.station = station;
 
+    this.tideTimes(station);
+
     const {
       predictions,
       sunTimes: { solarNoon, sunrise, sunset },
+      latitude,
+      longitude,
     } = station;
 
-    const timeInfos: esri.Collection<TimeInfo> = new Collection(
-      predictions.map((prediction: Prediction): TimeInfo => {
-        const { date, height, moneyType, tideType, time } = prediction;
+    // const tideSunAndMoonPositions = new Collection();
 
-        return {
-          date,
-          description: `${tideType} tide`,
-          style: [
-            moneyType !== 'not-money'
-              ? `--calcite-table-row-background-color: ${moneyTypeColorHex(
-                  moneyType,
-                )}; font-weight: var(--calcite-font-weight-medium);`
-              : '',
-            moneyType === 'money' ? '--calcite-table-cell-text-color: #ffffff' : '',
-          ].join(' '),
-          time,
-          value: `${height} ft`,
-        };
-      }),
-    );
+    const tideSunAndMoonPositions = new Collection();
 
-    timeInfos.addMany([
-      {
-        date: DateTime.fromJSDate(solarNoon),
-        description: 'solar noon',
-        time: twelveHourTime(solarNoon),
-      },
-      {
-        date: DateTime.fromJSDate(sunrise),
-        description: 'sunrise',
-        time: twelveHourTime(sunrise),
-      },
-      {
-        date: DateTime.fromJSDate(sunset),
-        description: 'sunset',
-        time: twelveHourTime(sunset),
-      },
-    ]);
+    predictions.forEach((prediction: Prediction): void => {
+      const {
+        sunPosition: { altitude, azimuth },
+      } = sunAndMoonPosition(prediction.date, latitude, longitude);
 
-    timeInfos.sort((a: TimeInfo, b: TimeInfo): number => {
-      return a.date.toMillis() - b.date.toMillis();
+      tideSunAndMoonPositions.add({
+        ...prediction,
+        ...sunAndMoonPosition(prediction.date, latitude, longitude),
+      });
     });
 
-    this.timeInfos = timeInfos;
+    // @ts-ignore
+    console.log(tideSunAndMoonPositions.items);
+
+    this.tideSunAndMoonPositions = tideSunAndMoonPositions;
 
     this.renderNow();
 
@@ -170,16 +153,71 @@ export default class TidesDialog extends Widget {
     );
   }
 
+  private tideTimes(station: Station): void {
+    const {
+      predictions,
+      sunTimes: { solarNoon, sunrise, sunset },
+    } = station;
+
+    const tideTimeInfos: esri.Collection<TideTimeInfo> = new Collection(
+      predictions.map((prediction: Prediction): TideTimeInfo => {
+        const { date, height, moneyType, tideType, time } = prediction;
+
+        return {
+          date,
+          event: `${tideType} tide`,
+          style: [
+            moneyType !== 'not-money'
+              ? `--calcite-table-row-background-color: ${moneyTypeColorHex(
+                  moneyType,
+                )}; font-weight: var(--calcite-font-weight-medium);`
+              : '',
+            moneyType === 'money' ? '--calcite-table-cell-text-color: #ffffff' : '',
+          ].join(' '),
+          time,
+          height: `${height} ft`,
+        };
+      }),
+    );
+
+    tideTimeInfos.addMany([
+      {
+        date: DateTime.fromJSDate(solarNoon),
+        event: 'solar noon',
+        time: twelveHourTime(solarNoon),
+        height: `${tideHeightAtTime(predictions, DateTime.fromJSDate(solarNoon))} ft`,
+      },
+      {
+        date: DateTime.fromJSDate(sunrise),
+        event: 'sunrise',
+        time: twelveHourTime(sunrise),
+        height: `${tideHeightAtTime(predictions, DateTime.fromJSDate(sunrise))} ft`,
+      },
+      {
+        date: DateTime.fromJSDate(sunset),
+        event: 'sunset',
+        time: twelveHourTime(sunset),
+        height: `${tideHeightAtTime(predictions, DateTime.fromJSDate(sunset))} ft`,
+      },
+    ]);
+
+    tideTimeInfos.sort((a: TideTimeInfo, b: TideTimeInfo): number => {
+      return a.date.toMillis() - b.date.toMillis();
+    });
+
+    this.tideTimeInfos = tideTimeInfos;
+  }
+
   //#endregion
 
   //#region render
 
   render(): tsx.JSX.Element {
-    const { content, station, timeInfos } = this;
+    const { content, station, tideTimeInfos, tideSunAndMoonPositions } = this;
 
     if (!station) return <calcite-dialog></calcite-dialog>;
 
-    const { date, name } = station;
+    const { date, name, sunTimes } = station;
 
     const heading = `${name} - ${date.toLocaleString(DateTime.DATE_FULL)}`;
 
@@ -189,7 +227,7 @@ export default class TidesDialog extends Widget {
         placement="bottom-start"
         scale="s"
         style={`--calcite-dialog-min-size-y: 0; --calcite-dialog-max-size-x: 420px; ${
-          content === 'tides' ? '--calcite-dialog-content-space: 0;' : ''
+          content !== 'moon' ? '--calcite-dialog-content-space: 0;' : ''
         }`}
         width="s"
       >
@@ -254,15 +292,15 @@ export default class TidesDialog extends Widget {
 
         {/* tides table */}
         <calcite-table hidden={content !== 'tides'} striped scale="s" style="--calcite-table-border-color: none;">
-          {timeInfos
-            .map((timeInfo: TimeInfo): tsx.JSX.Element => {
-              const { description, style, time, value } = timeInfo;
+          {tideTimeInfos
+            .map((tideTimeInfo: TideTimeInfo): tsx.JSX.Element => {
+              const { event, style, time, height } = tideTimeInfo;
 
               return (
                 <calcite-table-row key={KEY++} style={style}>
                   <calcite-table-cell>{time}</calcite-table-cell>
-                  <calcite-table-cell>{description}</calcite-table-cell>
-                  <calcite-table-cell>{value}</calcite-table-cell>
+                  <calcite-table-cell>{event}</calcite-table-cell>
+                  <calcite-table-cell>{height}</calcite-table-cell>
                 </calcite-table-row>
               );
             })
@@ -270,12 +308,45 @@ export default class TidesDialog extends Widget {
         </calcite-table>
 
         {/* sun */}
-        <div hidden={content !== 'sun'}>
+        {/* <div hidden={content !== 'sun'}>
           <calcite-notice icon="brightness" open scale="s">
             <div slot="title">Coming soon</div>
             <div slot="message">Information about the position of the sun at high and low tides</div>
           </calcite-notice>
-        </div>
+        </div> */}
+        <calcite-table hidden={content !== 'sun'} striped scale="s" style="--calcite-table-border-color: none;">
+          {tideSunAndMoonPositions
+            .map((tideSunAndMoonPosition: TideSunAndMoonPositionInfo): tsx.JSX.Element => {
+              const {
+                date,
+                moonPosition,
+                sunPosition: { altitude, azimuth },
+                tideType,
+                time,
+              } = tideSunAndMoonPosition;
+
+              const azimuthAngle = Number(((azimuth * 180) / Math.PI).toFixed(0));
+
+              const bearing =
+                azimuthAngle === 0
+                  ? 'South'
+                  : azimuthAngle > 0
+                  ? `S ${azimuthAngle}° W`
+                  : `S ${Math.abs(azimuthAngle)}° E`;
+
+              return (
+                <calcite-table-row key={KEY++}>
+                  <calcite-table-cell>{time}</calcite-table-cell>
+                  <calcite-table-cell>{tideType} tide</calcite-table-cell>
+                  <calcite-table-cell>{altitude < 0 ? '-' : bearing}</calcite-table-cell>
+                  <calcite-table-cell>
+                    {altitude < 0 ? '-' : `${((altitude * 180) / Math.PI).toFixed(0)}°`}
+                  </calcite-table-cell>
+                </calcite-table-row>
+              );
+            })
+            .toArray()}
+        </calcite-table>
 
         {/* moon */}
         <div hidden={content !== 'moon'}>
