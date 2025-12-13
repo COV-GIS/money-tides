@@ -119,10 +119,6 @@ export interface Prediction {
  */
 export type Station = {
   /**
-   * Station id
-   */
-  id: string;
-  /**
    * Date of predictions
    */
   date: DateTime;
@@ -142,6 +138,10 @@ export type Station = {
    * Station tides graphic
    */
   graphicTides: esri.Graphic;
+  /**
+   * Station id
+   */
+  id: string;
   /**
    * Station latitude
    */
@@ -163,6 +163,18 @@ export type Station = {
    */
   moneyType: MoneyType;
   /**
+   * Moon illumination (from earth)
+   *
+   * https://github.com/mourner/suncalc?tab=readme-ov-file#moon-illumination
+   */
+  moonIllumination: GetMoonIlluminationResult;
+  /**
+   * Moon times
+   *
+   * https://github.com/mourner/suncalc?tab=readme-ov-file#moon-rise-and-set-times
+   */
+  moonTimes: GetMoonTimes;
+  /**
    *  Tide predictions for the date
    */
   predictions: Prediction[];
@@ -175,7 +187,7 @@ export type Station = {
    */
   predictionUpdateErrorCount: number;
   /**
-   * Sun times.
+   * Sun times
    *
    * https://github.com/mourner/suncalc?tab=readme-ov-file#sunlight-times
    */
@@ -184,18 +196,6 @@ export type Station = {
    * Three days of tides for the day in question and the days either side
    */
   tides: Tide[];
-  /**
-   * Moon times.
-   *
-   * https://github.com/mourner/suncalc?tab=readme-ov-file#moon-rise-and-set-times
-   */
-  moonTimes: GetMoonTimes;
-  /**
-   * Moon illumination (from earth).
-   *
-   * https://github.com/mourner/suncalc?tab=readme-ov-file#moon-illumination
-   */
-  moonIllumination: GetMoonIlluminationResult;
 };
 
 /**
@@ -212,14 +212,23 @@ export interface StationInfo {
   stationName: string;
 }
 
+/**
+ * Internal station info
+ */
 export interface _StationInfo extends StationInfo {
-  loaded?: boolean;
+  /**
+   * Is station loaded
+   */
+  loaded: boolean;
   /**
    * Number of consecutive load errors
    */
   loadErrorCount: number;
 }
 
+/**
+ * Tide info
+ */
 export type Tide = {
   /**
    * Date/time of time
@@ -231,33 +240,40 @@ export type Tide = {
   height: number;
 };
 
-export interface TideSunAndMoonPositionInfo extends Prediction {
-  sunPosition: GetSunPositionResult;
-  moonPosition: GetMoonPositionResult;
-}
-
-interface TimeInfo {
+/**
+ * Sun time info
+ */
+export interface SunTimeInfo {
+  /**
+   * Altitude above the horizon of the sun
+   */
+  altitude: string;
+  /**
+   * Bearing to the sun
+   */
+  bearing: string;
   /**
    * Date/time of event
    */
   date: DateTime;
+  /**
+   * Tidal or sun event
+   */
+  event: string;
   /**
    * Event time, e.g. 5:12 PM
    */
   time: string;
 }
 
-export interface SunTimeInfo extends TimeInfo {
-  /**
-   * Tidal event
-   */
-  event: string;
-}
-
 /**
- * Time info
+ * Tide time info
  */
-export interface TideTimeInfo extends TimeInfo {
+export interface TideTimeInfo {
+  /**
+   * Date/time of event
+   */
+  date: DateTime;
   /**
    * Tidal event
    */
@@ -270,6 +286,10 @@ export interface TideTimeInfo extends TimeInfo {
    * Table row style
    */
   style?: string;
+  /**
+   * Event time, e.g. 5:12 PM
+   */
+  time: string;
 }
 
 export type ZoomToItem = {

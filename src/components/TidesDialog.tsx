@@ -2,7 +2,7 @@
 
 import esri = __esri;
 
-import type { Prediction, Station, TideTimeInfo, TideSunAndMoonPositionInfo } from '../typings';
+import type { Prediction, Station, SunTimeInfo, TideTimeInfo } from '../typings';
 
 //#endregion
 
@@ -23,11 +23,10 @@ import { property, subclass } from '@arcgis/core/core/accessorSupport/decorators
 import Widget from '@arcgis/core/widgets/Widget';
 import { tsx } from '@arcgis/core/widgets/support/widget';
 import Collection from '@arcgis/core/core/Collection';
-import { DateTime } from 'luxon';
 import createURL from '../utils/createURL';
-import { NOAADate, twelveHourTime } from '../utils/dateAndTimeUtils';
+import DateTime, { NOAADate, twelveHourTime } from '../utils/dateAndTimeUtils';
 import { moneyTypeColorHex } from '../utils/colorUtils';
-import { sunAndMoonPosition } from '../utils/sunAndMoonUtils';
+import { altitudeToDegrees, azimuthToBearing, sunPosition } from '../utils/sunAndMoonUtils';
 import { tideHeightAtTime } from '../utils/tideUtils';
 
 //#endregion
@@ -71,9 +70,9 @@ export default class TidesDialog extends Widget {
   @property()
   private content: 'tides' | 'sun' | 'moon' = 'tides';
 
-  private tideTimeInfos: esri.Collection<TideTimeInfo> = new Collection();
+  private sunTimeInfos: esri.Collection<SunTimeInfo> = new Collection();
 
-  private tideSunAndMoonPositions: esri.Collection<TideSunAndMoonPositionInfo> = new Collection();
+  private tideTimeInfos: esri.Collection<TideTimeInfo> = new Collection();
 
   //#endregion
 
@@ -88,32 +87,7 @@ export default class TidesDialog extends Widget {
 
     this.tideTimes(station);
 
-    const {
-      predictions,
-      sunTimes: { solarNoon, sunrise, sunset },
-      latitude,
-      longitude,
-    } = station;
-
-    // const tideSunAndMoonPositions = new Collection();
-
-    const tideSunAndMoonPositions = new Collection();
-
-    predictions.forEach((prediction: Prediction): void => {
-      const {
-        sunPosition: { altitude, azimuth },
-      } = sunAndMoonPosition(prediction.date, latitude, longitude);
-
-      tideSunAndMoonPositions.add({
-        ...prediction,
-        ...sunAndMoonPosition(prediction.date, latitude, longitude),
-      });
-    });
-
-    // @ts-ignore
-    console.log(tideSunAndMoonPositions.items);
-
-    this.tideSunAndMoonPositions = tideSunAndMoonPositions;
+    this.sunTimes(station);
 
     this.renderNow();
 
@@ -157,6 +131,7 @@ export default class TidesDialog extends Widget {
     const {
       predictions,
       sunTimes: { solarNoon, sunrise, sunset },
+      tides,
     } = station;
 
     const tideTimeInfos: esri.Collection<TideTimeInfo> = new Collection(
@@ -185,19 +160,19 @@ export default class TidesDialog extends Widget {
         date: DateTime.fromJSDate(solarNoon),
         event: 'solar noon',
         time: twelveHourTime(solarNoon),
-        height: `${tideHeightAtTime(predictions, DateTime.fromJSDate(solarNoon))} ft`,
+        height: `${tideHeightAtTime(tides, DateTime.fromJSDate(solarNoon))} ft`,
       },
       {
         date: DateTime.fromJSDate(sunrise),
         event: 'sunrise',
         time: twelveHourTime(sunrise),
-        height: `${tideHeightAtTime(predictions, DateTime.fromJSDate(sunrise))} ft`,
+        height: `${tideHeightAtTime(tides, DateTime.fromJSDate(sunrise))} ft`,
       },
       {
         date: DateTime.fromJSDate(sunset),
         event: 'sunset',
         time: twelveHourTime(sunset),
-        height: `${tideHeightAtTime(predictions, DateTime.fromJSDate(sunset))} ft`,
+        height: `${tideHeightAtTime(tides, DateTime.fromJSDate(sunset))} ft`,
       },
     ]);
 
@@ -208,16 +183,78 @@ export default class TidesDialog extends Widget {
     this.tideTimeInfos = tideTimeInfos;
   }
 
+  private sunTimes(station: Station): void {
+    const {
+      latitude,
+      longitude,
+      predictions,
+      sunTimes: { solarNoon, sunrise, sunset },
+    } = station;
+
+    const sunTimeInfos: esri.Collection<SunTimeInfo> = new Collection(
+      predictions
+        .filter((prediction: Prediction): boolean => {
+          return prediction.sunPosition.altitude >= 0;
+        })
+        .map((prediction: Prediction): SunTimeInfo => {
+          const {
+            date,
+            sunPosition: { altitude, azimuth },
+            tideType,
+            time,
+          } = prediction;
+
+          return {
+            altitude: altitudeToDegrees(altitude),
+            bearing: azimuthToBearing(azimuth),
+            date,
+            event: `${tideType} tide`,
+            time,
+          };
+        }),
+    );
+
+    sunTimeInfos.addMany([
+      {
+        altitude: altitudeToDegrees(sunPosition(solarNoon, latitude, longitude).altitude),
+        bearing: 'S',
+        date: DateTime.fromJSDate(solarNoon),
+        event: 'solar noon',
+        time: twelveHourTime(solarNoon),
+      },
+      {
+        altitude: '0°',
+        bearing: azimuthToBearing(sunPosition(sunrise, latitude, longitude).azimuth),
+        date: DateTime.fromJSDate(sunrise),
+        event: 'sunrise',
+        time: twelveHourTime(sunrise),
+      },
+      {
+        altitude: '0°',
+        bearing: azimuthToBearing(sunPosition(sunset, latitude, longitude).azimuth),
+        date: DateTime.fromJSDate(sunset),
+        event: 'sunset',
+        time: twelveHourTime(sunset),
+      },
+    ]);
+
+    sunTimeInfos.sort((a: SunTimeInfo, b: SunTimeInfo): number => {
+      return a.date.toMillis() - b.date.toMillis();
+    });
+
+    this.sunTimeInfos = sunTimeInfos;
+  }
+
   //#endregion
 
   //#region render
 
   render(): tsx.JSX.Element {
-    const { content, station, tideTimeInfos, tideSunAndMoonPositions } = this;
+    const { content, station, tideTimeInfos, sunTimeInfos } = this;
 
     if (!station) return <calcite-dialog></calcite-dialog>;
 
-    const { date, name, sunTimes } = station;
+    const { date, name } = station;
 
     const heading = `${name} - ${date.toLocaleString(DateTime.DATE_FULL)}`;
 
@@ -257,6 +294,7 @@ export default class TidesDialog extends Widget {
           onclick={this.openStationUrl.bind(this, 7)}
         ></calcite-action>
 
+        {/* action bar */}
         <calcite-action-bar expand-disabled="" layout="horizontal" slot="action-bar">
           <calcite-action
             active={content === 'tides'}
@@ -315,33 +353,16 @@ export default class TidesDialog extends Widget {
           </calcite-notice>
         </div> */}
         <calcite-table hidden={content !== 'sun'} striped scale="s" style="--calcite-table-border-color: none;">
-          {tideSunAndMoonPositions
-            .map((tideSunAndMoonPosition: TideSunAndMoonPositionInfo): tsx.JSX.Element => {
-              const {
-                date,
-                moonPosition,
-                sunPosition: { altitude, azimuth },
-                tideType,
-                time,
-              } = tideSunAndMoonPosition;
-
-              const azimuthAngle = Number(((azimuth * 180) / Math.PI).toFixed(0));
-
-              const bearing =
-                azimuthAngle === 0
-                  ? 'South'
-                  : azimuthAngle > 0
-                  ? `S ${azimuthAngle}° W`
-                  : `S ${Math.abs(azimuthAngle)}° E`;
+          {sunTimeInfos
+            .map((sunTimeInfo: SunTimeInfo): tsx.JSX.Element => {
+              const { altitude, bearing, event, time } = sunTimeInfo;
 
               return (
                 <calcite-table-row key={KEY++}>
                   <calcite-table-cell>{time}</calcite-table-cell>
-                  <calcite-table-cell>{tideType} tide</calcite-table-cell>
-                  <calcite-table-cell>{altitude < 0 ? '-' : bearing}</calcite-table-cell>
-                  <calcite-table-cell>
-                    {altitude < 0 ? '-' : `${((altitude * 180) / Math.PI).toFixed(0)}°`}
-                  </calcite-table-cell>
+                  <calcite-table-cell>{event}</calcite-table-cell>
+                  <calcite-table-cell>{bearing}</calcite-table-cell>
+                  <calcite-table-cell>{altitude}</calcite-table-cell>
                 </calcite-table-row>
               );
             })

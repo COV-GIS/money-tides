@@ -182,7 +182,24 @@ export default class MoneyTides extends Widget {
     this.zoomToDropdownItems.add({
       name,
       element: (
-        <calcite-dropdown-item key={KEY++} onclick={this.zoomTo.bind(this, `${id}`)}>
+        <calcite-dropdown-item
+          key={KEY++}
+          onclick={(): void => {
+            const { view } = this;
+
+            const station = this.stations.find((station: Station): boolean => {
+              return station.id === id;
+            });
+
+            if (!station) return;
+
+            view.goTo(station.graphicPoint);
+
+            view.scale = 60000;
+
+            this.tidesDialog.open(station);
+          }}
+        >
           {name}
         </calcite-dropdown-item>
       ),
@@ -416,6 +433,7 @@ export default class MoneyTides extends Widget {
         height,
       });
     });
+
     const { moneyType, moneyTideIndex } = this.getMoney(predictions);
 
     if (moneyTideIndex !== -1) {
@@ -560,7 +578,7 @@ export default class MoneyTides extends Widget {
     const { id, latitude, longitude, name } = station;
 
     try {
-      const { moneyType, predictions, noonHeight } = await this.getPredictions(id, date, latitude, longitude);
+      const { moneyType, noonHeight, predictions, tides } = await this.getPredictions(id, date, latitude, longitude);
 
       station.predictionUpdateError = false;
 
@@ -571,6 +589,7 @@ export default class MoneyTides extends Widget {
         noonHeight,
         moneyType,
         predictions,
+        tides,
         ...todaysSunAndMoon(date, latitude, longitude),
       });
 
@@ -663,22 +682,6 @@ export default class MoneyTides extends Widget {
     this.heatmapLayer.applyEdits({
       updateFeatures: [graphicHeatmap],
     });
-  }
-
-  private zoomTo(id: string): void {
-    const { view } = this;
-
-    const station = this.stations.find((station: Station): boolean => {
-      return station.id === id;
-    });
-
-    if (!station) return;
-
-    view.goTo(station.graphicPoint);
-
-    view.scale = 60000;
-
-    this.tidesDialog.open(station);
   }
 
   //#endregion
@@ -843,7 +846,7 @@ export default class MoneyTides extends Widget {
     view.ui.add(new Attribution({ container: document.createElement('calcite-action-bar'), view }), 'bottom-right');
 
     stationInfos.forEach((stationInfo: StationInfo): void => {
-      this.loadStation({ ...stationInfo, loadErrorCount: 0 });
+      this.loadStation({ ...stationInfo, loaded: false, loadErrorCount: 0 });
     });
 
     this.addHandles(view.on('click', this.viewClickEvent.bind(this)));

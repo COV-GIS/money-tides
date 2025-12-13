@@ -9,6 +9,48 @@ import type {
 import { DateTime } from 'luxon';
 import { getTimes, getPosition, getMoonPosition, getMoonTimes, getMoonIllumination } from 'suncalc';
 
+const radiansToDegrees = (radians: number): number => {
+  return (radians * 180) / Math.PI;
+};
+
+export const altitudeToDegrees = (altitude: number, precision?: number): string => {
+  return `${radiansToDegrees(altitude).toFixed(precision || 0)}°`;
+};
+
+export const azimuthToBearing = (azimuth: number, precision?: number): string => {
+  azimuth = radiansToDegrees(azimuth);
+
+  return azimuth === 0
+    ? 'S'
+    : azimuth === 90
+    ? 'W'
+    : azimuth === -90
+    ? 'E'
+    : azimuth === 180 || azimuth === -180
+    ? 'N'
+    : azimuth > 0 && azimuth < 90
+    ? `S ${azimuth.toFixed(precision || 0)}° W`
+    : azimuth > 90
+    ? `N ${(azimuth - 90).toFixed(precision || 0)}° W`
+    : azimuth < 0 && azimuth > -90
+    ? `S ${Math.abs(azimuth).toFixed(precision || 0)}° E`
+    : azimuth < -90
+    ? `N ${(Math.abs(azimuth) - 90).toFixed(precision || 0)}° E`
+    : 'bad azimuth';
+};
+
+export const moonPosition = (date: Date | DateTime, latitude: number, longitude: number): GetMoonPositionResult => {
+  date = date instanceof Date ? date : date.toJSDate();
+
+  return getMoonPosition(date, latitude, longitude);
+};
+
+export const sunPosition = (date: Date | DateTime, latitude: number, longitude: number): GetSunPositionResult => {
+  date = date instanceof Date ? date : date.toJSDate();
+
+  return getPosition(date, latitude, longitude);
+};
+
 export const todaysSunAndMoon = (
   date: Date | DateTime,
   latitude: number,
@@ -27,25 +69,13 @@ export const todaysSunAndMoon = (
   };
 };
 
-export const sunPosition = (date: Date | DateTime, latitude: number, longitude: number): GetSunPositionResult => {
-  date = date instanceof Date ? date : date.toJSDate();
-
-  return getPosition(date, latitude, longitude);
-};
-
-export const moonPosition = (date: Date | DateTime, latitude: number, longitude: number): GetMoonPositionResult => {
-  date = date instanceof Date ? date : date.toJSDate();
-
-  return getMoonPosition(date, latitude, longitude);
-};
-
-export const sunAndMoonPosition = (
-  date: Date | DateTime,
-  latitude: number,
-  longitude: number,
-): { sunPosition: GetSunPositionResult; moonPosition: GetMoonPositionResult } => {
-  return {
-    sunPosition: sunPosition(date, latitude, longitude),
-    moonPosition: moonPosition(date, latitude, longitude),
-  };
-};
+// export const sunAndMoonPosition = (
+//   date: Date | DateTime,
+//   latitude: number,
+//   longitude: number,
+// ): { sunPosition: GetSunPositionResult; moonPosition: GetMoonPositionResult } => {
+//   return {
+//     sunPosition: sunPosition(date, latitude, longitude),
+//     moonPosition: moonPosition(date, latitude, longitude),
+//   };
+// };
