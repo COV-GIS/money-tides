@@ -206,15 +206,15 @@ export default class MoneyTides extends Widget {
     });
   }
 
-  private createGraphics(
-    id: string,
-    latitude: number,
-    longitude: number,
-    moneyType: MoneyType,
-    name: string,
-    predictions: Prediction[],
-    noonHeight: number,
-  ): {
+  private createGraphics(createGraphicsParameters: {
+    id: string;
+    latitude: number;
+    longitude: number;
+    moneyType: MoneyType;
+    name: string;
+    noonHeight: number;
+    predictions: Prediction[];
+  }): {
     graphicHeatmap: esri.Graphic;
     graphicName: esri.Graphic;
     graphicPoint: esri.Graphic;
@@ -224,6 +224,8 @@ export default class MoneyTides extends Widget {
       view,
       view: { graphics },
     } = this;
+
+    const { id, latitude, longitude, moneyType, name, noonHeight, predictions } = createGraphicsParameters;
 
     const { primary, secondary } = moneyTypeColors(moneyType);
 
@@ -512,7 +514,7 @@ export default class MoneyTides extends Widget {
         predictionUpdateError: false,
         predictionUpdateErrorCount: 0,
         tides,
-        ...this.createGraphics(id, latitude, longitude, moneyType, name, predictions, noonHeight),
+        ...this.createGraphics({ id, latitude, longitude, moneyType, name, noonHeight, predictions }),
         ...todaysSunAndMoon(date, latitude, longitude),
       };
 
