@@ -10,6 +10,7 @@ import type { Prediction, Station, SunTimeInfo, TideTimeInfo } from '../typings'
 
 import '@esri/calcite-components/dist/components/calcite-action';
 import '@esri/calcite-components/dist/components/calcite-action-group';
+import '@esri/calcite-components/dist/components/calcite-alert';
 import '@esri/calcite-components/dist/components/calcite-dialog';
 import '@esri/calcite-components/dist/components/calcite-notice';
 import '@esri/calcite-components/dist/components/calcite-table';
@@ -19,6 +20,7 @@ import '@esri/calcite-components/dist/components/calcite-table-row';
 
 //#region modules
 
+import { watch } from '@arcgis/core/core/reactiveUtils';
 import { property, subclass } from '@arcgis/core/core/accessorSupport/decorators';
 import Widget from '@arcgis/core/widgets/Widget';
 import { tsx } from '@arcgis/core/widgets/support/widget';
@@ -26,7 +28,7 @@ import Collection from '@arcgis/core/core/Collection';
 import createURL from '../utils/createURL';
 import DateTime, { NOAADate, twelveHourTime } from '../utils/dateAndTimeUtils';
 import { moneyTypeColorHex } from '../utils/colorUtils';
-import { altitudeToDegrees, azimuthToBearing, sunPosition } from '../utils/sunAndMoonUtils';
+import { altitudeToDegrees, azimuthToBearing, magneticDeclination, sunPosition } from '../utils/sunAndMoonUtils';
 import { tideHeightAtTime } from '../utils/tideUtils';
 
 //#endregion
@@ -54,7 +56,17 @@ export default class TidesDialog extends Widget {
   postInitialize(): void {
     this.container.addEventListener('calciteDialogClose', (): void => {
       this.content = 'tides';
+      this.magenticDeclinationAlert.open = false;
     });
+
+    this.addHandles(
+      watch(
+        () => this.content,
+        (): void => {
+          this.magenticDeclinationAlert.open = false;
+        },
+      ),
+    );
   }
 
   //#endregion
@@ -69,6 +81,11 @@ export default class TidesDialog extends Widget {
 
   @property()
   private content: 'tides' | 'sun' | 'moon' = 'tides';
+
+  @property()
+  magenticDeclination = '';
+
+  magenticDeclinationAlert!: HTMLCalciteAlertElement;
 
   private sunTimeInfos: esri.Collection<SunTimeInfo> = new Collection();
 
@@ -127,60 +144,16 @@ export default class TidesDialog extends Widget {
     );
   }
 
-  private tideTimes(station: Station): void {
-    const {
-      predictions,
-      sunTimes: { solarNoon, sunrise, sunset },
-      tides,
-    } = station;
+  private async showMagenticDeclination(): Promise<void> {
+    const { date, latitude, longitude } = this.station;
 
-    const tideTimeInfos: esri.Collection<TideTimeInfo> = new Collection(
-      predictions.map((prediction: Prediction): TideTimeInfo => {
-        const { date, height, moneyType, tideType, time } = prediction;
+    try {
+      this.magenticDeclination = (await magneticDeclination(date, latitude, longitude, true)) as string;
 
-        return {
-          date,
-          event: `${tideType} tide`,
-          style: [
-            moneyType !== 'not-money'
-              ? `--calcite-table-row-background-color: ${moneyTypeColorHex(
-                  moneyType,
-                )}; font-weight: var(--calcite-font-weight-medium);`
-              : '',
-            moneyType === 'money' ? '--calcite-table-cell-text-color: #ffffff' : '',
-          ].join(' '),
-          time,
-          height: `${height} ft`,
-        };
-      }),
-    );
-
-    tideTimeInfos.addMany([
-      {
-        date: DateTime.fromJSDate(solarNoon),
-        event: 'solar noon',
-        time: twelveHourTime(solarNoon),
-        height: `${tideHeightAtTime(tides, DateTime.fromJSDate(solarNoon))} ft`,
-      },
-      {
-        date: DateTime.fromJSDate(sunrise),
-        event: 'sunrise',
-        time: twelveHourTime(sunrise),
-        height: `${tideHeightAtTime(tides, DateTime.fromJSDate(sunrise))} ft`,
-      },
-      {
-        date: DateTime.fromJSDate(sunset),
-        event: 'sunset',
-        time: twelveHourTime(sunset),
-        height: `${tideHeightAtTime(tides, DateTime.fromJSDate(sunset))} ft`,
-      },
-    ]);
-
-    tideTimeInfos.sort((a: TideTimeInfo, b: TideTimeInfo): number => {
-      return a.date.toMillis() - b.date.toMillis();
-    });
-
-    this.tideTimeInfos = tideTimeInfos;
+      this.magenticDeclinationAlert.open = true;
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   private sunTimes(station: Station): void {
@@ -245,14 +218,72 @@ export default class TidesDialog extends Widget {
     this.sunTimeInfos = sunTimeInfos;
   }
 
+  private tideTimes(station: Station): void {
+    const {
+      predictions,
+      sunTimes: { solarNoon, sunrise, sunset },
+      tides,
+    } = station;
+
+    const tideTimeInfos: esri.Collection<TideTimeInfo> = new Collection(
+      predictions.map((prediction: Prediction): TideTimeInfo => {
+        const { date, height, moneyType, tideType, time } = prediction;
+
+        return {
+          date,
+          event: `${tideType} tide`,
+          style: [
+            moneyType !== 'not-money'
+              ? `--calcite-table-row-background-color: ${moneyTypeColorHex(
+                  moneyType,
+                )}; font-weight: var(--calcite-font-weight-medium);`
+              : '',
+            moneyType === 'money' ? '--calcite-table-cell-text-color: #ffffff' : '',
+          ].join(' '),
+          time,
+          height: `${height} ft`,
+        };
+      }),
+    );
+
+    tideTimeInfos.addMany([
+      {
+        date: DateTime.fromJSDate(solarNoon),
+        event: 'solar noon',
+        time: twelveHourTime(solarNoon),
+        height: `${tideHeightAtTime(tides, DateTime.fromJSDate(solarNoon))} ft`,
+      },
+      {
+        date: DateTime.fromJSDate(sunrise),
+        event: 'sunrise',
+        time: twelveHourTime(sunrise),
+        height: `${tideHeightAtTime(tides, DateTime.fromJSDate(sunrise))} ft`,
+      },
+      {
+        date: DateTime.fromJSDate(sunset),
+        event: 'sunset',
+        time: twelveHourTime(sunset),
+        height: `${tideHeightAtTime(tides, DateTime.fromJSDate(sunset))} ft`,
+      },
+    ]);
+
+    tideTimeInfos.sort((a: TideTimeInfo, b: TideTimeInfo): number => {
+      return a.date.toMillis() - b.date.toMillis();
+    });
+
+    this.tideTimeInfos = tideTimeInfos;
+  }
+
   //#endregion
 
   //#region render
 
   render(): tsx.JSX.Element {
-    const { content, station, tideTimeInfos, sunTimeInfos } = this;
+    const { content, station } = this;
 
     if (!station) return <calcite-dialog></calcite-dialog>;
+
+    const { magenticDeclination, sunTimeInfos, tideTimeInfos } = this;
 
     const { date, name } = station;
 
@@ -292,6 +323,14 @@ export default class TidesDialog extends Widget {
           text="7 Day Plot"
           text-enabled=""
           onclick={this.openStationUrl.bind(this, 7)}
+        ></calcite-action>
+        <calcite-action
+          icon="explore"
+          scale="s"
+          slot="header-menu-actions"
+          text="Declination"
+          text-enabled=""
+          onclick={this.showMagenticDeclination.bind(this)}
         ></calcite-action>
 
         {/* action bar */}
@@ -376,8 +415,16 @@ export default class TidesDialog extends Widget {
             <div slot="message">Information about the phase of the moon and its position at high and low tides</div>
           </calcite-notice>
         </div>
+
+        <calcite-alert scale="s" slot="alerts" afterCreate={this.alertAfterCreate.bind(this)}>
+          <div slot="message">Today's magnetic declination is {magenticDeclination}</div>
+        </calcite-alert>
       </calcite-dialog>
     );
+  }
+
+  private alertAfterCreate(alert: HTMLCalciteAlertElement): void {
+    this.magenticDeclinationAlert = alert;
   }
 
   //#endregion

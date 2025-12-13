@@ -28,6 +28,20 @@ export type ApiPrediction = {
 };
 
 /**
+ * Response from magnetic declination api
+ * 
+ * https://www.ngdc.noaa.gov/geomag-web/calculators/calculateDeclination
+ */
+export type ApiMagneticDeclinationResponse = {
+  result: [{
+    /**
+     * Declination in degrees (positive E; negative W)
+     */
+    declination: number;
+  }]
+};
+
+/**
  * Response from predictions api
  *
  * Api docs: https://api.tidesandcurrents.noaa.gov/api/prod
