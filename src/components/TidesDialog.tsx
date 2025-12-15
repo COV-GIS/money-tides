@@ -56,14 +56,14 @@ export default class TidesDialog extends Widget {
   postInitialize(): void {
     this.container.addEventListener('calciteDialogClose', (): void => {
       this.content = 'tides';
-      this.magenticDeclinationAlert.open = false;
+      this.magneticDeclinationAlert.open = false;
     });
 
     this.addHandles(
       watch(
         () => this.content,
         (): void => {
-          this.magenticDeclinationAlert.open = false;
+          this.magneticDeclinationAlert.open = false;
         },
       ),
     );
@@ -83,9 +83,9 @@ export default class TidesDialog extends Widget {
   private content: 'tides' | 'sun' | 'moon' = 'tides';
 
   @property()
-  magenticDeclination = '';
+  magneticDeclination = '';
 
-  magenticDeclinationAlert!: HTMLCalciteAlertElement;
+  magneticDeclinationAlert!: HTMLCalciteAlertElement;
 
   private sunTimeInfos: esri.Collection<SunTimeInfo> = new Collection();
 
@@ -144,13 +144,13 @@ export default class TidesDialog extends Widget {
     );
   }
 
-  private async showMagenticDeclination(): Promise<void> {
+  private async showMagneticDeclination(): Promise<void> {
     const { date, latitude, longitude } = this.station;
 
     try {
-      this.magenticDeclination = (await magneticDeclination(date, latitude, longitude, true)) as string;
+      this.magneticDeclination = (await magneticDeclination(date, latitude, longitude, true)) as string;
 
-      this.magenticDeclinationAlert.open = true;
+      this.magneticDeclinationAlert.open = true;
     } catch (error) {
       console.log(error);
     }
@@ -283,7 +283,7 @@ export default class TidesDialog extends Widget {
 
     if (!station) return <calcite-dialog></calcite-dialog>;
 
-    const { magenticDeclination, sunTimeInfos, tideTimeInfos } = this;
+    const { magneticDeclination, sunTimeInfos, tideTimeInfos } = this;
 
     const { date, name } = station;
 
@@ -330,7 +330,7 @@ export default class TidesDialog extends Widget {
           slot="header-menu-actions"
           text="Declination"
           text-enabled=""
-          onclick={this.showMagenticDeclination.bind(this)}
+          onclick={this.showMagneticDeclination.bind(this)}
         ></calcite-action>
 
         {/* action bar */}
@@ -417,14 +417,14 @@ export default class TidesDialog extends Widget {
         </div>
 
         <calcite-alert scale="s" slot="alerts" afterCreate={this.alertAfterCreate.bind(this)}>
-          <div slot="message">Today's magnetic declination is {magenticDeclination}</div>
+          <div slot="message">Today's magnetic declination is {magneticDeclination}</div>
         </calcite-alert>
       </calcite-dialog>
     );
   }
 
   private alertAfterCreate(alert: HTMLCalciteAlertElement): void {
-    this.magenticDeclinationAlert = alert;
+    this.magneticDeclinationAlert = alert;
   }
 
   //#endregion
