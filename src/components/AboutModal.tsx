@@ -82,8 +82,8 @@ export default class AboutModal extends Widget {
             Occasionally a location only experiences three tides (two high tides and one low tide, or one high tide and
             two low tides) in a calendar day. On such an occasion when a location experiences one high tide and two low
             tides, the single high tide will always occur between 10:00 AM and 2:00 PM, and so is a money or mostly
-            tide. But, it may be a low high tide in relation to the proceeding and upcoming high tides. So you might
-            want to check to see if the single high tide is a high high tide.
+            money tide. But, it may be a low high tide in relation to the proceeding and upcoming high tides. So you
+            might want to check to see if the single high tide is a high high tide.
           </div>
         </div>
       </calcite-dialog>
