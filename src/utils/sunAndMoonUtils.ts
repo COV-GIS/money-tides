@@ -38,7 +38,7 @@ export const azimuthToBearing = (azimuth: number, precision?: number): string =>
     ? `S ${Math.abs(azimuth).toFixed(precision || 0)}° E`
     : azimuth < -90
     ? `N ${(Math.abs(azimuth) - 90).toFixed(precision || 0)}° E`
-    : 'bad azimuth';
+    : 'invalid azimuth';
 };
 
 export const magneticDeclination = async (
@@ -106,14 +106,3 @@ export const todaysSunAndMoon = (
     moonIllumination: getMoonIllumination(date),
   };
 };
-
-// export const sunAndMoonPosition = (
-//   date: Date | DateTime,
-//   latitude: number,
-//   longitude: number,
-// ): { sunPosition: GetSunPositionResult; moonPosition: GetMoonPositionResult } => {
-//   return {
-//     sunPosition: sunPosition(date, latitude, longitude),
-//     moonPosition: moonPosition(date, latitude, longitude),
-//   };
-// };
