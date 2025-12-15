@@ -792,10 +792,8 @@ export default class MoneyTides extends Widget {
         <div class={CSS.view} afterCreate={this.viewAfterCreate.bind(this)}></div>
 
         {/* dialogs */}
-        <div slot="dialogs">
-          <calcite-dialog afterCreate={this.tidesDialogAfterCreate.bind(this)}></calcite-dialog>
-          <calcite-dialog afterCreate={this.aboutModalAfterCreate.bind(this)}></calcite-dialog>
-        </div>
+        <calcite-dialog slot="dialogs" afterCreate={this.tidesDialogAfterCreate.bind(this)}></calcite-dialog>
+        <calcite-dialog slot="dialogs" afterCreate={this.aboutModalAfterCreate.bind(this)}></calcite-dialog>
 
         {/* alerts */}
         {alerts.length ? <div slot="alerts">{alerts.toArray()}</div> : null}
