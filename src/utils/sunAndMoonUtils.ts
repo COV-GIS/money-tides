@@ -1,3 +1,5 @@
+import type { __MT as MT } from '../interfaces';
+
 import type {
   GetTimesResult,
   GetSunPositionResult,
@@ -5,11 +7,12 @@ import type {
   GetMoonTimes,
   GetMoonIlluminationResult,
 } from 'suncalc';
-import type { ApiMagneticDeclinationResponse, MoonPosition, SunPosition } from '../typings';
+import type { ApiMagneticDeclinationResponse } from '../typings';
 
 import { DateTime } from 'luxon';
 import createURL from './createURL';
 import { getTimes, getPosition, getMoonPosition, getMoonTimes, getMoonIllumination } from 'suncalc';
+
 
 const MOON_DISTANCE = {
   average: 384400,
@@ -104,15 +107,15 @@ export const moonPhase = (phase: number): string => {
 };
 
 export const moonPosition = (date: Date | DateTime, latitude: number, longitude: number): GetMoonPositionResult => {
-  date = date instanceof Date ? date : date.toJSDate();
+  const _date = date instanceof Date ? date : date.toJSDate();
 
-  return getMoonPosition(date, latitude, longitude);
+  return getMoonPosition(_date, latitude, longitude);
 };
 
 export const sunPosition = (date: Date | DateTime, latitude: number, longitude: number): GetSunPositionResult => {
-  date = date instanceof Date ? date : date.toJSDate();
+  const _date = date instanceof Date ? date : date.toJSDate();
 
-  return getPosition(date, latitude, longitude);
+  return getPosition(_date, latitude, longitude);
 };
 
 /**
@@ -136,13 +139,43 @@ export const todaysSunAndMoon = (
   };
 };
 
+///////////////////////////////////////////////
+// working
+///////////////////////////////////////////////
+
+export const sunAndMoon = (date: Date | DateTime, latitude: number, longitude: number): MT.SunAndMoon => {
+  const _date = date instanceof Date ? date : date.toJSDate();
+
+  const { rise: moonrise, set: moonset } = getMoonTimes(_date, latitude, longitude);
+
+  const { fraction: illumination, phase } = getMoonIllumination(_date);
+
+  const { solarNoon, sunrise, sunset } = getTimes(_date, latitude, longitude);
+
+  return {
+    moon: {
+      illumination,
+      illuminationPercent: `${(illumination * 100).toFixed(0)}%`,
+      moonrise: moonrise ? DateTime.fromJSDate(moonrise) : undefined,
+      moonset: moonset ? DateTime.fromJSDate(moonset) : undefined,
+      phase,
+      phaseName: moonPhase(phase),
+    },
+    sun: {
+      solarNoon: DateTime.fromJSDate(solarNoon),
+      sunrise: DateTime.fromJSDate(sunrise),
+      sunset: DateTime.fromJSDate(sunset),
+    },
+  };
+};
+
 export const sunAndMoonPosition = (
   date: DateTime,
   latitude: number,
   longitude: number,
 ): {
-  moonPosition: MoonPosition;
-  sunPosition: SunPosition;
+  moonPosition: MT.MoonPosition;
+  sunPosition: MT.SunPosition;
 } => {
   const moon = moonPosition(date, latitude, longitude);
 

@@ -2,19 +2,15 @@
 
 import esri = __esri;
 
+import type { __MT as MT } from '../interfaces';
+
 import type {
   ApiPrediction,
   ApiPredictionsResponse,
-  // ApiStationResponse,
-  MoneyType,
-  Prediction,
-  Station,
-  StationInfo,
-  _StationInfo,
-  Tide,
-  ZoomToItem,
-  ZZZStation,
-  ZZZTide,
+  // MoneyType,
+  // StationInfo,
+  // _StationInfo,
+  // ZoomToItem,
 } from '../typings';
 
 //#endregion
@@ -50,8 +46,8 @@ import Color from '@arcgis/core/Color';
 import Point from '@arcgis/core/geometry/Point';
 import { moneyTypeColors, moneyColorsHeatmap } from '../utils/colorUtils';
 import DateTime, { NOAADate, setNoon, setTime, twelveHourTime } from '../utils/dateAndTimeUtils';
-import { moonPosition, sunPosition, todaysSunAndMoon, sunAndMoonPosition } from '../utils/sunAndMoonUtils';
-import { tideHeightAtNoon } from '../utils/tideUtils';
+import { sunAndMoon, sunAndMoonPosition } from '../utils/sunAndMoonUtils';
+import { tideHeight } from '../utils/tideUtils';
 import createURL from '../utils/createURL';
 import AboutModal from './AboutModal';
 import Attribution from './Attribution';
@@ -125,7 +121,9 @@ export default class MoneyTides extends Widget {
     this._container = value;
   }
 
-  constructor(properties?: esri.WidgetProperties & { stationInfos: StationInfo[] | esri.Collection<StationInfo> }) {
+  constructor(
+    properties?: esri.WidgetProperties & { stationInfos: MT.StationInfo[] | esri.Collection<MT.StationInfo> },
+  ) {
     super(properties);
 
     this.container = this._container;
@@ -136,7 +134,7 @@ export default class MoneyTides extends Widget {
 
     this.addHandles(
       zoomToDropdownItems.on('after-add', (): void => {
-        zoomToDropdownItems.sort((a: ZoomToItem, b: ZoomToItem): number => {
+        zoomToDropdownItems.sort((a: MT.ZoomToItem, b: MT.ZoomToItem): number => {
           if (a.name < b.name) return -1;
 
           if (a.name > b.name) return 1;
@@ -152,7 +150,7 @@ export default class MoneyTides extends Widget {
   //#region public properties
 
   @property({ type: Collection })
-  public stationInfos: esri.Collection<_StationInfo> = new Collection();
+  public stationInfos: esri.Collection<MT._StationInfo> = new Collection();
 
   //#endregion
 
@@ -170,11 +168,11 @@ export default class MoneyTides extends Widget {
 
   private tidesDialog = new TidesDialog();
 
-  private stations: esri.Collection<Station> = new Collection();
+  private stations: esri.Collection<MT.Station> = new Collection();
 
   private view!: esri.MapView;
 
-  private zoomToDropdownItems: esri.Collection<ZoomToItem> = new Collection();
+  private zoomToDropdownItems: esri.Collection<MT.ZoomToItem> = new Collection();
 
   //#endregion
 
@@ -189,17 +187,18 @@ export default class MoneyTides extends Widget {
           onclick={(): void => {
             const { view } = this;
 
-            const station = this.stations.find((station: Station): boolean => {
+            const station = this.stations.find((station: MT.Station): boolean => {
               return station.id === id;
             });
 
             if (!station) return;
 
-            view.goTo(station.graphicPoint);
+            view.goTo(station.graphics.marker);
 
             view.scale = 60000;
 
-            this.tidesDialog.open(station);
+            // TODO
+            // this.tidesDialog.open(station);
           }}
         >
           {name}
@@ -208,28 +207,22 @@ export default class MoneyTides extends Widget {
     });
   }
 
-  private createGraphics(createGraphicsParameters: {
+  private createGraphics(params: {
     id: string;
     latitude: number;
     longitude: number;
-    moneyType: MoneyType;
+    money: MT.MoneyType;
     name: string;
-    noonHeight: number;
-    predictions: Prediction[];
-  }): {
-    graphicHeatmap: esri.Graphic;
-    graphicName: esri.Graphic;
-    graphicPoint: esri.Graphic;
-    graphicTides: esri.Graphic;
-  } {
+    tides: MT.Tide[];
+  }): MT.StationGraphics {
     const {
       view,
       view: { graphics },
     } = this;
 
-    const { id, latitude, longitude, moneyType, name, noonHeight, predictions } = createGraphicsParameters;
+    const { id, latitude, longitude, money, name, tides } = params;
 
-    const { primary, secondary } = moneyTypeColors(moneyType);
+    const { primary, secondary } = moneyTypeColors(money);
 
     const attributes = { id };
 
@@ -238,26 +231,26 @@ export default class MoneyTides extends Widget {
       longitude,
     });
 
-    const graphicHeatmap = new Graphic({
-      attributes: { id, height: noonHeight },
+    const heatmapGraphic = new Graphic({
+      attributes: { id, height: 0 },
       geometry,
     });
 
     if (!this.heatmapLayer) {
-      this.createLayer(graphicHeatmap);
+      this.createLayer(heatmapGraphic);
     } else {
       this.heatmapLayer.applyEdits({
-        addFeatures: [graphicHeatmap],
+        addFeatures: [heatmapGraphic],
       });
     }
 
-    const graphicName = new Graphic({
+    const stationGraphic = new Graphic({
       attributes,
       geometry,
       symbol: Object.assign(SYMBOL_NAME.clone(), { color: primary, haloColor: secondary, text: name }),
     });
 
-    const graphicPoint = new Graphic({
+    const markerGraphic = new Graphic({
       attributes,
       geometry,
       symbol: Object.assign(SYMBOL_POINT.clone(), {
@@ -266,13 +259,13 @@ export default class MoneyTides extends Widget {
       }),
     });
 
-    const graphicTides = new Graphic({
+    const tidesGraphic = new Graphic({
       attributes,
       geometry,
       symbol: Object.assign(SYMBOL_TIDES.clone(), {
         color: primary,
         haloColor: secondary,
-        text: this.tidesSymbolText(predictions),
+        text: this.tidesSymbolText(tides),
       }),
       visible: view.scale < 240000,
     });
@@ -281,14 +274,14 @@ export default class MoneyTides extends Widget {
       watch(
         (): number => view.scale,
         (): void => {
-          graphicTides.visible = view.scale < 240000;
+          tidesGraphic.visible = view.scale < 240000;
         },
       ),
     );
 
-    graphics.addMany([graphicName, graphicPoint, graphicTides]);
+    graphics.addMany([markerGraphic, stationGraphic, tidesGraphic]);
 
-    return { graphicHeatmap, graphicName, graphicPoint, graphicTides };
+    return { heatmap: heatmapGraphic, marker: markerGraphic, station: stationGraphic, tides: tidesGraphic };
   }
 
   private async createLayer(graphic: esri.Graphic): Promise<void> {
@@ -341,139 +334,70 @@ export default class MoneyTides extends Widget {
     layer.renderer = renderer;
   }
 
-  private getMoney(predictions: Prediction[]): { moneyType: MoneyType; moneyTideIndex: number } {
-    // sort by height
-    const _predictions: Prediction[] = predictions.toSorted((a: Prediction, b: Prediction): number => {
-      return b.height - a.height;
-    });
+  private async getTides(params: MT.GetTidesParameters): Promise<{ money: MT.MoneyType; tides: MT.Tide[] }> {
+    const { date, id, latitude, longitude, tideEvents } = params;
 
-    const highestHigh: Prediction = _predictions[0];
+    const predictionsResponse: ApiPredictionsResponse = await (
+      await fetch(
+        createURL('https://api.tidesandcurrents.noaa.gov/api/prod/datagetter', {
+          product: 'predictions',
+          format: 'json',
+          interval: 'hilo', // only high and low tides
+          time_zone: 'lst_ldt', // station local time adjusted for DST
+          units: 'english',
+          datum: 'mllw', // must use 'mean lower low water' b/c most stations are subordinate
+          station: id,
+          begin_date: NOAADate(date.minus({ day: 1 })),
+          end_date: NOAADate(date.plus({ day: 1 })),
+        }),
+      )
+    ).json();
 
-    // may or may not have two high tides per day
-    const lowestHigh: Prediction | null = _predictions[1].tideType === 'high' ? _predictions[1] : null;
-
-    const highestRange = this.getTimeRange(highestHigh.date);
-
-    const lowestRange = this.getTimeRange(lowestHigh?.date);
-
-    const highestIndex = predictions.indexOf(highestHigh);
-
-    const lowestIndex = lowestHigh ? predictions.indexOf(lowestHigh) : -1;
-
-    if (highestRange === 2)
-      return {
-        moneyType: 'money',
-        moneyTideIndex: highestIndex,
-      };
-
-    if (highestRange === 1)
-      return {
-        moneyType: 'mostly-money',
-        moneyTideIndex: highestIndex,
-      };
-
-    if (lowestRange === 2)
-      return {
-        moneyType: 'kinda-money',
-        moneyTideIndex: lowestIndex,
-      };
-
-    if (lowestRange === 1)
-      return {
-        moneyType: 'potentially-money',
-        moneyTideIndex: lowestIndex,
-      };
-
-    return {
-      moneyType: 'not-money',
-      moneyTideIndex: -1,
-    };
-  }
-
-  private async getPredictions(
-    id: string,
-    date: DateTime,
-    latitude: number,
-    longitude: number,
-  ): Promise<{ moneyType: MoneyType; noonHeight: number; predictions: Prediction[]; tides: Tide[] }> {
-    const url = createURL('https://api.tidesandcurrents.noaa.gov/api/prod/datagetter', {
-      product: 'predictions',
-      format: 'json',
-      interval: 'hilo', // only high and low tides
-      time_zone: 'lst_ldt', // station local time adjusted for DST
-      units: 'english',
-      datum: 'mllw', // must use 'mean lower low water' b/c most stations are subordinate
-      station: id,
-      begin_date: NOAADate(date.minus({ day: 1 })),
-      end_date: NOAADate(date.plus({ day: 1 })),
-    });
-
-    const predictionsResponse: ApiPredictionsResponse = await (await fetch(url)).json();
-
-    const predictions: Prediction[] = [];
-
-    const tides: Tide[] = [];
-
-    predictionsResponse.predictions.forEach((prediction: ApiPrediction): void => {
+    const tides = predictionsResponse.predictions.map((prediction: ApiPrediction): MT.Tide => {
       const { t, v, type } = prediction;
 
       const tideDate = DateTime.fromSQL(t).setZone('America/Los_Angeles') as DateTime;
 
       const height = Number(Number(v).toFixed(2));
 
-      if (date.hasSame(tideDate, 'day'))
-        predictions.push({
-          date: tideDate,
-          height,
-          moneyType: 'not-money',
-          moonPosition: moonPosition(tideDate, latitude, longitude),
-          sunPosition: sunPosition(tideDate, latitude, longitude),
-          tideType: type === 'H' ? 'high' : 'low',
-          time: twelveHourTime(tideDate),
-        });
+      return {
+        date: tideDate,
+        height,
+        heightLabel: `${height} ft`,
+        isDate: date.hasSame(tideDate, 'day'),
+        isPrediction: true,
+        money: 'not-money',
+        ...sunAndMoonPosition(tideDate, latitude, longitude),
+        time: twelveHourTime(tideDate),
+        type: type === 'H' ? 'high tide' : 'low tide',
+      };
+    });
+
+    const money = this.money(tides);
+
+    tideEvents.forEach((tideEvent: MT.TideEvent): void => {
+      const { date: tideDate, event } = tideEvent;
+
+      const height = tideHeight(tides, tideDate);
 
       tides.push({
         date: tideDate,
         height,
+        heightLabel: `${height} ft`,
+        isDate: date.hasSame(tideDate, 'day'),
+        isPrediction: false,
+        money: 'not-money',
+        ...sunAndMoonPosition(tideDate, latitude, longitude),
+        time: twelveHourTime(tideDate),
+        type: event,
       });
     });
 
-    const { moneyType, moneyTideIndex } = this.getMoney(predictions);
-
-    if (moneyTideIndex !== -1) {
-      predictions[moneyTideIndex].moneyType = moneyType;
-    }
-
-    const noonPrediction = predictions.find((prediction: Prediction): boolean => {
-      return prediction.time === '12:00 PM';
+    tides.sort((a: MT.Tide, b: MT.Tide): number => {
+      return a.date.toMillis() - b.date.toMillis();
     });
 
-    const noonHeight = noonPrediction ? noonPrediction.height : tideHeightAtNoon(predictions);
-
-    if (!noonPrediction) {
-      const noonDate = setNoon(date);
-
-      predictions.push({
-        date: noonDate,
-        height: noonHeight,
-        moneyType: 'not-money',
-        moonPosition: moonPosition(noonDate, latitude, longitude),
-        sunPosition: sunPosition(noonDate, latitude, longitude),
-        time: '12:00 PM',
-        tideType: 'noon',
-      });
-
-      predictions.sort((a: Prediction, b: Prediction): number => {
-        return a.date.toMillis() - b.date.toMillis();
-      });
-    }
-
-    return {
-      moneyType,
-      noonHeight,
-      predictions,
-      tides,
-    };
+    return { money, tides };
   }
 
   private getTimeRange(date?: DateTime): 0 | 1 | 2 {
@@ -490,39 +414,82 @@ export default class MoneyTides extends Widget {
     return 0;
   }
 
-  private async loadStation(stationInfo: _StationInfo): Promise<Station | void> {
-    const { id, latitude, longitude, name } = stationInfo;
+  private async loadStation(stationInfo: MT._StationInfo): Promise<void> {
+    const { id, errorAlertId, latitude, longitude, name } = stationInfo;
 
     const date = this.date;
 
-    try {
-      const { noonHeight, moneyType, predictions, tides } = await this.getPredictions(id, date, latitude, longitude);
+    const {
+      moon,
+      moon: { moonrise, moonset },
+      sun,
+      sun: { solarNoon, sunrise, sunset },
+    } = sunAndMoon(date, latitude, longitude);
 
-      const station = {
-        date,
+    const tideEvents: MT.TideEvent[] = [
+      {
+        date: solarNoon,
+        event: 'solar noon',
+      },
+      {
+        date: sunrise,
+        event: 'sunrise',
+      },
+      {
+        date: sunset,
+        event: 'sunset',
+      },
+    ];
+
+    if (moonrise)
+      tideEvents.push({
+        date: moonrise,
+        event: 'moonrise',
+      });
+
+    if (moonset)
+      tideEvents.push({
+        date: moonset,
+        event: 'moonset',
+      });
+
+    const { money, tides } = await this.getTides({
+      date,
+      id,
+      latitude,
+      longitude,
+      tideEvents,
+    });
+
+    this.stations.add({
+      date,
+      errorAlertId,
+      graphics: this.createGraphics({
         id,
         latitude,
         longitude,
-        moneyType,
+        money,
         name,
-        noonHeight,
-        predictions,
-        predictionUpdateError: false,
-        predictionUpdateErrorCount: 0,
         tides,
-        ...this.createGraphics({ id, latitude, longitude, moneyType, name, noonHeight, predictions }),
-        ...todaysSunAndMoon(date, latitude, longitude),
-      };
+      }),
+      id,
+      latitude,
+      longitude,
+      name,
+      money,
+      moon,
+      predictionUpdateError: false,
+      predictionUpdateErrorCount: 0,
+      sun,
+      tides,
+    });
 
-      this.stations.add(station);
+    stationInfo.loaded = true;
 
-      stationInfo.loaded = true;
+    stationInfo.loadErrorCount = 0;
 
-      stationInfo.loadErrorCount = 0;
-
-      this.addZoomToItem(id, name);
-
-      return station;
+    this.addZoomToItem(id, name);
+    try {
     } catch (error) {
       // console.log(error);
 
@@ -538,17 +505,15 @@ export default class MoneyTides extends Widget {
 
       stationInfo.loadErrorCount = 0;
 
-      const alertId = `error-alert${this.id}-${KEY++}`;
-
       this.alerts.add(
-        <calcite-alert icon="exclamation-mark-circle" id={alertId} key={KEY++} kind="danger" open scale="s">
+        <calcite-alert icon="exclamation-mark-circle" id={errorAlertId} key={KEY++} kind="danger" open scale="s">
           <div slot="message">Failed to load station data for {name}</div>
           <calcite-link
             slot="link"
             onclick={(): void => {
               this.loadStation(stationInfo);
 
-              (document.getElementById(alertId) as HTMLCalciteAlertElement).open = false;
+              (document.getElementById(errorAlertId) as HTMLCalciteAlertElement).open = false;
             }}
           >
             Try again
@@ -560,97 +525,130 @@ export default class MoneyTides extends Widget {
     }
   }
 
-  private tidesSymbolText(predictions: Prediction[]): string {
-    return predictions
-      .map((prediction: Prediction): string => {
-        const { height, time, tideType } = prediction;
+  private money(tides: MT.Tide[]): MT.MoneyType {
+    // sort by height
+    const _tides: MT.Tide[] = tides
+      .filter((tide: MT.Tide): boolean => {
+        return tide.isDate;
+      })
+      .toSorted((a: MT.Tide, b: MT.Tide): number => {
+        return b.height - a.height;
+      });
 
-        return `${time} ${tideType} ${height} ft`;
+    const highestHigh: MT.Tide = _tides[0];
+
+    // may or may not have two high tides per day
+    const lowestHigh: MT.Tide | null = _tides[1].type === 'high tide' ? _tides[1] : null;
+
+    const highestRange = this.getTimeRange(highestHigh.date);
+
+    const lowestRange = this.getTimeRange(lowestHigh?.date);
+
+    if (highestRange === 2) {
+      tides[tides.indexOf(highestHigh)].money = 'money';
+      return 'money';
+    }
+
+    if (highestRange === 1) {
+      tides[tides.indexOf(highestHigh)].money = 'mostly-money';
+      return 'mostly-money';
+    }
+
+    if (lowestRange === 2 && lowestHigh) {
+      tides[tides.indexOf(lowestHigh)].money = 'kinda-money';
+      return 'kinda-money';
+    }
+
+    if (lowestRange === 1 && lowestHigh) {
+      tides[tides.indexOf(lowestHigh)].money = 'potentially-money';
+      return 'potentially-money';
+    }
+
+    return 'not-money';
+  }
+
+  private tidesSymbolText(tides: MT.Tide[]): string {
+    return tides
+      .filter((tide: MT.Tide): boolean => {
+        return tide.isPrediction && tide.isDate;
+      })
+      .map((tide: MT.Tide): string => {
+        const { heightLabel, time, type } = tide;
+
+        return `${time} ${type} ${heightLabel}`;
       })
       .join('\n');
   }
 
-  private async updatePredictions(station: Station): Promise<void> {
-    const { date, tidesDialog } = this;
+  private async updateStation(station: MT.Station): Promise<void> {
+    const { date } = this;
 
     const { id, latitude, longitude, name } = station;
 
     try {
-      const { moneyType, noonHeight, predictions, tides } = await this.getPredictions(id, date, latitude, longitude);
+      const {
+        moon,
+        moon: { moonrise, moonset },
+        sun,
+        sun: { solarNoon, sunrise, sunset },
+      } = sunAndMoon(date, latitude, longitude);
 
-      station.predictionUpdateError = false;
+      const tideEvents: MT.TideEvent[] = [
+        {
+          date: solarNoon,
+          event: 'solar noon',
+        },
+        {
+          date: sunrise,
+          event: 'sunrise',
+        },
+        {
+          date: sunset,
+          event: 'sunset',
+        },
+      ];
 
-      station.predictionUpdateErrorCount = 0;
+      if (moonrise)
+        tideEvents.push({
+          date: moonrise,
+          event: 'moonrise',
+        });
+
+      if (moonset)
+        tideEvents.push({
+          date: moonset,
+          event: 'moonset',
+        });
+
+      const { money, tides } = await this.getTides({
+        date,
+        id,
+        latitude,
+        longitude,
+        tideEvents,
+      });
 
       Object.assign(station, {
         date,
-        noonHeight,
-        moneyType,
-        predictions,
+        money,
+        moon,
+        sun,
         tides,
-        ...todaysSunAndMoon(date, latitude, longitude),
       });
 
-      this.updateSymbols(station);
-
-      if (tidesDialog.container.open && tidesDialog.station.id === id) {
-        tidesDialog.open(station);
-      }
-    } catch (error) {
-      console.log(error);
-
-      if (station.predictionUpdateErrorCount !== 10) {
-        setTimeout((): void => {
-          station.predictionUpdateErrorCount++;
-
-          this.updatePredictions(station);
-        }, station.predictionUpdateErrorCount * 100);
-
-        return;
-      }
-
-      station.predictionUpdateErrorCount = 0;
-
-      const alertId = `error-alert${this.id}-${KEY++}`;
-
-      this.alerts.add(
-        <calcite-alert icon="exclamation-mark-circle" id={alertId} key={KEY++} kind="danger" open scale="s">
-          <div slot="message">Failed to update predictions for {name}</div>
-          <calcite-link
-            slot="link"
-            onclick={(): void => {
-              this.updatePredictions(station);
-              (document.getElementById(alertId) as HTMLCalciteAlertElement).open = false;
-            }}
-          >
-            Try again
-          </calcite-link>
-        </calcite-alert>,
-      );
-
-      station.predictionUpdateError = true;
-
-      this.updateSymbols(station);
-
-      if (tidesDialog.container.open && tidesDialog.station.id === id) {
-        tidesDialog.close();
-      }
-    }
+      this.updateGraphics(station);
+    } catch (error) {}
   }
 
-  private updateSymbols(station: Station): void {
+  private updateGraphics(station: MT.Station): void {
     const {
-      moneyType,
-      predictions,
-      graphicHeatmap,
-      graphicName,
-      graphicPoint,
-      graphicTides,
-      noonHeight,
+      graphics: { heatmap: heatmapGraphic, marker: markerGraphic, station: stationGraphic, tides: tidesGraphic },
+      money,
       predictionUpdateError,
+      tides,
     } = station;
 
-    let { primary, secondary } = moneyTypeColors(moneyType);
+    let { primary, secondary } = moneyTypeColors(money);
 
     if (predictionUpdateError) {
       primary = new Color('black');
@@ -658,27 +656,27 @@ export default class MoneyTides extends Widget {
       secondary = new Color('white');
     }
 
-    graphicName.symbol = Object.assign((graphicName.symbol as esri.TextSymbol).clone(), {
+    stationGraphic.symbol = Object.assign((stationGraphic.symbol as esri.TextSymbol).clone(), {
       color: primary,
       haloColor: secondary,
     });
 
-    graphicPoint.symbol = Object.assign((graphicPoint.symbol as esri.SimpleMarkerSymbol).clone(), {
+    markerGraphic.symbol = Object.assign((markerGraphic.symbol as esri.SimpleMarkerSymbol).clone(), {
       color: primary,
       outline: { color: secondary, width: SYMBOL_POINT.outline.width },
     });
 
-    graphicTides.symbol = Object.assign((graphicTides.symbol as esri.TextSymbol).clone(), {
+    tidesGraphic.symbol = Object.assign((tidesGraphic.symbol as esri.TextSymbol).clone(), {
       color: predictionUpdateError ? null : primary,
       haloColor: predictionUpdateError ? null : secondary,
-      text: this.tidesSymbolText(predictions),
+      text: this.tidesSymbolText(tides),
     });
 
     // TODO handle error for heatmap layer
-    Object.assign(graphicHeatmap.attributes, { height: noonHeight });
+    Object.assign(heatmapGraphic.attributes, { height: 0 });
 
     this.heatmapLayer.applyEdits({
-      updateFeatures: [graphicHeatmap],
+      updateFeatures: [heatmapGraphic],
     });
   }
 
@@ -693,11 +691,17 @@ export default class MoneyTides extends Widget {
       ),
     );
 
-    this.stationInfos.forEach((stationInfo: _StationInfo): void => {
-      if (!stationInfo.loaded) this.loadStation(stationInfo);
+    this.stationInfos.forEach((stationInfo: MT._StationInfo): void => {
+      const { errorAlertId, loaded } = stationInfo;
+
+      const alert = document.getElementById(errorAlertId) as HTMLCalciteAlertElement | null;
+
+      if (alert) alert.open = false;
+
+      if (!loaded) this.loadStation(stationInfo);
     });
 
-    this.stations.forEach(this.updatePredictions.bind(this));
+    this.stations.forEach(this.updateStation.bind(this));
   }
 
   private dateButtonClickEvent(event: Event) {
@@ -723,7 +727,7 @@ export default class MoneyTides extends Widget {
       return;
     }
 
-    const station = this.stations.find((station: Station): boolean => {
+    const station = this.stations.find((station: MT.Station): boolean => {
       return station.id === result.graphic.attributes.id;
     });
 
@@ -768,7 +772,7 @@ export default class MoneyTides extends Widget {
               <calcite-button icon-start="zoom-to-object" scale="s" slot="trigger"></calcite-button>
               <calcite-dropdown-group group-title="Zoom to" selection-mode="none">
                 {zoomToDropdownItems
-                  .map((zoomToItem: ZoomToItem): tsx.JSX.Element => {
+                  .map((zoomToItem: MT.ZoomToItem): tsx.JSX.Element => {
                     return zoomToItem.element;
                   })
                   .toArray()}
@@ -841,13 +845,20 @@ export default class MoneyTides extends Widget {
 
     view.ui.add(new Attribution({ container: document.createElement('calcite-action-bar'), view }), 'bottom-right');
 
-    stationInfos.forEach((stationInfo: StationInfo): void => {
-      this.loadStation({ ...stationInfo, loaded: false, loadErrorCount: 0 });
+    stationInfos.forEach((stationInfo: MT.StationInfo): void => {
+      this.loadStation({
+        ...stationInfo,
+        errorAlertId: `error-alert${this.id}-${KEY++}`,
+        loaded: false,
+        loadErrorCount: 0,
+      });
     });
 
     this.addHandles(view.on('click', this.viewClickEvent.bind(this)));
 
     this.emit('loaded');
+
+    // console.log(this.stations);
 
     // setTimeout((): void => {
     //   console.log(view.extent.toJSON());
@@ -877,55 +888,4 @@ export default class MoneyTides extends Widget {
   }
 
   //#endregion
-
-  private _stations: esri.Collection<ZZZStation> = new Collection();
-
-  private async _getTides(date: DateTime, id: string, latitude: number, longitude: number): Promise<ZZZTide[]> {
-    const predictionsResponse: ApiPredictionsResponse = await (
-      await fetch(
-        createURL('https://api.tidesandcurrents.noaa.gov/api/prod/datagetter', {
-          product: 'predictions',
-          format: 'json',
-          interval: 'hilo', // only high and low tides
-          time_zone: 'lst_ldt', // station local time adjusted for DST
-          units: 'english',
-          datum: 'mllw', // must use 'mean lower low water' b/c most stations are subordinate
-          station: id,
-          begin_date: NOAADate(date.minus({ day: 1 })),
-          end_date: NOAADate(date.plus({ day: 1 })),
-        }),
-      )
-    ).json();
-
-    const tides = predictionsResponse.predictions.map((prediction: ApiPrediction): ZZZTide => {
-      const { t, v, type } = prediction;
-
-      const tideDate = DateTime.fromSQL(t).setZone('America/Los_Angeles') as DateTime;
-
-      const height = Number(Number(v).toFixed(2));
-
-      return {
-        date: tideDate,
-        height,
-        heightLabel: `${height} ft`,
-        isDate: date.hasSame(tideDate, 'day'),
-        isPrediction: true,
-        moneyType: 'not-money',
-        ...sunAndMoonPosition(tideDate, latitude, longitude),
-        time: twelveHourTime(tideDate),
-        type: type === 'H' ? 'high tide' : 'low tide',
-      };
-    });
-
-    return tides;
-  }
-
-  private async _loadStation(stationInfo: _StationInfo): Promise<void> {
-    const { id, latitude, longitude, name } = stationInfo;
-
-    const date = this.date;
-
-    try {
-    } catch (error) {}
-  }
 }

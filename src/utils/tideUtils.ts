@@ -1,3 +1,4 @@
+import type { __MT as MT } from '../interfaces';
 import type { Prediction, Tide } from '../typings';
 import type { DateTime } from 'luxon';
 
@@ -30,6 +31,49 @@ export const tideHeightAtTime = (predictions: Prediction[] | Tide[], date: DateT
 
   // @ts-expect-error need to fix this error
   upcoming = predictions[predictions.indexOf(proceeding) + 1];
+
+  if (!upcoming) return -999;
+
+  const { date: proceedingDate, height: startHeight } = proceeding;
+
+  const { date: upcomingDate, height: endHeight } = upcoming;
+
+  const startTime = proceedingDate.toMillis();
+
+  const endTime = upcomingDate.toMillis();
+
+  const time = date.toMillis();
+
+  // time does not fall between predictions
+  if ((time < startTime && time < endTime) || (time > startTime && time > endTime)) {
+    height = -999;
+  } else {
+    height = Number(
+      (startHeight + ((endHeight - startHeight) * (time - startTime)) / (endTime - startTime)).toFixed(2),
+    );
+  }
+
+  return height;
+};
+
+export const tideHeight = (tides: MT.Tide[], date: DateTime): number => {
+  const _tides = tides.filter((tide: MT.Tide): boolean => {
+    return tide.isPrediction;
+  });
+
+  let height = -999;
+
+  let proceeding: MT.Tide | nullish;
+
+  let upcoming: MT.Tide | nullish;
+
+  _tides.forEach((tide: MT.Tide): void => {
+    if (tide.date.toMillis() < date.toMillis()) proceeding = tide;
+  });
+
+  if (!proceeding) return -999;
+
+  upcoming = _tides[_tides.indexOf(proceeding) + 1];
 
   if (!upcoming) return -999;
 
