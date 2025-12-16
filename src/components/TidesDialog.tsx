@@ -498,11 +498,9 @@ export default class TidesDialog extends Widget {
         </calcite-table>
 
         {/* moon */}
-
         <div hidden={content !== 'moon'}>
           <div afterCreate={this.moonInfoAfterCreate.bind(this)}></div>
         </div>
-
         <calcite-table hidden={content !== 'moon'} striped scale="s" style="--calcite-table-border-color: none;">
           {moonTimeInfos
             .map((moonTimeInfo: MoonTimeInfo): tsx.JSX.Element => {

@@ -17,6 +17,7 @@ const CSS = {
   hemisphere: `${CSS_BASE}_hemisphere`,
   info: `${CSS_BASE}_info`,
   light: `${CSS_BASE}_light`,
+  medium: `${CSS_BASE}_medium`,
   moon: `${CSS_BASE}_moon`,
   sky: `${CSS_BASE}_sky`,
 };
@@ -52,19 +53,6 @@ export default class MoonInfo extends Widget {
 
   //#endregion
 
-  private stars = (): string => {
-    const x = Math.round(Math.random() * 100);
-    const y = Math.round(Math.random() * 100);
-
-    return `
-      radial-gradient(circle at ${x}% ${y}%, 
-      rgba(255,255,255,1) 0%, 
-      rgba(0, 72, 116,1) 3px, 
-      rgba(0, 72, 116,0) 5px, 
-      rgba(0, 72, 116,0) 100%) no-repeat border-box
-    `;
-  };
-
   //#region render
 
   render(): tsx.JSX.Element {
@@ -86,22 +74,19 @@ export default class MoonInfo extends Widget {
           </div>
         </div>
         <div class={CSS.info}>
-          <calcite-table scale="s" style="--calcite-table-border-color: none;">
-            <calcite-table-row>
-              <calcite-table-cell>Phase</calcite-table-cell>
-              <calcite-table-cell>{moonPhase(station.moonIllumination.phase)}</calcite-table-cell>
-            </calcite-table-row>
-
-            <calcite-table-row>
-              <calcite-table-cell>Illumination</calcite-table-cell>
-              <calcite-table-cell>{(station.moonIllumination.fraction * 100).toFixed()}%</calcite-table-cell>
-            </calcite-table-row>
-
-            <calcite-table-row>
-              <calcite-table-cell>Age</calcite-table-cell>
-              <calcite-table-cell>{(station.moonIllumination.phase * 29.530589).toFixed(1)} days</calcite-table-cell>
-            </calcite-table-row>
-          </calcite-table>
+          <div>
+            <span>Phase: </span>
+            <span class={CSS.medium}>{moonPhase(station.moonIllumination.phase)}</span>
+          </div>
+          <div>
+            <span>Illumination: </span>
+            <span class={CSS.medium}>{(station.moonIllumination.fraction * 100).toFixed()}%</span>
+          </div>
+          <div>
+            <span>Age: </span>
+            <span class={CSS.medium}>{(station.moonIllumination.phase * 29.530589).toFixed(1)}</span>
+            <span> days</span>
+          </div>
         </div>
       </div>
     );

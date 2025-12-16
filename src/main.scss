@@ -76,10 +76,15 @@ $moon-light: var(--calcite-color-border-3);
 .moon-info {
   display: flex;
   flex-direction: row;
+  background-color: var(--calcite-ui-brand-press);
+}
+
+.moon-info_medium {
+  font-weight: var(--calcite-font-weight-medium);
 }
 
 .moon-info_info {
-  // width: 100%;
+  color: var(--calcite-color-text-inverse);
 }
 
 .moon-info_sky {
@@ -88,7 +93,6 @@ $moon-light: var(--calcite-color-border-3);
   justify-content: center;
   align-items: center;
   padding: 1rem 2rem;
-  background-color: var(--calcite-ui-brand-press);
 }
 
 .moon-info_moon {
