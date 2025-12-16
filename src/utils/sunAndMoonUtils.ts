@@ -5,7 +5,7 @@ import type {
   GetMoonTimes,
   GetMoonIlluminationResult,
 } from 'suncalc';
-import type { ApiMagneticDeclinationResponse } from '../typings';
+import type { ApiMagneticDeclinationResponse, MoonPosition, SunPosition } from '../typings';
 
 import { DateTime } from 'luxon';
 import createURL from './createURL';
@@ -133,5 +133,33 @@ export const todaysSunAndMoon = (
     sunTimes: getTimes(date, latitude, longitude),
     moonTimes: getMoonTimes(date, latitude, longitude),
     moonIllumination: getMoonIllumination(date),
+  };
+};
+
+export const sunAndMoonPosition = (
+  date: DateTime,
+  latitude: number,
+  longitude: number,
+): {
+  moonPosition: MoonPosition;
+  sunPosition: SunPosition;
+} => {
+  const moon = moonPosition(date, latitude, longitude);
+
+  const sun = sunPosition(date, latitude, longitude);
+
+  return {
+    moonPosition: {
+      aboveHorizon: moon.altitude > 0,
+      altitude: altitudeToDegrees(moon.altitude),
+      bearing: azimuthToBearing(moon.azimuth),
+      position: moon,
+    },
+    sunPosition: {
+      aboveHorizon: moon.altitude > 0,
+      altitude: altitudeToDegrees(sun.altitude),
+      bearing: azimuthToBearing(sun.azimuth),
+      position: sun,
+    },
   };
 };

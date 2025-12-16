@@ -5,7 +5,7 @@ import esri = __esri;
 import type {
   ApiPrediction,
   ApiPredictionsResponse,
-  ApiStationResponse,
+  // ApiStationResponse,
   MoneyType,
   Prediction,
   Station,
@@ -13,6 +13,8 @@ import type {
   _StationInfo,
   Tide,
   ZoomToItem,
+  ZZZStation,
+  ZZZTide,
 } from '../typings';
 
 //#endregion
@@ -48,7 +50,7 @@ import Color from '@arcgis/core/Color';
 import Point from '@arcgis/core/geometry/Point';
 import { moneyTypeColors, moneyColorsHeatmap } from '../utils/colorUtils';
 import DateTime, { NOAADate, setNoon, setTime, twelveHourTime } from '../utils/dateAndTimeUtils';
-import { moonPosition, sunPosition, todaysSunAndMoon } from '../utils/sunAndMoonUtils';
+import { moonPosition, sunPosition, todaysSunAndMoon, sunAndMoonPosition } from '../utils/sunAndMoonUtils';
 import { tideHeightAtNoon } from '../utils/tideUtils';
 import createURL from '../utils/createURL';
 import AboutModal from './AboutModal';
@@ -489,17 +491,11 @@ export default class MoneyTides extends Widget {
   }
 
   private async loadStation(stationInfo: _StationInfo): Promise<Station | void> {
-    const { stationId, stationName: name } = stationInfo;
+    const { id, latitude, longitude, name } = stationInfo;
 
     const date = this.date;
 
     try {
-      const stationResponse: ApiStationResponse = await (
-        await fetch(`https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations/${stationId}.json`)
-      ).json();
-
-      const { id, lat: latitude, lng: longitude } = stationResponse.stations[0];
-
       const { noonHeight, moneyType, predictions, tides } = await this.getPredictions(id, date, latitude, longitude);
 
       const station = {
@@ -528,12 +524,12 @@ export default class MoneyTides extends Widget {
 
       return station;
     } catch (error) {
-      console.log(error);
+      // console.log(error);
 
       if (stationInfo.loadErrorCount !== 10) {
-        setTimeout((): void => {
-          stationInfo.loadErrorCount++;
+        stationInfo.loadErrorCount++;
 
+        setTimeout((): void => {
           this.loadStation(stationInfo);
         }, stationInfo.loadErrorCount * 100);
 
@@ -856,7 +852,80 @@ export default class MoneyTides extends Widget {
     // setTimeout((): void => {
     //   console.log(view.extent.toJSON());
     // }, 10000);
+
+    // setTimeout((): void => {
+    //   const stations = this.stations.map((station: Station): any => {
+    //     return {
+    //       id: station.id,
+    //       latitude: Number(station.latitude.toFixed(3)),
+    //       longitude: Number(station.longitude.toFixed(3)),
+    //       name: station.name,
+    //     };
+    //   });
+
+    //   stations.sort((a, b) => {
+    //     if (a.name < b.name) return -1;
+
+    //       if (a.name > b.name) return 1;
+
+    //       return 0;
+    //   });
+
+    //   console.log(stations.toArray());
+
+    // }, 10000);
   }
 
   //#endregion
+
+  private _stations: esri.Collection<ZZZStation> = new Collection();
+
+  private async _getTides(date: DateTime, id: string, latitude: number, longitude: number): Promise<ZZZTide[]> {
+    const predictionsResponse: ApiPredictionsResponse = await (
+      await fetch(
+        createURL('https://api.tidesandcurrents.noaa.gov/api/prod/datagetter', {
+          product: 'predictions',
+          format: 'json',
+          interval: 'hilo', // only high and low tides
+          time_zone: 'lst_ldt', // station local time adjusted for DST
+          units: 'english',
+          datum: 'mllw', // must use 'mean lower low water' b/c most stations are subordinate
+          station: id,
+          begin_date: NOAADate(date.minus({ day: 1 })),
+          end_date: NOAADate(date.plus({ day: 1 })),
+        }),
+      )
+    ).json();
+
+    const tides = predictionsResponse.predictions.map((prediction: ApiPrediction): ZZZTide => {
+      const { t, v, type } = prediction;
+
+      const tideDate = DateTime.fromSQL(t).setZone('America/Los_Angeles') as DateTime;
+
+      const height = Number(Number(v).toFixed(2));
+
+      return {
+        date: tideDate,
+        height,
+        heightLabel: `${height} ft`,
+        isDate: date.hasSame(tideDate, 'day'),
+        isPrediction: true,
+        moneyType: 'not-money',
+        ...sunAndMoonPosition(tideDate, latitude, longitude),
+        time: twelveHourTime(tideDate),
+        type: type === 'H' ? 'high tide' : 'low tide',
+      };
+    });
+
+    return tides;
+  }
+
+  private async _loadStation(stationInfo: _StationInfo): Promise<void> {
+    const { id, latitude, longitude, name } = stationInfo;
+
+    const date = this.date;
+
+    try {
+    } catch (error) {}
+  }
 }

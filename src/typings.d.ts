@@ -29,16 +29,18 @@ export type ApiPrediction = {
 
 /**
  * Response from magnetic declination api
- * 
+ *
  * https://www.ngdc.noaa.gov/geomag-web/calculators/calculateDeclination
  */
 export type ApiMagneticDeclinationResponse = {
-  result: [{
-    /**
-     * Declination in degrees (positive E; negative W)
-     */
-    declination: number;
-  }]
+  result: [
+    {
+      /**
+       * Declination in degrees (positive E; negative W)
+       */
+      declination: number;
+    },
+  ];
 };
 
 /**
@@ -219,11 +221,13 @@ export interface StationInfo {
   /**
    * Station id
    */
-  stationId: number | string;
+  id: string;
+  latitude: number;
+  longitude: number;
   /**
    * Station name
    */
-  stationName: string;
+  name: string;
 }
 
 /**
@@ -234,6 +238,7 @@ export interface _StationInfo extends StationInfo {
    * Is station loaded
    */
   loaded: boolean;
+
   /**
    * Number of consecutive load errors
    */
@@ -336,3 +341,156 @@ export type ZoomToItem = {
   name: string;
   element: esri.widget.tsx.JSX.Element;
 };
+
+export interface ZZZStation {
+  /**
+   * Day of intrest
+   */
+  date: DateTime;
+
+  /**
+   * Station graphics
+   */
+  graphics: {
+    /**
+     * Heatmap feature layer graphic
+     */
+    heatmap: esri.Graphic;
+
+    /**
+     * Marker graphic
+     */
+    marker: esri.Graphic;
+
+    /**
+     * Name graphic
+     */
+    name: esri.Graphic;
+
+    /**
+     * Tides graphic
+     */
+    tides: esri.Graphic;
+  };
+
+  /**
+   * Station id
+   */
+  id: string;
+
+  /**
+   * Station latitude
+   */
+  latitude: number;
+
+  /**
+   * Station longitude
+   */
+  longitude: number;
+
+  /**
+   * Day money
+   */
+  money: MoneyType;
+
+  /**
+   * Moon illumination (day of interest @ noon...close enough)
+   *
+   * https://github.com/mourner/suncalc?tab=readme-ov-file#moon-illumination
+   */
+  moonIllumination: {
+    fraction: number;
+    phase: number;
+  };
+
+  /**
+   * Moon times (day of interest)
+   *
+   * https://github.com/mourner/suncalc?tab=readme-ov-file#moon-rise-and-set-times
+   */
+  moonTimes: {
+    moonrise?: DateTime;
+    moonset?: DateTime;
+  };
+
+  /**
+   * Station name
+   */
+  name: string;
+
+  /**
+   * Last prediction update failed if `true`
+   */
+  predictionUpdateError: boolean;
+
+  /**
+   * Number of consecutive update errors
+   */
+  predictionUpdateErrorCount: number;
+
+  /**
+   * Sun times (day of interest)
+   *
+   * https://github.com/mourner/suncalc?tab=readme-ov-file#sunlight-times
+   */
+  sunTimes: {
+    sunrise?: DateTime;
+    sunset?: DateTime;
+  };
+
+  /**
+   * Tides
+   */
+  tides: ZZZTide[];
+}
+
+export interface ZZZTide {
+  date: DateTime;
+
+  height: number;
+
+  heightLabel: string;
+
+  /**
+   * Tide is in day of interest
+   */
+  isDate: boolean;
+
+  /**
+   * Tide is a NOAA prediction
+   */
+  isPrediction: boolean;
+
+  /**
+   * Tide money
+   */
+  money: MoneyType;
+
+  /**
+   * Moon Position
+   */
+  moonPosition: MoonPosition;
+
+  /**
+   * Sun position
+   */
+  sunPosition: SunPosition;
+
+  time: string;
+
+  type: 'high tide' | 'low tide' | 'moonrise' | 'moonset' | 'noon' | 'solar noon' | 'sunrise' | 'sunset';
+}
+
+interface SharedSunMoonPosition {
+  aboveHorizon: boolean;
+  altitude: string;
+  bearing: string;
+}
+
+export interface SunPosition extends SharedSunMoonPosition {
+  position: GetSunPositionResult;
+}
+
+export interface MoonPosition extends SharedSunMoonPosition {
+  position: GetMoonPositionResult;
+}
