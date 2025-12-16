@@ -4,27 +4,70 @@ import type { DateTime } from 'luxon';
 
 import type {
   GetSunPositionResult,
-  GetTimesResult,
+  // GetTimesResult,
   GetMoonPositionResult,
-  GetMoonTimes,
-  GetMoonIlluminationResult,
+  // GetMoonTimes,
+  // GetMoonIlluminationResult,
 } from 'suncalc';
 
 declare namespace __MT {
   /**
-   * Money types.
+   * Response from magnetic declination api
+   *
+   * https://www.ngdc.noaa.gov/geomag-web/calculators/calculateDeclination
+   */
+  export type ApiMagneticDeclinationResponse = {
+    result: [
+      {
+        /**
+         * Declination in degrees (positive E; negative W)
+         */
+        declination: number;
+      },
+    ];
+  };
+
+  /**
+   * Api tide prediction
+   */
+  export type ApiPrediction = {
+    /**
+     * Sql time (always local time, e.g. lst_ldt)
+     */
+    t: string;
+
+    /**
+     * Vertical difference from mean lower low water (mllw)
+     */
+    v: string;
+
+    /**
+     * Tide type
+     */
+    type: 'H' | 'L';
+  };
+
+  /**
+   * Response from predictions api
+   *
+   * Api docs: https://api.tidesandcurrents.noaa.gov/api/prod
+   */
+  export type ApiPredictionsResponse = {
+    /**
+     * Array of predictions
+     */
+    predictions: ApiPrediction[];
+  };
+
+  /**
+   * Money types
    */
   export type MoneyType = 'not-money' | 'potentially-money' | 'kinda-money' | 'mostly-money' | 'money';
 
-  export type TideType =
-    | 'high tide'
-    | 'low tide'
-    | 'moonrise'
-    | 'moonset'
-    | 'noon'
-    | 'solar noon'
-    | 'sunrise'
-    | 'sunset';
+  /**
+   * Tide types
+   */
+  export type TideType = 'high tide' | 'low tide' | 'moonrise' | 'moonset' | 'solar noon' | 'sunrise' | 'sunset';
 
   export type StationGraphics = {
     /**
@@ -236,5 +279,10 @@ declare namespace __MT {
     latitude: number;
     longitude: number;
     tideEvents: TideEvent[];
+  }
+
+  export interface ZoomToItem {
+    name: string;
+    element: esri.widget.tsx.JSX.Element;
   }
 }

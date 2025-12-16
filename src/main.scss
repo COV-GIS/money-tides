@@ -69,6 +69,16 @@
   height: 100%;
 }
 
+/** tides dialog **/
+
+.tides-dialog {
+  --calcite-dialog-min-size-y: 0;
+  --calcite-dialog-max-size-x: 420px;
+  --calcite-dialog-content-space: 0;
+}
+
+/** moon **/
+
 $moon-size: 80px;
 $moon-dark: var(--calcite-color-text-2);
 $moon-light: var(--calcite-color-border-3);

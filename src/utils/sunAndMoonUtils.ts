@@ -13,7 +13,6 @@ import { DateTime } from 'luxon';
 import createURL from './createURL';
 import { getTimes, getPosition, getMoonPosition, getMoonTimes, getMoonIllumination } from 'suncalc';
 
-
 const MOON_DISTANCE = {
   average: 384400,
   longest: 406700,
@@ -29,24 +28,24 @@ export const altitudeToDegrees = (altitude: number, precision?: number): string 
 };
 
 export const azimuthToBearing = (azimuth: number, precision?: number): string => {
-  azimuth = radiansToDegrees(azimuth);
+  const _azimuth = Number(radiansToDegrees(azimuth).toFixed(precision || 0));
 
-  return azimuth === 0
+  return _azimuth === 0
     ? 'S'
-    : azimuth === 90
+    : _azimuth === 90
     ? 'W'
-    : azimuth === -90
+    : _azimuth === -90
     ? 'E'
-    : azimuth === 180 || azimuth === -180
+    : _azimuth === 180 || _azimuth === -180
     ? 'N'
-    : azimuth > 0 && azimuth < 90
-    ? `S ${azimuth.toFixed(precision || 0)}° W`
-    : azimuth > 90
-    ? `N ${(azimuth - 90).toFixed(precision || 0)}° W`
-    : azimuth < 0 && azimuth > -90
-    ? `S ${Math.abs(azimuth).toFixed(precision || 0)}° E`
-    : azimuth < -90
-    ? `N ${(Math.abs(azimuth) - 90).toFixed(precision || 0)}° E`
+    : _azimuth > 0 && _azimuth < 90
+    ? `S ${_azimuth}° W`
+    : _azimuth > 90
+    ? `N ${(_azimuth - 90)}° W`
+    : _azimuth < 0 && _azimuth > -90
+    ? `S ${Math.abs(_azimuth)}° E`
+    : _azimuth < -90
+    ? `N ${(Math.abs(_azimuth) - 90)}° E`
     : 'invalid azimuth';
 };
 
@@ -173,6 +172,7 @@ export const sunAndMoonPosition = (
   date: DateTime,
   latitude: number,
   longitude: number,
+  riseSet?: boolean,
 ): {
   moonPosition: MT.MoonPosition;
   sunPosition: MT.SunPosition;
@@ -189,7 +189,7 @@ export const sunAndMoonPosition = (
       position: moon,
     },
     sunPosition: {
-      aboveHorizon: moon.altitude > 0,
+      aboveHorizon: sun.altitude > 0,
       altitude: altitudeToDegrees(sun.altitude),
       bearing: azimuthToBearing(sun.azimuth),
       position: sun,

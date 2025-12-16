@@ -4,15 +4,6 @@ import esri = __esri;
 
 import type { __MT as MT } from '../interfaces';
 
-import type {
-  ApiPrediction,
-  ApiPredictionsResponse,
-  // MoneyType,
-  // StationInfo,
-  // _StationInfo,
-  // ZoomToItem,
-} from '../typings';
-
 //#endregion
 
 //#region components
@@ -337,7 +328,7 @@ export default class MoneyTides extends Widget {
   private async getTides(params: MT.GetTidesParameters): Promise<{ money: MT.MoneyType; tides: MT.Tide[] }> {
     const { date, id, latitude, longitude, tideEvents } = params;
 
-    const predictionsResponse: ApiPredictionsResponse = await (
+    const predictionsResponse: MT.ApiPredictionsResponse = await (
       await fetch(
         createURL('https://api.tidesandcurrents.noaa.gov/api/prod/datagetter', {
           product: 'predictions',
@@ -353,7 +344,7 @@ export default class MoneyTides extends Widget {
       )
     ).json();
 
-    const tides = predictionsResponse.predictions.map((prediction: ApiPrediction): MT.Tide => {
+    const tides = predictionsResponse.predictions.map((prediction: MT.ApiPrediction): MT.Tide => {
       const { t, v, type } = prediction;
 
       const tideDate = DateTime.fromSQL(t).setZone('America/Los_Angeles') as DateTime;
@@ -387,7 +378,7 @@ export default class MoneyTides extends Widget {
         isDate: date.hasSame(tideDate, 'day'),
         isPrediction: false,
         money: 'not-money',
-        ...sunAndMoonPosition(tideDate, latitude, longitude),
+        ...sunAndMoonPosition(tideDate, latitude, longitude, event),
         time: twelveHourTime(tideDate),
         type: event,
       });
@@ -581,9 +572,9 @@ export default class MoneyTides extends Widget {
   }
 
   private async updateStation(station: MT.Station): Promise<void> {
-    const { date } = this;
+    const { date, tidesDialog } = this;
 
-    const { id, latitude, longitude, name } = station;
+    const { id, latitude, longitude } = station;
 
     try {
       const {
@@ -637,6 +628,10 @@ export default class MoneyTides extends Widget {
       });
 
       this.updateGraphics(station);
+
+      if (tidesDialog.container.open && tidesDialog.station.id === id) {
+        tidesDialog.open(station);
+      }
     } catch (error) {}
   }
 
@@ -858,32 +853,8 @@ export default class MoneyTides extends Widget {
 
     this.emit('loaded');
 
-    // console.log(this.stations);
-
     // setTimeout((): void => {
     //   console.log(view.extent.toJSON());
-    // }, 10000);
-
-    // setTimeout((): void => {
-    //   const stations = this.stations.map((station: Station): any => {
-    //     return {
-    //       id: station.id,
-    //       latitude: Number(station.latitude.toFixed(3)),
-    //       longitude: Number(station.longitude.toFixed(3)),
-    //       name: station.name,
-    //     };
-    //   });
-
-    //   stations.sort((a, b) => {
-    //     if (a.name < b.name) return -1;
-
-    //       if (a.name > b.name) return 1;
-
-    //       return 0;
-    //   });
-
-    //   console.log(stations.toArray());
-
     // }, 10000);
   }
 
