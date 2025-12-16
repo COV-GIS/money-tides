@@ -2,7 +2,7 @@
 
 import esri = __esri;
 
-import type { Prediction, Station, SunTimeInfo, TideTimeInfo } from '../typings';
+import type { MoonTimeInfo, Prediction, Station, SunTimeInfo, TideTimeInfo } from '../typings';
 
 //#endregion
 
@@ -28,8 +28,15 @@ import Collection from '@arcgis/core/core/Collection';
 import createURL from '../utils/createURL';
 import DateTime, { NOAADate, twelveHourTime } from '../utils/dateAndTimeUtils';
 import { moneyTypeColorHex } from '../utils/colorUtils';
-import { altitudeToDegrees, azimuthToBearing, magneticDeclination, sunPosition } from '../utils/sunAndMoonUtils';
+import {
+  altitudeToDegrees,
+  azimuthToBearing,
+  magneticDeclination,
+  moonPosition,
+  sunPosition,
+} from '../utils/sunAndMoonUtils';
 import { tideHeightAtTime } from '../utils/tideUtils';
+import MoonInfo from './MoonInfo';
 
 //#endregion
 
@@ -83,9 +90,13 @@ export default class TidesDialog extends Widget {
   private content: 'tides' | 'sun' | 'moon' = 'tides';
 
   @property()
-  magneticDeclination = '';
+  private magneticDeclination = '';
 
-  magneticDeclinationAlert!: HTMLCalciteAlertElement;
+  private magneticDeclinationAlert!: HTMLCalciteAlertElement;
+
+  private moonInfo = new MoonInfo();
+
+  private moonTimeInfos: esri.Collection<MoonTimeInfo> = new Collection();
 
   private sunTimeInfos: esri.Collection<SunTimeInfo> = new Collection();
 
@@ -102,11 +113,15 @@ export default class TidesDialog extends Widget {
   open(station: Station): void {
     this.station = station;
 
-    this.tideTimes(station);
+    this.moonTimes(station);
 
     this.sunTimes(station);
 
+    this.tideTimes(station);
+
     this.renderNow();
+
+    this.moonInfo.station = station;
 
     this.container.open = true;
   }
@@ -154,6 +169,74 @@ export default class TidesDialog extends Widget {
     } catch (error) {
       console.log(error);
     }
+  }
+
+  private moonTimes(station: Station): void {
+    const {
+      latitude,
+      longitude,
+      moonTimes: { rise: moonrise, set: moonset },
+      predictions,
+    } = station;
+
+    const moonTimeInfos: esri.Collection<MoonTimeInfo> = new Collection(
+      predictions
+        .filter((prediction: Prediction): boolean => {
+          return prediction.moonPosition.altitude >= 0;
+        })
+        .map((prediction: Prediction): MoonTimeInfo => {
+          const {
+            date,
+            moonPosition: { altitude, azimuth },
+            tideType,
+            time,
+          } = prediction;
+
+          return {
+            altitude: altitudeToDegrees(altitude),
+            bearing: azimuthToBearing(azimuth),
+            date,
+            event: `${tideType} tide`,
+            time,
+          };
+        }),
+    );
+
+    if (moonrise) {
+      const moonrisePosition = moonPosition(moonrise, latitude, longitude);
+
+      if (moonrisePosition.altitude >= 0)
+        moonTimeInfos.add({
+          altitude: altitudeToDegrees(moonrisePosition.altitude),
+          bearing: azimuthToBearing(moonrisePosition.azimuth),
+          date: DateTime.fromJSDate(moonrise),
+          event: 'moonrise',
+          time: twelveHourTime(moonrise),
+        });
+    }
+
+    if (moonset) {
+      const moonsetPosition = moonPosition(moonset, latitude, longitude);
+
+      if (moonsetPosition.altitude >= 0)
+        moonTimeInfos.add({
+          altitude: altitudeToDegrees(moonsetPosition.altitude),
+          bearing: azimuthToBearing(moonsetPosition.azimuth),
+          date: DateTime.fromJSDate(moonset),
+          event: 'moonset',
+          time: twelveHourTime(moonset),
+        });
+    }
+
+    moonTimeInfos.sort((a: MoonTimeInfo, b: MoonTimeInfo): number => {
+      return a.date.toMillis() - b.date.toMillis();
+    });
+
+    this.moonTimeInfos = moonTimeInfos;
+  }
+
+  private showContent(content: 'tides' | 'sun' | 'moon'): void {
+    if (content !== this.content) this.content = content;
   }
 
   private sunTimes(station: Station): void {
@@ -220,6 +303,7 @@ export default class TidesDialog extends Widget {
 
   private tideTimes(station: Station): void {
     const {
+      moonTimes: { rise: moonrise, set: moonset },
       predictions,
       sunTimes: { solarNoon, sunrise, sunset },
       tides,
@@ -250,22 +334,41 @@ export default class TidesDialog extends Widget {
       {
         date: DateTime.fromJSDate(solarNoon),
         event: 'solar noon',
+        // event: `solar noon (S @ ${altitudeToDegrees(sunPosition(solarNoon, latitude, longitude).altitude)})`,
         time: twelveHourTime(solarNoon),
         height: `${tideHeightAtTime(tides, DateTime.fromJSDate(solarNoon))} ft`,
       },
       {
         date: DateTime.fromJSDate(sunrise),
         event: 'sunrise',
+        // event: `sunrise (${azimuthToBearing(sunPosition(sunrise, latitude, longitude).azimuth)} @ 0°)`,
         time: twelveHourTime(sunrise),
         height: `${tideHeightAtTime(tides, DateTime.fromJSDate(sunrise))} ft`,
       },
       {
         date: DateTime.fromJSDate(sunset),
         event: 'sunset',
+        // event: `sunset (${azimuthToBearing(sunPosition(sunset, latitude, longitude).azimuth)} @ 0°)`,
         time: twelveHourTime(sunset),
         height: `${tideHeightAtTime(tides, DateTime.fromJSDate(sunset))} ft`,
       },
     ]);
+
+    if (moonrise)
+      tideTimeInfos.add({
+        date: DateTime.fromJSDate(moonrise),
+        event: 'moonrise',
+        time: twelveHourTime(moonrise),
+        height: `${tideHeightAtTime(tides, DateTime.fromJSDate(moonrise))} ft`,
+      });
+
+    if (moonset)
+      tideTimeInfos.add({
+        date: DateTime.fromJSDate(moonset),
+        event: 'moonset',
+        time: twelveHourTime(moonset),
+        height: `${tideHeightAtTime(tides, DateTime.fromJSDate(moonset))} ft`,
+      });
 
     tideTimeInfos.sort((a: TideTimeInfo, b: TideTimeInfo): number => {
       return a.date.toMillis() - b.date.toMillis();
@@ -283,7 +386,7 @@ export default class TidesDialog extends Widget {
 
     if (!station) return <calcite-dialog></calcite-dialog>;
 
-    const { magneticDeclination, sunTimeInfos, tideTimeInfos } = this;
+    const { magneticDeclination, moonTimeInfos, sunTimeInfos, tideTimeInfos } = this;
 
     const { date, name } = station;
 
@@ -294,9 +397,7 @@ export default class TidesDialog extends Widget {
         heading={heading}
         placement="bottom-start"
         scale="s"
-        style={`--calcite-dialog-min-size-y: 0; --calcite-dialog-max-size-x: 420px; ${
-          content !== 'moon' ? '--calcite-dialog-content-space: 0;' : ''
-        }`}
+        style="--calcite-dialog-min-size-y: 0; --calcite-dialog-max-size-x: 420px; --calcite-dialog-content-space: 0;"
         width="s"
       >
         {/* header menu actions */}
@@ -341,9 +442,7 @@ export default class TidesDialog extends Widget {
             scale="s"
             text="Tides"
             text-enabled=""
-            onclick={(): void => {
-              this.content = 'tides';
-            }}
+            onclick={this.showContent.bind(this, 'tides')}
           ></calcite-action>
           <calcite-action
             active={content === 'sun'}
@@ -351,9 +450,7 @@ export default class TidesDialog extends Widget {
             scale="s"
             text="Sun"
             text-enabled=""
-            onclick={(): void => {
-              this.content = 'sun';
-            }}
+            onclick={this.showContent.bind(this, 'sun')}
           ></calcite-action>
           <calcite-action
             active={content === 'moon'}
@@ -361,9 +458,7 @@ export default class TidesDialog extends Widget {
             scale="s"
             text="Moon"
             text-enabled=""
-            onclick={(): void => {
-              this.content = 'moon';
-            }}
+            onclick={this.showContent.bind(this, 'moon')}
           ></calcite-action>
         </calcite-action-bar>
 
@@ -385,12 +480,6 @@ export default class TidesDialog extends Widget {
         </calcite-table>
 
         {/* sun */}
-        {/* <div hidden={content !== 'sun'}>
-          <calcite-notice icon="brightness" open scale="s">
-            <div slot="title">Coming soon</div>
-            <div slot="message">Information about the position of the sun at high and low tides</div>
-          </calcite-notice>
-        </div> */}
         <calcite-table hidden={content !== 'sun'} striped scale="s" style="--calcite-table-border-color: none;">
           {sunTimeInfos
             .map((sunTimeInfo: SunTimeInfo): tsx.JSX.Element => {
@@ -409,15 +498,30 @@ export default class TidesDialog extends Widget {
         </calcite-table>
 
         {/* moon */}
+
         <div hidden={content !== 'moon'}>
-          <calcite-notice icon="moon" open scale="s">
-            <div slot="title">Coming soon</div>
-            <div slot="message">Information about the phase of the moon and its position at high and low tides</div>
-          </calcite-notice>
+          <div afterCreate={this.moonInfoAfterCreate.bind(this)}></div>
         </div>
 
+        <calcite-table hidden={content !== 'moon'} striped scale="s" style="--calcite-table-border-color: none;">
+          {moonTimeInfos
+            .map((moonTimeInfo: MoonTimeInfo): tsx.JSX.Element => {
+              const { altitude, bearing, event, time } = moonTimeInfo;
+
+              return (
+                <calcite-table-row key={KEY++}>
+                  <calcite-table-cell>{time}</calcite-table-cell>
+                  <calcite-table-cell>{event}</calcite-table-cell>
+                  <calcite-table-cell>{bearing}</calcite-table-cell>
+                  <calcite-table-cell>{altitude}</calcite-table-cell>
+                </calcite-table-row>
+              );
+            })
+            .toArray()}
+        </calcite-table>
+
         <calcite-alert scale="s" slot="alerts" afterCreate={this.alertAfterCreate.bind(this)}>
-          <div slot="message">Today's magnetic declination is {magneticDeclination}</div>
+          <div slot="message">Magnetic declination is {magneticDeclination}</div>
         </calcite-alert>
       </calcite-dialog>
     );
@@ -425,6 +529,10 @@ export default class TidesDialog extends Widget {
 
   private alertAfterCreate(alert: HTMLCalciteAlertElement): void {
     this.magneticDeclinationAlert = alert;
+  }
+
+  private moonInfoAfterCreate(container: HTMLDivElement): void {
+    this.moonInfo.container = container;
   }
 
   //#endregion

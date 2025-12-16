@@ -68,3 +68,70 @@
   width: 100%;
   height: 100%;
 }
+
+$moon-size: 80px;
+$moon-dark: var(--calcite-color-text-2);
+$moon-light: var(--calcite-color-border-3);
+
+.moon-info {
+  display: flex;
+  flex-direction: row;
+}
+
+.moon-info_info {
+  // width: 100%;
+}
+
+.moon-info_sky {
+  // width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem 2rem;
+  background-color: var(--calcite-ui-brand-press);
+}
+
+.moon-info_moon {
+  border-radius: 100%;
+  width: $moon-size;
+  height: $moon-size;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.moon-info_hemisphere {
+  width: 50%;
+  height: 100%;
+}
+
+.moon-info_light {
+  background-color: $moon-light;
+}
+
+.moon-info_dark {
+  background-color: $moon-dark;
+}
+
+.moon-info_divider,
+.moon-info_divider:after {
+  top: 0;
+  left: 0;
+  width: $moon-size;
+  height: $moon-size;
+  position: absolute;
+  border-radius: 100%;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+}
+
+.moon-info_divider {
+  background-color: $moon-dark;
+}
+
+.moon-info_divider:after {
+  content: "";
+  background-color: $moon-light;
+  transform: rotateY(180deg);
+}

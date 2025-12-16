@@ -11,6 +11,12 @@ import { DateTime } from 'luxon';
 import createURL from './createURL';
 import { getTimes, getPosition, getMoonPosition, getMoonTimes, getMoonIllumination } from 'suncalc';
 
+const MOON_DISTANCE = {
+  average: 384400,
+  longest: 406700,
+  shortest: 356500,
+};
+
 const radiansToDegrees = (radians: number): number => {
   return (radians * 180) / Math.PI;
 };
@@ -77,6 +83,26 @@ export const magneticDeclination = async (
   return declination;
 };
 
+export const moonPhase = (phase: number): string => {
+  return phase === 0
+    ? 'New Moon'
+    : phase > 0 && phase < 0.25
+    ? 'Waxing Crescent'
+    : phase === 0.25
+    ? 'First Quarter'
+    : phase > 0.25 && phase < 0.5
+    ? 'Waxing Gibbous'
+    : phase === 0.5
+    ? 'Full Moon'
+    : phase > 0.5 && phase < 0.75
+    ? 'Waning Gibbous'
+    : phase === 0.75
+    ? 'Last Quarter'
+    : phase > 0.75 && phase <= 1
+    ? 'Waning Crescent'
+    : 'Invalid Phase';
+};
+
 export const moonPosition = (date: Date | DateTime, latitude: number, longitude: number): GetMoonPositionResult => {
   date = date instanceof Date ? date : date.toJSDate();
 
@@ -89,6 +115,9 @@ export const sunPosition = (date: Date | DateTime, latitude: number, longitude: 
   return getPosition(date, latitude, longitude);
 };
 
+/**
+ * at noon local time
+ */
 export const todaysSunAndMoon = (
   date: Date | DateTime,
   latitude: number,

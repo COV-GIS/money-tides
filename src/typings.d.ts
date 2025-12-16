@@ -255,6 +255,32 @@ export type Tide = {
 };
 
 /**
+ * Moon time info
+ */
+export interface MoonTimeInfo {
+  /**
+   * Altitude above the horizon of the moon
+   */
+  altitude: string;
+  /**
+   * Bearing to the moon
+   */
+  bearing: string;
+  /**
+   * Date/time of event
+   */
+  date: DateTime;
+  /**
+   * Tidal or lunar event
+   */
+  event: string;
+  /**
+   * Event time, e.g. 5:12 PM
+   */
+  time: string;
+}
+
+/**
  * Sun time info
  */
 export interface SunTimeInfo {
@@ -271,7 +297,7 @@ export interface SunTimeInfo {
    */
   date: DateTime;
   /**
-   * Tidal or sun event
+   * Tidal or solar event
    */
   event: string;
   /**
