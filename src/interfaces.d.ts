@@ -2,13 +2,7 @@ import esri = __esri;
 
 import type { DateTime } from 'luxon';
 
-import type {
-  GetSunPositionResult,
-  // GetTimesResult,
-  GetMoonPositionResult,
-  // GetMoonTimes,
-  // GetMoonIlluminationResult,
-} from 'suncalc';
+import type { GetSunPositionResult, GetMoonPositionResult } from 'suncalc';
 
 declare namespace __MT {
   /**
@@ -73,22 +67,22 @@ declare namespace __MT {
     /**
      * Heatmap feature layer graphic
      */
-    heatmap: esri.Graphic;
+    heatmapGraphic: esri.Graphic;
 
     /**
      * Marker graphic
      */
-    marker: esri.Graphic;
+    markerGraphic: esri.Graphic;
 
     /**
      * Station name graphic
      */
-    station: esri.Graphic;
+    stationGraphic: esri.Graphic;
 
     /**
      * Tides graphic
      */
-    tides: esri.Graphic;
+    tidesGraphic: esri.Graphic;
   };
 
   export interface Station {
@@ -248,7 +242,8 @@ declare namespace __MT {
     position: GetMoonPositionResult;
   }
 
-  interface Moon {
+  export interface Moon {
+    distance: number,
     illumination: number;
     illuminationPercent: string;
     moonrise?: DateTime;
@@ -257,7 +252,7 @@ declare namespace __MT {
     phaseName: string;
   }
 
-  interface Sun {
+  export interface Sun {
     solarNoon: DateTime;
     sunrise: DateTime;
     sunset: DateTime;

@@ -13,7 +13,6 @@ import '@esri/calcite-components/dist/components/calcite-button';
 import '@esri/calcite-components/dist/components/calcite-dropdown';
 import '@esri/calcite-components/dist/components/calcite-dropdown-group';
 import '@esri/calcite-components/dist/components/calcite-dropdown-item';
-import '@esri/calcite-components/dist/components/calcite-link';
 import '@esri/calcite-components/dist/components/calcite-input-date-picker';
 import '@esri/calcite-components/dist/components/calcite-shell';
 
@@ -42,19 +41,22 @@ import { tideHeight } from '../utils/tideUtils';
 import createURL from '../utils/createURL';
 import AboutModal from './AboutModal';
 import Attribution from './Attribution';
+import LunarPhaseModal from './LunarPhaseModal';
+import PlotModal from './PlotModal';
 import TidesDialog from './TidesDialog';
 
 //#endregion
 
 //#region constants
 
+const CSS_BASE = 'money-tides';
+
 const CSS = {
-  dialog: 'money-tides_dialog',
-  header: 'money-tides_header',
-  headerButtons: 'money-tides_header--buttons',
-  headerDate: 'money-tides_header--date',
-  headerTitle: 'money-tides_header--title',
-  view: 'money-tides_view',
+  header: `${CSS_BASE}_header`,
+  headerButtons: `${CSS_BASE}_header--buttons`,
+  headerDate: `${CSS_BASE}_header--date`,
+  headerTitle: `${CSS_BASE}_header--title`,
+  view: `${CSS_BASE}_view`,
 };
 
 let KEY = 0;
@@ -136,6 +138,33 @@ export default class MoneyTides extends Widget {
     );
   }
 
+  postInitialize(): void {
+    const { date, lunarPhaseModal } = this;
+
+    const latitude = 44.927;
+
+    const longitude = -124.013;
+
+    const { moon } = sunAndMoon(date, latitude, longitude);
+
+    lunarPhaseModal.date = date;
+
+    lunarPhaseModal.moon = moon;
+
+    this.addHandles(
+      watch(
+        (): DateTime => this.date,
+        (_date: DateTime): void => {
+          const { moon: _moon } = sunAndMoon(_date, latitude, longitude);
+
+          lunarPhaseModal.date = _date;
+
+          lunarPhaseModal.moon = _moon;
+        },
+      ),
+    );
+  }
+
   //#endregion
 
   //#region public properties
@@ -151,11 +180,16 @@ export default class MoneyTides extends Widget {
 
   private alerts: esri.Collection<tsx.JSX.Element> = new Collection();
 
+  @property()
   private date = setNoon(DateTime.now().setZone('America/Los_Angeles'));
 
   private datePicker!: HTMLCalciteInputDatePickerElement;
 
   private heatmapLayer!: esri.FeatureLayer;
+
+  private lunarPhaseModal = new LunarPhaseModal();
+
+  private plotModal = new PlotModal();
 
   private tidesDialog = new TidesDialog();
 
@@ -174,6 +208,7 @@ export default class MoneyTides extends Widget {
       name,
       element: (
         <calcite-dropdown-item
+          icon-start="pin-tear"
           key={KEY++}
           onclick={(): void => {
             const { view } = this;
@@ -184,12 +219,11 @@ export default class MoneyTides extends Widget {
 
             if (!station) return;
 
-            view.goTo(station.graphics.marker);
+            view.goTo(station.graphics.markerGraphic);
 
             view.scale = 60000;
 
-            // TODO
-            // this.tidesDialog.open(station);
+            this.tidesDialog.open(station);
           }}
         >
           {name}
@@ -272,7 +306,7 @@ export default class MoneyTides extends Widget {
 
     graphics.addMany([markerGraphic, stationGraphic, tidesGraphic]);
 
-    return { heatmap: heatmapGraphic, marker: markerGraphic, station: stationGraphic, tides: tidesGraphic };
+    return { heatmapGraphic, markerGraphic, stationGraphic, tidesGraphic };
   }
 
   private async createLayer(graphic: esri.Graphic): Promise<void> {
@@ -378,7 +412,7 @@ export default class MoneyTides extends Widget {
         isDate: date.hasSame(tideDate, 'day'),
         isPrediction: false,
         money: 'not-money',
-        ...sunAndMoonPosition(tideDate, latitude, longitude, event),
+        ...sunAndMoonPosition(tideDate, latitude, longitude),
         time: twelveHourTime(tideDate),
         type: event,
       });
@@ -637,7 +671,7 @@ export default class MoneyTides extends Widget {
 
   private updateGraphics(station: MT.Station): void {
     const {
-      graphics: { heatmap: heatmapGraphic, marker: markerGraphic, station: stationGraphic, tides: tidesGraphic },
+      graphics: { heatmapGraphic, markerGraphic, stationGraphic, tidesGraphic },
       money,
       predictionUpdateError,
       tides,
@@ -773,13 +807,44 @@ export default class MoneyTides extends Widget {
                   .toArray()}
               </calcite-dropdown-group>
             </calcite-dropdown>
+
+            <calcite-dropdown scale="s">
+              <calcite-button icon-start="information" scale="s" slot="trigger"></calcite-button>
+              <calcite-dropdown-group selection-mode="none">
+                <calcite-dropdown-item icon-start="explore">Magnetic Declination</calcite-dropdown-item>
+                <calcite-dropdown-item
+                  icon-start="moon"
+                  onclick={(): void => {
+                    this.lunarPhaseModal.open();
+                  }}
+                >
+                  Lunar Phase
+                </calcite-dropdown-item>
+                <calcite-dropdown-item
+                  icon-start="question"
+                  onclick={(): void => {
+                    this.aboutModal.open();
+                  }}
+                >
+                  About
+                </calcite-dropdown-item>
+              </calcite-dropdown-group>
+            </calcite-dropdown>
+
+            {/* <calcite-button
+              icon-start="moon"
+              scale="s"
+              onclick={(): void => {
+                this.moonPhaseModal.open();
+              }}
+            ></calcite-button>
             <calcite-button
               icon-start="information"
               scale="s"
               onclick={(): void => {
                 this.aboutModal.open();
               }}
-            ></calcite-button>
+            ></calcite-button> */}
           </div>
         </div>
 
@@ -789,6 +854,8 @@ export default class MoneyTides extends Widget {
         {/* dialogs */}
         <calcite-dialog slot="dialogs" afterCreate={this.tidesDialogAfterCreate.bind(this)}></calcite-dialog>
         <calcite-dialog slot="dialogs" afterCreate={this.aboutModalAfterCreate.bind(this)}></calcite-dialog>
+        <calcite-dialog slot="dialogs" afterCreate={this.lunarPhaseModalAfterCreate.bind(this)}></calcite-dialog>
+        <calcite-dialog slot="dialogs" afterCreate={this.plotModalAfterCreate.bind(this)}></calcite-dialog>
 
         {/* alerts */}
         {alerts.length ? <div slot="alerts">{alerts.toArray()}</div> : null}
@@ -808,6 +875,14 @@ export default class MoneyTides extends Widget {
     datePicker.addEventListener('calciteInputDatePickerChange', this.dateChangeEvent.bind(this));
 
     this.datePicker = datePicker;
+  }
+
+  private lunarPhaseModalAfterCreate(dialog: HTMLCalciteDialogElement): void {
+    this.lunarPhaseModal.container = dialog;
+  }
+
+  private plotModalAfterCreate(dialog: HTMLCalciteDialogElement): void {
+    this.plotModal.container = dialog;
   }
 
   private tidesDialogAfterCreate(dialog: HTMLCalciteDialogElement): void {
@@ -852,6 +927,12 @@ export default class MoneyTides extends Widget {
     this.addHandles(view.on('click', this.viewClickEvent.bind(this)));
 
     this.emit('loaded');
+
+    // setTimeout((): void => {
+    //   this.plotModal.station = this.stations.getItemAt(2);
+
+    //   this.plotModal.open();
+    // }, 4000);
 
     // setTimeout((): void => {
     //   console.log(view.extent.toJSON());

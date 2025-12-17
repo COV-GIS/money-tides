@@ -31,21 +31,21 @@ export const azimuthToBearing = (azimuth: number, precision?: number): string =>
   const _azimuth = Number(radiansToDegrees(azimuth).toFixed(precision || 0));
 
   return _azimuth === 0
-    ? 'S'
+    ? 'South'
     : _azimuth === 90
-    ? 'W'
+    ? 'West'
     : _azimuth === -90
-    ? 'E'
+    ? 'East'
     : _azimuth === 180 || _azimuth === -180
-    ? 'N'
+    ? 'North'
     : _azimuth > 0 && _azimuth < 90
     ? `S ${_azimuth}° W`
     : _azimuth > 90
-    ? `N ${(_azimuth - 90)}° W`
+    ? `N ${_azimuth - 90}° W`
     : _azimuth < 0 && _azimuth > -90
     ? `S ${Math.abs(_azimuth)}° E`
     : _azimuth < -90
-    ? `N ${(Math.abs(_azimuth) - 90)}° E`
+    ? `N ${Math.abs(_azimuth) - 90}° E`
     : 'invalid azimuth';
 };
 
@@ -147,12 +147,15 @@ export const sunAndMoon = (date: Date | DateTime, latitude: number, longitude: n
 
   const { rise: moonrise, set: moonset } = getMoonTimes(_date, latitude, longitude);
 
+  const { distance } = getMoonPosition(_date, latitude, longitude);
+
   const { fraction: illumination, phase } = getMoonIllumination(_date);
 
   const { solarNoon, sunrise, sunset } = getTimes(_date, latitude, longitude);
 
   return {
     moon: {
+      distance,
       illumination,
       illuminationPercent: `${(illumination * 100).toFixed(0)}%`,
       moonrise: moonrise ? DateTime.fromJSDate(moonrise) : undefined,
@@ -172,25 +175,35 @@ export const sunAndMoonPosition = (
   date: DateTime,
   latitude: number,
   longitude: number,
-  riseSet?: boolean,
 ): {
   moonPosition: MT.MoonPosition;
   sunPosition: MT.SunPosition;
 } => {
+  const {
+    moon: { moonrise, moonset },
+    sun: { sunrise, sunset },
+  } = sunAndMoon(date, latitude, longitude);
+
   const moon = moonPosition(date, latitude, longitude);
 
   const sun = sunPosition(date, latitude, longitude);
 
+  const time = date.toMillis();
+
+  const moonRiseOrSet = (moonrise && time === moonrise.toMillis()) || (moonset && time === moonset.toMillis());
+
+  const sunRiseOrSet = time === sunrise.toMillis() || time === sunset.toMillis();
+
   return {
     moonPosition: {
-      aboveHorizon: moon.altitude > 0,
-      altitude: altitudeToDegrees(moon.altitude),
+      aboveHorizon: moonRiseOrSet ? true : moon.altitude > 0,
+      altitude: moonRiseOrSet ? '0°' : altitudeToDegrees(moon.altitude),
       bearing: azimuthToBearing(moon.azimuth),
       position: moon,
     },
     sunPosition: {
-      aboveHorizon: sun.altitude > 0,
-      altitude: altitudeToDegrees(sun.altitude),
+      aboveHorizon: sunRiseOrSet ? true : sun.altitude > 0,
+      altitude: sunRiseOrSet ? '0°' : altitudeToDegrees(sun.altitude),
       bearing: azimuthToBearing(sun.azimuth),
       position: sun,
     },
