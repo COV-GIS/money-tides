@@ -203,10 +203,14 @@ declare namespace __MT {
      */
     isDate: boolean;
 
+    isLunar: boolean;
+
     /**
      * Tide is a NOAA prediction
      */
     isPrediction: boolean;
+
+    isSolar: boolean;
 
     /**
      * Tide money
@@ -243,7 +247,7 @@ declare namespace __MT {
   }
 
   export interface Moon {
-    distance: number,
+    distance: number;
     illumination: number;
     illuminationPercent: string;
     moonrise?: DateTime;
@@ -266,6 +270,7 @@ declare namespace __MT {
   export interface TideEvent {
     date: DateTime;
     event: TideType;
+    type: 'lunar' | 'solar';
   }
 
   export interface GetTidesParameters {

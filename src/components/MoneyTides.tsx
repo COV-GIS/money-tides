@@ -390,7 +390,9 @@ export default class MoneyTides extends Widget {
         height,
         heightLabel: `${height} ft`,
         isDate: date.hasSame(tideDate, 'day'),
+        isLunar: false,
         isPrediction: true,
+        isSolar: false,
         money: 'not-money',
         ...sunAndMoonPosition(tideDate, latitude, longitude),
         time: twelveHourTime(tideDate),
@@ -401,7 +403,7 @@ export default class MoneyTides extends Widget {
     const money = this.money(tides);
 
     tideEvents.forEach((tideEvent: MT.TideEvent): void => {
-      const { date: tideDate, event } = tideEvent;
+      const { date: tideDate, event, type: eventType } = tideEvent;
 
       const height = tideHeight(tides, tideDate);
 
@@ -410,7 +412,9 @@ export default class MoneyTides extends Widget {
         height,
         heightLabel: `${height} ft`,
         isDate: date.hasSame(tideDate, 'day'),
+        isLunar: eventType === 'lunar',
         isPrediction: false,
+        isSolar: eventType === 'solar',
         money: 'not-money',
         ...sunAndMoonPosition(tideDate, latitude, longitude),
         time: twelveHourTime(tideDate),
@@ -455,14 +459,17 @@ export default class MoneyTides extends Widget {
       {
         date: solarNoon,
         event: 'solar noon',
+        type: 'solar',
       },
       {
         date: sunrise,
         event: 'sunrise',
+        type: 'solar',
       },
       {
         date: sunset,
         event: 'sunset',
+        type: 'solar',
       },
     ];
 
@@ -470,12 +477,14 @@ export default class MoneyTides extends Widget {
       tideEvents.push({
         date: moonrise,
         event: 'moonrise',
+        type: 'lunar',
       });
 
     if (moonset)
       tideEvents.push({
         date: moonset,
         event: 'moonset',
+        type: 'lunar',
       });
 
     const { money, tides } = await this.getTides({
@@ -622,14 +631,17 @@ export default class MoneyTides extends Widget {
         {
           date: solarNoon,
           event: 'solar noon',
+          type: 'solar',
         },
         {
           date: sunrise,
           event: 'sunrise',
+          type: 'solar',
         },
         {
           date: sunset,
           event: 'sunset',
+          type: 'solar',
         },
       ];
 
@@ -637,12 +649,14 @@ export default class MoneyTides extends Widget {
         tideEvents.push({
           date: moonrise,
           event: 'moonrise',
+          type: 'lunar',
         });
 
       if (moonset)
         tideEvents.push({
           date: moonset,
           event: 'moonset',
+          type: 'lunar',
         });
 
       const { money, tides } = await this.getTides({

@@ -19,7 +19,7 @@ const MOON_DISTANCE = {
   shortest: 356500,
 };
 
-const radiansToDegrees = (radians: number): number => {
+export const radiansToDegrees = (radians: number): number => {
   return (radians * 180) / Math.PI;
 };
 
