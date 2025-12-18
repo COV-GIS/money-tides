@@ -178,7 +178,7 @@ export default class TidesDialog extends Widget {
           icon="home"
           scale="s"
           slot="header-menu-actions"
-          text="NOAA Home"
+          text="NOAA Station"
           text-enabled=""
           onclick={this.openStationUrl.bind(this, 'home')}
         ></calcite-action>
@@ -236,10 +236,18 @@ export default class TidesDialog extends Widget {
                   {showSunAndMoon
                     ? [
                         <calcite-table-cell key={KEY++}>
-                          {sunPosition.aboveHorizon ? `${sunPosition.bearing} @ ${sunPosition.altitude}` : 'n/a'}
+                          {sunPosition.aboveHorizon
+                            ? `${sunPosition.bearing} ${
+                                sunPosition.altitude === '0°' ? '' : `@ ${sunPosition.altitude}`
+                              }`
+                            : 'n/a'}
                         </calcite-table-cell>,
                         <calcite-table-cell key={KEY++}>
-                          {moonPosition.aboveHorizon ? `${moonPosition.bearing} @ ${moonPosition.altitude}` : 'n/a'}
+                          {moonPosition.aboveHorizon
+                            ? `${moonPosition.bearing} ${
+                                moonPosition.altitude === '0°' ? '' : `@ ${moonPosition.altitude}`
+                              }`
+                            : 'n/a'}
                         </calcite-table-cell>,
                       ]
                     : null}
