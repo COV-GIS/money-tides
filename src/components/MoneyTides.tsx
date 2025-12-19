@@ -359,8 +359,14 @@ export default class MoneyTides extends Widget {
     layer.renderer = renderer;
   }
 
-  private async getTides(params: MT.GetTidesParameters): Promise<{ money: MT.MoneyType; tides: MT.Tide[] }> {
-    const { date, id, latitude, longitude, tideEvents } = params;
+  private async getTides(
+    params: MT.GetTidesParameters,
+  ): Promise<{ money: MT.MoneyType; moon: MT.Moon; sun: MT.Sun; tides: MT.Tide[] }> {
+    const { date, id, latitude, longitude } = params;
+
+    const yesterday = date.minus({ day: 1 });
+
+    const tomorrow = date.plus({ day: 1 });
 
     const predictionsResponse: MT.ApiPredictionsResponse = await (
       await fetch(
@@ -372,8 +378,8 @@ export default class MoneyTides extends Widget {
           units: 'english',
           datum: 'mllw', // must use 'mean lower low water' b/c most stations are subordinate
           station: id,
-          begin_date: NOAADate(date.minus({ day: 1 })),
-          end_date: NOAADate(date.plus({ day: 1 })),
+          begin_date: NOAADate(yesterday),
+          end_date: NOAADate(tomorrow),
         }),
       )
     ).json();
@@ -402,6 +408,117 @@ export default class MoneyTides extends Widget {
 
     const money = this.money(tides);
 
+    const { moon: yesterdayMoon, sun: yesterdaySun } = sunAndMoon(yesterday, latitude, longitude);
+
+    const { moon: todayMoon, sun: todaySun } = sunAndMoon(date, latitude, longitude);
+
+    const { moon: tomorrowMoon, sun: tomorrowSun } = sunAndMoon(tomorrow, latitude, longitude);
+
+    const tideEvents: MT.TideEvent[] = [
+      {
+        date: yesterdaySun.nadir,
+        event: 'solar nadir',
+        type: 'solar',
+      },
+      {
+        date: yesterdaySun.solarNoon,
+        event: 'solar noon',
+        type: 'solar',
+      },
+      {
+        date: yesterdaySun.sunrise,
+        event: 'sunrise',
+        type: 'solar',
+      },
+      {
+        date: yesterdaySun.sunset,
+        event: 'sunset',
+        type: 'solar',
+      },
+      {
+        date: todaySun.nadir,
+        event: 'solar nadir',
+        type: 'solar',
+      },
+      {
+        date: todaySun.solarNoon,
+        event: 'solar noon',
+        type: 'solar',
+      },
+      {
+        date: todaySun.sunrise,
+        event: 'sunrise',
+        type: 'solar',
+      },
+      {
+        date: todaySun.sunset,
+        event: 'sunset',
+        type: 'solar',
+      },
+      {
+        date: tomorrowSun.nadir,
+        event: 'solar nadir',
+        type: 'solar',
+      },
+      {
+        date: tomorrowSun.solarNoon,
+        event: 'solar noon',
+        type: 'solar',
+      },
+      {
+        date: tomorrowSun.sunrise,
+        event: 'sunrise',
+        type: 'solar',
+      },
+      {
+        date: tomorrowSun.sunset,
+        event: 'sunset',
+        type: 'solar',
+      },
+    ];
+
+    if (yesterdayMoon.moonrise)
+      tideEvents.push({
+        date: yesterdayMoon.moonrise,
+        event: 'moonrise',
+        type: 'lunar',
+      });
+
+    if (yesterdayMoon.moonset)
+      tideEvents.push({
+        date: yesterdayMoon.moonset,
+        event: 'moonset',
+        type: 'lunar',
+      });
+
+    if (todayMoon.moonrise)
+      tideEvents.push({
+        date: todayMoon.moonrise,
+        event: 'moonrise',
+        type: 'lunar',
+      });
+
+    if (todayMoon.moonset)
+      tideEvents.push({
+        date: todayMoon.moonset,
+        event: 'moonset',
+        type: 'lunar',
+      });
+
+    if (tomorrowMoon.moonrise)
+      tideEvents.push({
+        date: tomorrowMoon.moonrise,
+        event: 'moonrise',
+        type: 'lunar',
+      });
+
+    if (tomorrowMoon.moonset)
+      tideEvents.push({
+        date: tomorrowMoon.moonset,
+        event: 'moonset',
+        type: 'lunar',
+      });
+
     tideEvents.forEach((tideEvent: MT.TideEvent): void => {
       const { date: tideDate, event, type: eventType } = tideEvent;
 
@@ -426,7 +543,73 @@ export default class MoneyTides extends Widget {
       return a.date.toMillis() - b.date.toMillis();
     });
 
-    return { money, tides };
+    tides
+      .filter((tide: MT.Tide): boolean => {
+        return tide.isLunar;
+      })
+      .forEach((tide: MT.Tide, index: number, array: MT.Tide[]): void => {
+        const { date: tideDate, type } = tide;
+
+        // if ((index = array.length - 1)) return;
+
+        let culminationDate: DateTime | nullish;
+
+        let height: number | nullish;
+
+        if (type === 'moonrise') {
+          const moonset = array[index + 1];
+
+          if (moonset) {
+            culminationDate = DateTime.fromMillis(Math.floor((tideDate.toMillis() + moonset.date.toMillis()) / 2));
+
+            height = tideHeight(tides, culminationDate);
+
+            tides.push({
+              date: culminationDate,
+              height,
+              heightLabel: `${height} ft`,
+              isDate: date.hasSame(culminationDate, 'day'),
+              isLunar: true,
+              isPrediction: false,
+              isSolar: false,
+              money: 'not-money',
+              ...sunAndMoonPosition(culminationDate, latitude, longitude),
+              time: twelveHourTime(culminationDate),
+              type: 'lunar noon',
+            });
+          }
+        }
+
+        if (type === 'moonset') {
+          const moonrise = array[index + 1];
+
+          if (moonrise) {
+            culminationDate = DateTime.fromMillis(Math.floor((tideDate.toMillis() + moonrise.date.toMillis()) / 2));
+
+            height = tideHeight(tides, culminationDate);
+
+            tides.push({
+              date: culminationDate,
+              height,
+              heightLabel: `${height} ft`,
+              isDate: date.hasSame(culminationDate, 'day'),
+              isLunar: true,
+              isPrediction: false,
+              isSolar: false,
+              money: 'not-money',
+              ...sunAndMoonPosition(culminationDate, latitude, longitude),
+              time: twelveHourTime(culminationDate),
+              type: 'lunar nadir',
+            });
+          }
+        }
+      });
+
+    tides.sort((a: MT.Tide, b: MT.Tide): number => {
+      return a.date.toMillis() - b.date.toMillis();
+    });
+
+    return { money, moon: todayMoon, sun: todaySun, tides };
   }
 
   private getTimeRange(date?: DateTime): 0 | 1 | 2 {
@@ -448,51 +631,11 @@ export default class MoneyTides extends Widget {
 
     const date = this.date;
 
-    const {
-      moon,
-      moon: { moonrise, moonset },
-      sun,
-      sun: { solarNoon, sunrise, sunset },
-    } = sunAndMoon(date, latitude, longitude);
-
-    const tideEvents: MT.TideEvent[] = [
-      {
-        date: solarNoon,
-        event: 'solar noon',
-        type: 'solar',
-      },
-      {
-        date: sunrise,
-        event: 'sunrise',
-        type: 'solar',
-      },
-      {
-        date: sunset,
-        event: 'sunset',
-        type: 'solar',
-      },
-    ];
-
-    if (moonrise)
-      tideEvents.push({
-        date: moonrise,
-        event: 'moonrise',
-        type: 'lunar',
-      });
-
-    if (moonset)
-      tideEvents.push({
-        date: moonset,
-        event: 'moonset',
-        type: 'lunar',
-      });
-
-    const { money, tides } = await this.getTides({
+    const { money, moon, sun, tides } = await this.getTides({
       date,
       id,
       latitude,
       longitude,
-      tideEvents,
     });
 
     this.stations.add({
@@ -620,51 +763,11 @@ export default class MoneyTides extends Widget {
     const { id, latitude, longitude } = station;
 
     try {
-      const {
-        moon,
-        moon: { moonrise, moonset },
-        sun,
-        sun: { solarNoon, sunrise, sunset },
-      } = sunAndMoon(date, latitude, longitude);
-
-      const tideEvents: MT.TideEvent[] = [
-        {
-          date: solarNoon,
-          event: 'solar noon',
-          type: 'solar',
-        },
-        {
-          date: sunrise,
-          event: 'sunrise',
-          type: 'solar',
-        },
-        {
-          date: sunset,
-          event: 'sunset',
-          type: 'solar',
-        },
-      ];
-
-      if (moonrise)
-        tideEvents.push({
-          date: moonrise,
-          event: 'moonrise',
-          type: 'lunar',
-        });
-
-      if (moonset)
-        tideEvents.push({
-          date: moonset,
-          event: 'moonset',
-          type: 'lunar',
-        });
-
-      const { money, tides } = await this.getTides({
+      const { money, moon, sun, tides } = await this.getTides({
         date,
         id,
         latitude,
         longitude,
-        tideEvents,
       });
 
       Object.assign(station, {
@@ -825,7 +928,6 @@ export default class MoneyTides extends Widget {
             <calcite-dropdown scale="s">
               <calcite-button icon-start="information" scale="s" slot="trigger"></calcite-button>
               <calcite-dropdown-group selection-mode="none">
-                <calcite-dropdown-item icon-start="explore">Magnetic Declination</calcite-dropdown-item>
                 <calcite-dropdown-item
                   icon-start="moon"
                   onclick={(): void => {
@@ -842,23 +944,9 @@ export default class MoneyTides extends Widget {
                 >
                   About
                 </calcite-dropdown-item>
+                <calcite-dropdown-item icon-start="exclamation-mark-circle">Disclaimer</calcite-dropdown-item>
               </calcite-dropdown-group>
             </calcite-dropdown>
-
-            {/* <calcite-button
-              icon-start="moon"
-              scale="s"
-              onclick={(): void => {
-                this.moonPhaseModal.open();
-              }}
-            ></calcite-button>
-            <calcite-button
-              icon-start="information"
-              scale="s"
-              onclick={(): void => {
-                this.aboutModal.open();
-              }}
-            ></calcite-button> */}
           </div>
         </div>
 
@@ -900,7 +988,11 @@ export default class MoneyTides extends Widget {
   }
 
   private tidesDialogAfterCreate(dialog: HTMLCalciteDialogElement): void {
-    this.tidesDialog.container = dialog;
+    const { plotModal, tidesDialog } = this;
+
+    tidesDialog.container = dialog;
+
+    this.addHandles(tidesDialog.on('plot-tides', plotModal.open.bind(plotModal)));
   }
 
   private async viewAfterCreate(container: HTMLDivElement): Promise<void> {

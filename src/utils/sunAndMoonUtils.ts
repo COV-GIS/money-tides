@@ -85,7 +85,7 @@ export const magneticDeclination = async (
   return declination;
 };
 
-export const moonPhase = (phase: number): string => {
+export const moonPhaseName = (phase: number): string => {
   return phase === 0
     ? 'New Moon'
     : phase > 0 && phase < 0.25
@@ -108,35 +108,43 @@ export const moonPhase = (phase: number): string => {
 export const moonPosition = (date: Date | DateTime, latitude: number, longitude: number): GetMoonPositionResult => {
   const _date = date instanceof Date ? date : date.toJSDate();
 
-  return getMoonPosition(_date, latitude, longitude);
+  const position = getMoonPosition(_date, latitude, longitude);
+
+  // if (radiansToDegrees(position.altitude) < 1 && radiansToDegrees(position.altitude) > -1) position.altitude = 0;
+
+  return position;
 };
 
 export const sunPosition = (date: Date | DateTime, latitude: number, longitude: number): GetSunPositionResult => {
   const _date = date instanceof Date ? date : date.toJSDate();
 
-  return getPosition(_date, latitude, longitude);
+  const position = getPosition(_date, latitude, longitude);
+
+  // if (radiansToDegrees(position.altitude) < 1 && radiansToDegrees(position.altitude) > -1) position.altitude = 0;
+
+  return position;
 };
 
 /**
  * at noon local time
  */
-export const todaysSunAndMoon = (
-  date: Date | DateTime,
-  latitude: number,
-  longitude: number,
-): {
-  sunTimes: GetTimesResult;
-  moonTimes: GetMoonTimes;
-  moonIllumination: GetMoonIlluminationResult;
-} => {
-  date = date instanceof Date ? date : date.toJSDate();
+// export const todaysSunAndMoon = (
+//   date: Date | DateTime,
+//   latitude: number,
+//   longitude: number,
+// ): {
+//   sunTimes: GetTimesResult;
+//   moonTimes: GetMoonTimes;
+//   moonIllumination: GetMoonIlluminationResult;
+// } => {
+//   date = date instanceof Date ? date : date.toJSDate();
 
-  return {
-    sunTimes: getTimes(date, latitude, longitude),
-    moonTimes: getMoonTimes(date, latitude, longitude),
-    moonIllumination: getMoonIllumination(date),
-  };
-};
+//   return {
+//     sunTimes: getTimes(date, latitude, longitude),
+//     moonTimes: getMoonTimes(date, latitude, longitude),
+//     moonIllumination: getMoonIllumination(date),
+//   };
+// };
 
 ///////////////////////////////////////////////
 // working
@@ -151,7 +159,7 @@ export const sunAndMoon = (date: Date | DateTime, latitude: number, longitude: n
 
   const { fraction: illumination, phase } = getMoonIllumination(_date);
 
-  const { solarNoon, sunrise, sunset } = getTimes(_date, latitude, longitude);
+  const { nadir, solarNoon, sunrise, sunset } = getTimes(_date, latitude, longitude);
 
   return {
     moon: {
@@ -161,9 +169,10 @@ export const sunAndMoon = (date: Date | DateTime, latitude: number, longitude: n
       moonrise: moonrise ? DateTime.fromJSDate(moonrise) : undefined,
       moonset: moonset ? DateTime.fromJSDate(moonset) : undefined,
       phase,
-      phaseName: moonPhase(phase),
+      phaseName: moonPhaseName(phase),
     },
     sun: {
+      nadir: DateTime.fromJSDate(nadir),
       solarNoon: DateTime.fromJSDate(solarNoon),
       sunrise: DateTime.fromJSDate(sunrise),
       sunset: DateTime.fromJSDate(sunset),

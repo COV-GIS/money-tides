@@ -61,7 +61,7 @@ declare namespace __MT {
   /**
    * Tide types
    */
-  export type TideType = 'high tide' | 'low tide' | 'moonrise' | 'moonset' | 'solar noon' | 'sunrise' | 'sunset';
+  export type TideType = 'high tide' | 'low tide' | 'lunar nadir' | 'lunar noon' | 'solar nadir' | 'moonrise' | 'moonset' | 'solar noon' | 'sunrise' | 'sunset';
 
   export type StationGraphics = {
     /**
@@ -257,6 +257,7 @@ declare namespace __MT {
   }
 
   export interface Sun {
+    nadir: DateTime;
     solarNoon: DateTime;
     sunrise: DateTime;
     sunset: DateTime;
@@ -278,7 +279,6 @@ declare namespace __MT {
     id: string;
     latitude: number;
     longitude: number;
-    tideEvents: TideEvent[];
   }
 
   export interface ZoomToItem {
