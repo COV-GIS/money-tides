@@ -51,16 +51,16 @@ export default class AboutModal extends Widget {
       <calcite-dialog heading="About" modal scale="s" width="s">
         <div style="display: flex; flex-direction: column; gap: 0.5rem; line-height: var(--calcite-font-line-height-relative-snug);">
           <div style={heading}>What is a money tide?</div>
-          <div>A money tide is when the highest high tide of the day occurs at noon.</div>
+          <div>When the highest high tide of the day occurs at noon.</div>
           <div style={heading}>Why are money tides important?</div>
           <div>If you have to ask...you will never know.</div>
-          <div style={heading}>How money is a high tide?</div>
+          <div style={heading}>How money is the day?</div>
           <div>
             <span style={this.classes(medium, moneyTypeColorHex('money', 'color'))}>Money</span>
             <span> - Highest high tide occurs between 11:00 AM and 1:00 PM</span>
           </div>
           <div>
-            <span style={this.classes(medium, moneyTypeColorHex('mostly-money', 'color'))}>Mostly Money</span>
+            <span style={this.classes(medium, moneyTypeColorHex('mostly-money', 'color'), shadow)}>Mostly Money</span>
             <span> - Highest high tide occurs between 10:00 AM and 11:00 AM or between 1:00 PM and 2:00 PM</span>
           </div>
           <div>

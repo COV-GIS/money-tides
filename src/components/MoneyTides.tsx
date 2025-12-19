@@ -627,78 +627,81 @@ export default class MoneyTides extends Widget {
   }
 
   private async loadStation(stationInfo: MT._StationInfo): Promise<void> {
-    const { id, errorAlertId, latitude, longitude, name } = stationInfo;
+    try {
+      const { id, latitude, longitude, name } = stationInfo;
 
-    const date = this.date;
+      const date = this.date;
 
-    const { money, moon, sun, tides } = await this.getTides({
-      date,
-      id,
-      latitude,
-      longitude,
-    });
-
-    this.stations.add({
-      date,
-      errorAlertId,
-      graphics: this.createGraphics({
+      const { money, moon, sun, tides } = await this.getTides({
+        date,
         id,
         latitude,
         longitude,
-        money,
+      });
+
+      this.stations.add({
+        date,
+        error: false,
+        errorCount: 0,
+        graphics: this.createGraphics({
+          id,
+          latitude,
+          longitude,
+          money,
+          name,
+          tides,
+        }),
+        id,
+        latitude,
+        longitude,
         name,
+        money,
+        moon,
+        sun,
         tides,
-      }),
-      id,
-      latitude,
-      longitude,
-      name,
-      money,
-      moon,
-      predictionUpdateError: false,
-      predictionUpdateErrorCount: 0,
-      sun,
-      tides,
-    });
+      });
 
-    stationInfo.loaded = true;
+      this.addZoomToItem(id, name);
 
-    stationInfo.loadErrorCount = 0;
-
-    this.addZoomToItem(id, name);
-    try {
+      stationInfo.loaded = true;
     } catch (error) {
-      // console.log(error);
+      console.log('load error', error);
 
-      if (stationInfo.loadErrorCount !== 10) {
-        stationInfo.loadErrorCount++;
+      if (stationInfo.errorCount !== 10) {
+        stationInfo.errorCount++;
 
         setTimeout((): void => {
           this.loadStation(stationInfo);
-        }, stationInfo.loadErrorCount * 100);
+        }, stationInfo.errorCount * 50);
 
         return;
       }
 
-      stationInfo.loadErrorCount = 0;
+      const alertId = `station-error-alert-${stationInfo.id}`;
+
+      const errorAlert = this.container.querySelector(`#${alertId}`) as HTMLCalciteAlertElement | nullish;
+
+      if (errorAlert) {
+        errorAlert.open = true;
+
+        return;
+      }
 
       this.alerts.add(
-        <calcite-alert icon="exclamation-mark-circle" id={errorAlertId} key={KEY++} kind="danger" open scale="s">
-          <div slot="message">Failed to load station data for {name}</div>
-          <calcite-link
-            slot="link"
-            onclick={(): void => {
-              this.loadStation(stationInfo);
-
-              (document.getElementById(errorAlertId) as HTMLCalciteAlertElement).open = false;
-            }}
-          >
-            Try again
-          </calcite-link>
+        <calcite-alert
+          auto-close=""
+          auto-close-duration="fast"
+          icon="exclamation-mark-circle"
+          id={alertId}
+          key={KEY++}
+          kind="danger"
+          open
+          scale="s"
+        >
+          <div slot="title">Error</div>
+          <div slot="message">Failed to load station data for {stationInfo.name}</div>
         </calcite-alert>,
       );
-
-      stationInfo.loaded = false;
     }
   }
 
@@ -758,11 +761,11 @@ export default class MoneyTides extends Widget {
   }
 
   private async updateStation(station: MT.Station): Promise<void> {
-    const { date, tidesDialog } = this;
-
-    const { id, latitude, longitude } = station;
-
     try {
+      const { date, tidesDialog } = this;
+
+      const { id, latitude, longitude } = station;
+
       const { money, moon, sun, tides } = await this.getTides({
         date,
         id,
@@ -783,24 +786,76 @@ export default class MoneyTides extends Widget {
       if (tidesDialog.container.open && tidesDialog.station.id === id) {
         tidesDialog.open(station);
       }
-    } catch (error) {}
+
+      station.error = false;
+
+      station.errorCount = 0;
+
+      const errorAlert = this.container.querySelector(`#station-error-alert-${id}`) as
+        | HTMLCalciteAlertElement
+        | nullish;
+
+      if (errorAlert) errorAlert.open = false;
+    } catch (error) {
+      console.log('update error', error);
+
+      if (station.errorCount !== 10) {
+        station.errorCount++;
+
+        setTimeout((): void => {
+          this.updateStation(station);
+        }, station.errorCount * 50);
+
+        return;
+      }
+
+      const alertId = `station-error-alert-${station.id}`;
+
+      const errorAlert = this.container.querySelector(`#${alertId}`) as HTMLCalciteAlertElement | nullish;
+
+      if (errorAlert) {
+        errorAlert.open = true;
+
+        return;
+      }
+
+      station.error = true;
+
+      station.errorCount = 0;
+
+      this.alerts.add(
+        <calcite-alert
+          auto-close=""
+          auto-close-duration="fast"
+          icon="exclamation-mark-circle"
+          id={alertId}
+          key={KEY++}
+          kind="danger"
+          open
+          scale="s"
+        >
+          <div slot="title">Error</div>
+          <div slot="message">Failed to load station data for {station.name}</div>
+        </calcite-alert>,
+      );
+    }
   }
 
   private updateGraphics(station: MT.Station): void {
     const {
       graphics: { heatmapGraphic, markerGraphic, stationGraphic, tidesGraphic },
       money,
-      predictionUpdateError,
+      // predictionUpdateError,
       tides,
     } = station;
 
     let { primary, secondary } = moneyTypeColors(money);
 
-    if (predictionUpdateError) {
-      primary = new Color('black');
+    // if (predictionUpdateError) {
+    //   primary = new Color('black');
 
-      secondary = new Color('white');
-    }
+    //   secondary = new Color('white');
+    // }
 
     stationGraphic.symbol = Object.assign((stationGraphic.symbol as esri.TextSymbol).clone(), {
       color: primary,
@@ -813,8 +868,10 @@ export default class MoneyTides extends Widget {
     });
 
     tidesGraphic.symbol = Object.assign((tidesGraphic.symbol as esri.TextSymbol).clone(), {
-      color: predictionUpdateError ? null : primary,
-      haloColor: predictionUpdateError ? null : secondary,
+      // color: predictionUpdateError ? null : primary,
+      // haloColor: predictionUpdateError ? null : secondary,
+      color: primary,
+      haloColor: secondary,
       text: this.tidesSymbolText(tides),
     });
 
@@ -836,16 +893,6 @@ export default class MoneyTides extends Widget {
         'America/Los_Angeles',
       ),
     );
-
-    this.stationInfos.forEach((stationInfo: MT._StationInfo): void => {
-      const { errorAlertId, loaded } = stationInfo;
-
-      const alert = document.getElementById(errorAlertId) as HTMLCalciteAlertElement | null;
-
-      if (alert) alert.open = false;
-
-      if (!loaded) this.loadStation(stationInfo);
-    });
 
     this.stations.forEach(this.updateStation.bind(this));
   }
@@ -877,7 +924,9 @@ export default class MoneyTides extends Widget {
       return station.id === result.graphic.attributes.id;
     });
 
-    if (!station || (station && station.predictionUpdateError)) return;
+    // if (!station || (station && station.predictionUpdateError)) return;
+
+    if (!station) return;
 
     tidesDialog.open(station);
   }
@@ -1021,24 +1070,17 @@ export default class MoneyTides extends Widget {
 
     view.ui.add(new Attribution({ container: document.createElement('calcite-action-bar'), view }), 'bottom-right');
 
-    stationInfos.forEach((stationInfo: MT.StationInfo): void => {
-      this.loadStation({
-        ...stationInfo,
-        errorAlertId: `error-alert${this.id}-${KEY++}`,
-        loaded: false,
-        loadErrorCount: 0,
-      });
+    stationInfos.forEach((stationInfo: MT._StationInfo): void => {
+      stationInfo.errorCount = 0;
+
+      stationInfo.loaded = false;
+
+      this.loadStation(stationInfo);
     });
 
     this.addHandles(view.on('click', this.viewClickEvent.bind(this)));
 
     this.emit('loaded');
-
-    // setTimeout((): void => {
-    //   this.plotModal.station = this.stations.getItemAt(2);
-
-    //   this.plotModal.open();
-    // }, 4000);
 
     // setTimeout((): void => {
     //   console.log(view.extent.toJSON());

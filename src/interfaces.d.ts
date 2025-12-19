@@ -61,7 +61,17 @@ declare namespace __MT {
   /**
    * Tide types
    */
-  export type TideType = 'high tide' | 'low tide' | 'lunar nadir' | 'lunar noon' | 'solar nadir' | 'moonrise' | 'moonset' | 'solar noon' | 'sunrise' | 'sunset';
+  export type TideType =
+    | 'high tide'
+    | 'low tide'
+    | 'lunar nadir'
+    | 'lunar noon'
+    | 'solar nadir'
+    | 'moonrise'
+    | 'moonset'
+    | 'solar noon'
+    | 'sunrise'
+    | 'sunset';
 
   export type StationGraphics = {
     /**
@@ -91,10 +101,9 @@ declare namespace __MT {
      */
     date: DateTime;
 
-    /**
-     * Id of calcite error alert
-     */
-    errorAlertId: string;
+    error: boolean;
+
+    errorCount: number;
 
     /**
      * Station graphics
@@ -132,16 +141,6 @@ declare namespace __MT {
     name: string;
 
     /**
-     * Last prediction update failed if `true`
-     */
-    predictionUpdateError: boolean;
-
-    /**
-     * Number of consecutive update errors
-     */
-    predictionUpdateErrorCount: number;
-
-    /**
      * Sun info
      */
     sun: Sun;
@@ -175,20 +174,12 @@ declare namespace __MT {
   }
 
   export interface _StationInfo extends StationInfo {
-    /**
-     * Id of calcite error alert
-     */
-    errorAlertId: string;
-
+    errorCount: number;
+    
     /**
      * Is station loaded
      */
     loaded: boolean;
-
-    /**
-     * Number of consecutive load errors
-     */
-    loadErrorCount: number;
   }
 
   export interface Tide {
