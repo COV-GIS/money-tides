@@ -10,6 +10,7 @@
     "@arcgis/core": "^4.34.8",
     "chart.js": "^4.5.1",
     "chartjs-plugin-annotation": "^3.1.0",
+    "chartjs-plugin-datalabels": "^2.2.0",
     "luxon": "^3.7.2",
     "suncalc": "^1.9.0"
   },

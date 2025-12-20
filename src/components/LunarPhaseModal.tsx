@@ -1,6 +1,6 @@
 //#region types
 
-import type { __MT as MT } from '../interfaces';
+import type {  MT } from '../interfaces';
 
 //#endregion
 

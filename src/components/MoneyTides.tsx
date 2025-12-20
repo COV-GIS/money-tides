@@ -1,8 +1,7 @@
 //#region types
 
 import esri = __esri;
-
-import type { __MT as MT } from '../interfaces';
+import type { MT } from '../interfaces';
 
 //#endregion
 
@@ -993,7 +992,6 @@ export default class MoneyTides extends Widget {
                 >
                   About
                 </calcite-dropdown-item>
-                <calcite-dropdown-item icon-start="exclamation-mark-circle">Disclaimer</calcite-dropdown-item>
               </calcite-dropdown-group>
             </calcite-dropdown>
           </div>

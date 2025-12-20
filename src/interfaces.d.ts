@@ -1,16 +1,15 @@
 import esri = __esri;
-
 import type { DateTime } from 'luxon';
 
-import type { GetSunPositionResult, GetMoonPositionResult } from 'suncalc';
+declare namespace MT {
+  //#region types
 
-declare namespace __MT {
   /**
    * Response from magnetic declination api
    *
    * https://www.ngdc.noaa.gov/geomag-web/calculators/calculateDeclination
    */
-  export type ApiMagneticDeclinationResponse = {
+  type ApiMagneticDeclinationResponse = {
     result: [
       {
         /**
@@ -24,7 +23,7 @@ declare namespace __MT {
   /**
    * Api tide prediction
    */
-  export type ApiPrediction = {
+  type ApiPrediction = {
     /**
      * Sql time (always local time, e.g. lst_ldt)
      */
@@ -46,34 +45,23 @@ declare namespace __MT {
    *
    * Api docs: https://api.tidesandcurrents.noaa.gov/api/prod
    */
-  export type ApiPredictionsResponse = {
+  type ApiPredictionsResponse = {
     /**
      * Array of predictions
      */
     predictions: ApiPrediction[];
   };
 
-  /**
-   * Money types
-   */
-  export type MoneyType = 'not-money' | 'potentially-money' | 'kinda-money' | 'mostly-money' | 'money';
+  type GetTidesParameters = {
+    date: DateTime;
+    id: string;
+    latitude: number;
+    longitude: number;
+  };
 
-  /**
-   * Tide types
-   */
-  export type TideType =
-    | 'high tide'
-    | 'low tide'
-    | 'lunar nadir'
-    | 'lunar noon'
-    | 'solar nadir'
-    | 'moonrise'
-    | 'moonset'
-    | 'solar noon'
-    | 'sunrise'
-    | 'sunset';
+  type MoneyType = 'not-money' | 'potentially-money' | 'kinda-money' | 'mostly-money' | 'money';
 
-  export type StationGraphics = {
+  type StationGraphics = {
     /**
      * Heatmap feature layer graphic
      */
@@ -95,7 +83,33 @@ declare namespace __MT {
     tidesGraphic: esri.Graphic;
   };
 
-  export interface Station {
+  type TideType =
+    | 'high tide'
+    | 'low tide'
+    | 'lunar nadir'
+    | 'lunar noon'
+    | 'solar nadir'
+    | 'moonrise'
+    | 'moonset'
+    | 'solar noon'
+    | 'sunrise'
+    | 'sunset';
+
+  //#endregion
+
+  //#region interfaces
+
+  interface Moon {
+    distance: number;
+    illumination: number;
+    illuminationPercent: string;
+    moonrise?: DateTime;
+    moonset?: DateTime;
+    phase: number;
+    phaseName: string;
+  }
+
+  interface Station {
     /**
      * Day of interest
      */
@@ -151,7 +165,7 @@ declare namespace __MT {
     tides: Tide[];
   }
 
-  export interface StationInfo {
+  interface StationInfo {
     /**
      * Station id
      */
@@ -173,16 +187,37 @@ declare namespace __MT {
     name: string;
   }
 
-  export interface _StationInfo extends StationInfo {
+  interface _StationInfo extends StationInfo {
     errorCount: number;
-    
+
     /**
      * Is station loaded
      */
     loaded: boolean;
   }
 
-  export interface Tide {
+  interface Sun {
+    nadir: DateTime;
+    solarNoon: DateTime;
+    sunrise: DateTime;
+    sunset: DateTime;
+  }
+
+  interface SunAndMoon {
+    moon: Moon;
+    sun: Sun;
+  }
+
+  interface SunMoonPosition {
+    aboveHorizon: boolean;
+    altitude: number;
+    altitudeDegrees: string;
+    azimuth: number;
+    azimuthBearing: string;
+    type: 'moon' | 'sun';
+  }
+
+  interface Tide {
     date: DateTime;
 
     height: number;
@@ -211,69 +246,28 @@ declare namespace __MT {
     /**
      * Moon Position
      */
-    moonPosition: MoonPosition;
+    moonPosition: SunMoonPosition;
 
     /**
      * Sun position
      */
-    sunPosition: SunPosition;
+    sunPosition: SunMoonPosition;
 
     time: string;
 
     type: TideType;
   }
 
-  interface SharedSunMoonPosition {
-    aboveHorizon: boolean;
-    altitude: string;
-    bearing: string;
-  }
-
-  export interface SunPosition extends SharedSunMoonPosition {
-    position: GetSunPositionResult;
-  }
-
-  export interface MoonPosition extends SharedSunMoonPosition {
-    position: GetMoonPositionResult;
-  }
-
-  export interface Moon {
-    distance: number;
-    illumination: number;
-    illuminationPercent: string;
-    moonrise?: DateTime;
-    moonset?: DateTime;
-    phase: number;
-    phaseName: string;
-  }
-
-  export interface Sun {
-    nadir: DateTime;
-    solarNoon: DateTime;
-    sunrise: DateTime;
-    sunset: DateTime;
-  }
-
-  export interface SunAndMoon {
-    moon: Moon;
-    sun: Sun;
-  }
-
-  export interface TideEvent {
+  interface TideEvent {
     date: DateTime;
     event: TideType;
     type: 'lunar' | 'solar';
   }
 
-  export interface GetTidesParameters {
-    date: DateTime;
-    id: string;
-    latitude: number;
-    longitude: number;
-  }
-
-  export interface ZoomToItem {
+  interface ZoomToItem {
     name: string;
     element: esri.widget.tsx.JSX.Element;
   }
+
+  //#endregion
 }

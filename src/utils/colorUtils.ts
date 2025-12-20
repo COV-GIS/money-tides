@@ -1,6 +1,5 @@
 import esri = __esri;
-
-import type { MoneyType, MoneyTypeIndex } from '../typings';
+import type { MT } from '../interfaces';
 
 import { byName } from '@arcgis/core/smartMapping/symbology/support/colorRamps';
 import Color from '@arcgis/core/Color';
@@ -21,7 +20,7 @@ export const moneyColorsHeatmap = (byName('Blue 2') as esri.supportColorRampsCol
  *
  * Useful for getting money colors by index.
  */
-export const moneyTypeIndex: MoneyTypeIndex = [
+export const moneyTypeIndex = [
   'not-money',
   'potentially-money',
   'kinda-money',
@@ -35,7 +34,7 @@ export const moneyTypeIndex: MoneyTypeIndex = [
  * @param moneyType - money type
  * @param className - optional class name
  */
-export const moneyTypeColorHex = (moneyType: MoneyType, className?: string): string => {
+export const moneyTypeColorHex = (moneyType: MT.MoneyType, className?: string): string => {
   const hex = (moneyColors[moneyTypeIndex.indexOf(moneyType)] as esri.Color).toHex();
 
   if (className) return `${className}: ${hex};`;
@@ -48,7 +47,7 @@ export const moneyTypeColorHex = (moneyType: MoneyType, className?: string): str
  *
  * @param moneyType - money type
  */
-export const moneyTypeColors = (moneyType: MoneyType): { primary: esri.Color; secondary: esri.Color } => {
+export const moneyTypeColors = (moneyType: MT.MoneyType): { primary: esri.Color; secondary: esri.Color } => {
   const primary = moneyColors[moneyTypeIndex.indexOf(moneyType)] as esri.Color & { isBright: boolean };
 
   return {

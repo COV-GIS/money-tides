@@ -1,6 +1,6 @@
 //#region types
 
-import type { __MT as MT } from '../interfaces';
+import type { MT } from '../interfaces';
 
 //#endregion
 
@@ -8,7 +8,6 @@ import type { __MT as MT } from '../interfaces';
 
 import '@esri/calcite-components/dist/components/calcite-action';
 import '@esri/calcite-components/dist/components/calcite-action-bar';
-import '@esri/calcite-components/dist/components/calcite-alert';
 import '@esri/calcite-components/dist/components/calcite-dialog';
 import '@esri/calcite-components/dist/components/calcite-table';
 import '@esri/calcite-components/dist/components/calcite-table-cell';
@@ -24,7 +23,6 @@ import { tsx } from '@arcgis/core/widgets/support/widget';
 import createURL from '../utils/createURL';
 import DateTime, { NOAADate } from '../utils/dateAndTimeUtils';
 import { moneyTypeColorHex } from '../utils/colorUtils';
-import { magneticDeclination } from '../utils/sunAndMoonUtils';
 
 //#endregion
 
@@ -48,30 +46,12 @@ export default class TidesDialog extends Widget {
     this._container = value;
   }
 
-  postInitialize(): void {
-    this.container.addEventListener('calciteDialogClose', (): void => {
-      this.magneticDeclinationAlert.open = false;
-    });
-  }
-
   //#endregion
 
   //#region public properties
 
   @property()
   public station!: MT.Station;
-
-  //#endregion
-
-  //#region private properties
-
-  @property()
-  private showSunAndMoonPositions = false;
-
-  @property()
-  private magneticDeclination = '';
-
-  private magneticDeclinationAlert!: HTMLCalciteAlertElement;
 
   //#endregion
 
@@ -84,7 +64,7 @@ export default class TidesDialog extends Widget {
   open(station: MT.Station): void {
     this.station = station;
 
-    // this.renderNow();
+    this.renderNow();
 
     this.container.open = true;
   }
@@ -114,18 +94,6 @@ export default class TidesDialog extends Widget {
     );
   }
 
-  private async showMagneticDeclination(): Promise<void> {
-    const { date, latitude, longitude } = this.station;
-
-    try {
-      this.magneticDeclination = (await magneticDeclination(date, latitude, longitude, true)) as string;
-
-      this.magneticDeclinationAlert.open = true;
-    } catch (error) {
-      console.log(error);
-    }
-  }
-
   //#endregion
 
   //#region render
@@ -135,8 +103,6 @@ export default class TidesDialog extends Widget {
 
     if (!station) return <calcite-dialog></calcite-dialog>;
 
-    const { magneticDeclination, showSunAndMoonPositions } = this;
-
     const { date, name, tides } = station;
 
     return (
@@ -144,36 +110,15 @@ export default class TidesDialog extends Widget {
         heading={`${name} - ${date.toLocaleString(DateTime.DATE_FULL)}`}
         placement="bottom-start"
         scale="s"
-        style={`--calcite-dialog-min-size-y: 0; --calcite-dialog-max-size-x: ${
-          showSunAndMoonPositions ? '420' : '330'
-        }px; --calcite-dialog-content-space: 0;`}
+        style="--calcite-dialog-min-size-y: 0; --calcite-dialog-max-size-x: 380px; --calcite-dialog-content-space: 0;"
         width="s"
       >
-        {/* header menu actions */}
-        <calcite-action
-          icon={showSunAndMoonPositions ? 'view-hide' : 'view-visible'}
-          scale="s"
-          slot="header-menu-actions"
-          text="Solar/Lunar Positions"
-          text-enabled=""
-          onclick={(): void => {
-            this.showSunAndMoonPositions = !this.showSunAndMoonPositions;
-          }}
-        ></calcite-action>
-        <calcite-action
-          icon="explore"
-          scale="s"
-          slot="header-menu-actions"
-          text="Magnetic Declination"
-          text-enabled=""
-          onclick={this.showMagneticDeclination.bind(this)}
-        ></calcite-action>
-
+        {/* action bar */}
         <calcite-action-bar expand-disabled="" layout="horizontal" scale="s" slot="action-bar">
           <calcite-action
             icon="graph-time-series"
             scale="s"
-            text="Plot Tides"
+            text="Tides Plot"
             text-enabled=""
             onclick={(): void => {
               this.emit('plot-tides', this.station);
@@ -191,15 +136,11 @@ export default class TidesDialog extends Widget {
         {/* tides table */}
         <calcite-table striped scale="s" style="--calcite-table-border-color: none;">
           <calcite-table-row slot="table-header">
-            <calcite-table-header heading="Time"></calcite-table-header>
-            <calcite-table-header heading="Tide event"></calcite-table-header>
-            <calcite-table-header heading="Tide height"></calcite-table-header>
-            {showSunAndMoonPositions
-              ? [
-                  <calcite-table-header heading="Solar position" key={KEY++}></calcite-table-header>,
-                  <calcite-table-header heading="Lunar position" key={KEY++}></calcite-table-header>,
-                ]
-              : null}
+            <calcite-table-header alignment="center" heading="Time"></calcite-table-header>
+            <calcite-table-header alignment="center" heading="Event"></calcite-table-header>
+            <calcite-table-header alignment="center" heading="Height"></calcite-table-header>
+            <calcite-table-header alignment="center" heading="Sun Position"></calcite-table-header>
+            <calcite-table-header alignment="center" heading="Moon Position"></calcite-table-header>
           </calcite-table-row>
           {tides
             .filter((tide: MT.Tide): boolean => {
@@ -219,51 +160,29 @@ export default class TidesDialog extends Widget {
 
               return (
                 <calcite-table-row key={KEY++} style={style}>
-                  <calcite-table-cell>{time}</calcite-table-cell>
-                  <calcite-table-cell>{type}</calcite-table-cell>
-                  <calcite-table-cell>{heightLabel}</calcite-table-cell>
-                  {showSunAndMoonPositions
-                    ? [
-                        <calcite-table-cell key={KEY++}>
-                          {sunPosition.aboveHorizon
-                            ? `${sunPosition.bearing} ${
-                                sunPosition.altitude === '0°' ? '' : `@ ${sunPosition.altitude}`
-                              }`
-                            : '-'}
-                        </calcite-table-cell>,
-                        <calcite-table-cell key={KEY++}>
-                          {moonPosition.aboveHorizon
-                            ? `${moonPosition.bearing} ${
-                                moonPosition.altitude === '0°' ? '' : `@ ${moonPosition.altitude}`
-                              }`
-                            : '-'}
-                        </calcite-table-cell>,
-                      ]
-                    : null}
+                  <calcite-table-cell alignment="center">{time}</calcite-table-cell>
+                  <calcite-table-cell alignment="center">{type}</calcite-table-cell>
+                  <calcite-table-cell alignment="center">{heightLabel}</calcite-table-cell>
+                  <calcite-table-cell alignment="center">
+                    {sunPosition.aboveHorizon
+                      ? `${sunPosition.azimuthBearing} ${
+                          sunPosition.altitudeDegrees === '0°' ? '' : `@ ${sunPosition.altitudeDegrees}`
+                        }`
+                      : '-'}
+                  </calcite-table-cell>
+                  <calcite-table-cell alignment="center">
+                    {moonPosition.aboveHorizon
+                      ? `${moonPosition.azimuthBearing} ${
+                          moonPosition.altitudeDegrees === '0°' ? '' : `@ ${moonPosition.altitudeDegrees}`
+                        }`
+                      : '-'}
+                  </calcite-table-cell>
                 </calcite-table-row>
               );
             })}
         </calcite-table>
-
-        {/* <calcite-button
-          scale="s"
-          slot="footer-end"
-          onclick={(): void => {
-            this.emit('plot-tides', this.station);
-          }}
-        >
-          Plot Tides
-        </calcite-button> */}
-
-        <calcite-alert scale="s" slot="alerts" afterCreate={this.alertAfterCreate.bind(this)}>
-          <div slot="message">Magnetic declination is {magneticDeclination}</div>
-        </calcite-alert>
       </calcite-dialog>
     );
-  }
-
-  private alertAfterCreate(alert: HTMLCalciteAlertElement): void {
-    this.magneticDeclinationAlert = alert;
   }
 
   //#endregion

@@ -1,6 +1,8 @@
 //#region types
 
-import type { __MT as MT } from '../interfaces';
+import type { MT } from '../interfaces';
+import type { Context as DataLabelsContext } from 'chartjs-plugin-datalabels';
+type ChartDataValue = { x: number; y: number; tide: MT.Tide };
 
 //#endregion
 
@@ -16,16 +18,24 @@ import { property, subclass } from '@arcgis/core/core/accessorSupport/decorators
 import Widget from '@arcgis/core/widgets/Widget';
 import { tsx } from '@arcgis/core/widgets/support/widget';
 import DateTime from '../utils/dateAndTimeUtils';
-
 import { setTime, twelveHourTime } from '../utils/dateAndTimeUtils';
-import { radiansToDegrees } from '../utils/sunAndMoonUtils';
-
-// import { polynomial } from 'regression';
-
 import Chart from 'chart.js/auto';
 import annotationPlugin from 'chartjs-plugin-annotation';
-
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 Chart.register(annotationPlugin);
+Chart.register(ChartDataLabels);
+
+//#endregion
+
+//#region constants
+
+const COLORS = {
+  moon: 'rgba(74, 74, 74, 0.25)',
+  sun: 'rgba(248, 153, 39, 0.25)',
+  tide: '#00619b',
+  time: '#35ac46',
+  transparent: 'rgba(0, 0, 0, 0)',
+};
 
 //#endregion
 
@@ -45,15 +55,6 @@ export default class PlotModal extends Widget {
 
   //#endregion
 
-  //#region public properties
-
-  // private chart: Chart | null = null;
-
-  @property()
-  private station: MT.Station | null = null;
-
-  //#endregion
-
   //#region public methods
 
   public open(station: MT.Station): void {
@@ -64,10 +65,29 @@ export default class PlotModal extends Widget {
 
   //#endregion
 
+  //#region private properties
+
+  private chart: Chart | null = null;
+
+  @property()
+  private station: MT.Station | null = null;
+
+  //#endregion
+
+  //#region private methods
+
   private createChart(canvas: HTMLCanvasElement): void {
     if (!this.station) return;
 
     const { tides } = this.station;
+
+    const altitideScales = [-90, -45, 0, 45, 90];
+
+    const currentTime = DateTime.now().setZone('America/Los_Angeles').toMillis();
+
+    let maxAltitude = 0;
+
+    let minAltitude = 0;
 
     const labels: number[] = [
       setTime(this.station.date.minus({ day: 1 }), { hour: 12 }).toMillis(),
@@ -81,33 +101,39 @@ export default class PlotModal extends Widget {
       setTime(this.station.date.plus({ day: 1 }), { hour: 12 }).toMillis(),
     ];
 
-    const tideData: { x: number; y: number }[] = tides
+    const tideData: ChartDataValue[] = tides
       .filter((tide: MT.Tide): boolean => {
         return tide.isPrediction;
       })
-      .map((tide: MT.Tide): { x: number; y: number } => {
-        return { x: tide.date.toMillis(), y: tide.height };
+      .map((tide: MT.Tide): ChartDataValue => {
+        return { x: tide.date.toMillis(), y: tide.height, tide };
       });
 
-    const solarData: { x: number; y: number }[] = tides
+    const solarData: ChartDataValue[] = tides
       .filter((tide: MT.Tide): boolean => {
         return tide.isSolar;
       })
-      .map((tide: MT.Tide): { x: number; y: number } => {
-        console.log('solar', radiansToDegrees(tide.sunPosition.position.altitude));
-        return { x: tide.date.toMillis(), y: radiansToDegrees(tide.sunPosition.position.altitude) };
+      .map((tide: MT.Tide): ChartDataValue => {
+        if (tide.sunPosition.altitude > maxAltitude) maxAltitude = tide.sunPosition.altitude;
+
+        if (tide.sunPosition.altitude < minAltitude) minAltitude = tide.sunPosition.altitude;
+
+        return { x: tide.date.toMillis(), y: tide.sunPosition.altitude, tide };
       });
 
-    const lunarData: { x: number; y: number }[] = tides
+    const lunarData: ChartDataValue[] = tides
       .filter((tide: MT.Tide): boolean => {
         return tide.isLunar;
       })
-      .map((tide: MT.Tide): { x: number; y: number } => {
-        console.log('lunar', radiansToDegrees(tide.moonPosition.position.altitude));
-        return { x: tide.date.toMillis(), y: radiansToDegrees(tide.moonPosition.position.altitude) };
+      .map((tide: MT.Tide): ChartDataValue => {
+        if (tide.moonPosition.altitude > maxAltitude) maxAltitude = tide.moonPosition.altitude;
+
+        if (tide.moonPosition.altitude < minAltitude) minAltitude = tide.moonPosition.altitude;
+
+        return { x: tide.date.toMillis(), y: tide.moonPosition.altitude, tide };
       });
 
-    new Chart(canvas, {
+    this.chart = new Chart(canvas, {
       type: 'line',
       data: {
         labels,
@@ -116,16 +142,28 @@ export default class PlotModal extends Widget {
             yAxisID: 'tides',
             data: tideData,
             cubicInterpolationMode: 'monotone',
+            borderColor: COLORS.tide,
+            hoverBorderColor: COLORS.transparent,
+            pointRadius: 0,
+            pointHitRadius: 0,
           },
           {
             yAxisID: 'solar-lunar',
             data: solarData,
             cubicInterpolationMode: 'monotone',
+            borderColor: COLORS.sun,
+            hoverBorderColor: COLORS.transparent,
+            pointRadius: 0,
+            pointHitRadius: 0,
           },
           {
             yAxisID: 'solar-lunar',
             data: lunarData,
             cubicInterpolationMode: 'monotone',
+            borderColor: COLORS.moon,
+            hoverBorderColor: COLORS.transparent,
+            pointRadius: 0,
+            pointHitRadius: 0,
           },
         ],
       },
@@ -150,34 +188,31 @@ export default class PlotModal extends Widget {
             },
           },
           'solar-lunar': {
-            position: 'right',
-            min: 0,
-            max: 70,
             grid: {
               drawOnChartArea: false,
             },
+            max: 90,
+            min: -90,
+            position: 'right',
             title: {
               display: true,
               text: 'Altitude above horizon in degrees',
             },
+            afterBuildTicks: (scale): void => {
+              scale.ticks = altitideScales.map((value: number) => ({ value: value, label: value.toString() }));
+            },
           },
         },
         plugins: {
-          legend: {
-            display: false,
-          },
-          tooltip: {
-            callbacks: {
-              title: (tooltipItems): string => {
-                return DateTime.fromMillis(tooltipItems[0].parsed.x as number).toLocaleString(DateTime.DATETIME_MED);
-              },
-              label: (tooltipItem): string => {
-                return `${tooltipItem.formattedValue} ft`;
-              },
-            },
-          },
           annotation: {
             annotations: {
+              time: {
+                type: 'line',
+                xMax: currentTime,
+                xMin: currentTime,
+                borderColor: COLORS.time,
+                borderWidth: 2,
+              },
               yesterday: {
                 type: 'box',
                 xMin: labels[0],
@@ -194,10 +229,37 @@ export default class PlotModal extends Widget {
               },
             },
           },
+          datalabels: {
+            display: (context: DataLabelsContext): string | boolean => {
+              return context.datasetIndex === 0;
+            },
+            formatter: (value: ChartDataValue, context: DataLabelsContext): string | null => {
+              return context.datasetIndex === 0 ? `${value.tide.time}\n${value.tide.heightLabel}` : null;
+            },
+            color: (context: DataLabelsContext): string => {
+              return context.datasetIndex === 0 ? COLORS.tide : 'rgba(0, 0, 0, 0)';
+            },
+            font: {
+              lineHeight: 1,
+              weight: 'bold',
+            },
+            textStrokeColor: 'white',
+            textStrokeWidth: 5,
+            textAlign: 'center',
+            clip: true,
+          },
+          legend: {
+            display: false,
+          },
+          tooltip: {
+            enabled: false,
+          },
         },
       },
     });
   }
+
+  //#endregion
 
   //#region render
 
@@ -205,7 +267,7 @@ export default class PlotModal extends Widget {
     return (
       <calcite-dialog
         heading={
-          this.station ? `${this.station.name} - ${this.station.date.toLocaleString(DateTime.DATE_FULL)}` : 'Plot'
+          this.station ? `${this.station.name} - ${this.station.date.toLocaleString(DateTime.DATE_FULL)}` : ''
         }
         modal
         scale="s"
@@ -223,6 +285,10 @@ export default class PlotModal extends Widget {
   private dialogAfterCreate(dialog: HTMLCalciteDialogElement): void {
     dialog.addEventListener('calciteDialogClose', (): void => {
       this.station = null;
+
+      this.chart?.destroy();
+
+      this.chart = null;
     });
   }
 
