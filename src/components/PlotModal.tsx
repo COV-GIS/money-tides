@@ -175,7 +175,7 @@ export default class PlotModal extends Widget {
             max: labels[labels.length - 1],
             ticks: {
               count: labels.length,
-              callback: (tickValue): any => {
+              callback: (tickValue): string => {
                 return twelveHourTime(DateTime.fromMillis(tickValue as number));
               },
             },
@@ -266,9 +266,7 @@ export default class PlotModal extends Widget {
   render(): tsx.JSX.Element {
     return (
       <calcite-dialog
-        heading={
-          this.station ? `${this.station.name} - ${this.station.date.toLocaleString(DateTime.DATE_FULL)}` : ''
-        }
+        heading={this.station ? `${this.station.name} - ${this.station.date.toLocaleString(DateTime.DATE_FULL)}` : ''}
         modal
         scale="s"
         afterCreate={this.dialogAfterCreate.bind(this)}

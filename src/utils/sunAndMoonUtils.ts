@@ -22,20 +22,20 @@ export const azimuthToBearing = (azimuth: number): string => {
   return _azimuth === 0
     ? 'South'
     : _azimuth === 90
-    ? 'West'
-    : _azimuth === -90
-    ? 'East'
-    : _azimuth === 180 || _azimuth === -180
-    ? 'North'
-    : _azimuth > 0 && _azimuth < 90
-    ? `S ${_azimuth}° W`
-    : _azimuth > 90
-    ? `N ${_azimuth - 90}° W`
-    : _azimuth < 0 && _azimuth > -90
-    ? `S ${Math.abs(_azimuth)}° E`
-    : _azimuth < -90
-    ? `N ${Math.abs(_azimuth) - 90}° E`
-    : 'invalid azimuth';
+      ? 'West'
+      : _azimuth === -90
+        ? 'East'
+        : _azimuth === 180 || _azimuth === -180
+          ? 'North'
+          : _azimuth > 0 && _azimuth < 90
+            ? `S ${_azimuth}° W`
+            : _azimuth > 90
+              ? `N ${_azimuth - 90}° W`
+              : _azimuth < 0 && _azimuth > -90
+                ? `S ${Math.abs(_azimuth)}° E`
+                : _azimuth < -90
+                  ? `N ${Math.abs(_azimuth) - 90}° E`
+                  : 'invalid azimuth';
 };
 
 export const magneticDeclination = async (
@@ -78,20 +78,20 @@ export const moonPhaseName = (phase: number): string => {
   return phase === 0
     ? 'New Moon'
     : phase > 0 && phase < 0.25
-    ? 'Waxing Crescent'
-    : phase === 0.25
-    ? 'First Quarter'
-    : phase > 0.25 && phase < 0.5
-    ? 'Waxing Gibbous'
-    : phase === 0.5
-    ? 'Full Moon'
-    : phase > 0.5 && phase < 0.75
-    ? 'Waning Gibbous'
-    : phase === 0.75
-    ? 'Last Quarter'
-    : phase > 0.75 && phase <= 1
-    ? 'Waning Crescent'
-    : 'Invalid Phase';
+      ? 'Waxing Crescent'
+      : phase === 0.25
+        ? 'First Quarter'
+        : phase > 0.25 && phase < 0.5
+          ? 'Waxing Gibbous'
+          : phase === 0.5
+            ? 'Full Moon'
+            : phase > 0.5 && phase < 0.75
+              ? 'Waning Gibbous'
+              : phase === 0.75
+                ? 'Last Quarter'
+                : phase > 0.75 && phase <= 1
+                  ? 'Waning Crescent'
+                  : 'Invalid Phase';
 };
 
 export const radiansToDegrees = (radians: number): number => {

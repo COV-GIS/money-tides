@@ -6,11 +6,9 @@ export const tideHeight = (tides: MT.Tide[], date: DateTime): number => {
     return tide.isPrediction;
   });
 
-  let height = -999;
+  const height = -999;
 
   let proceeding: MT.Tide | nullish;
-
-  let upcoming: MT.Tide | nullish;
 
   _tides.forEach((tide: MT.Tide): void => {
     if (tide.date.toMillis() < date.toMillis()) proceeding = tide;
@@ -18,7 +16,7 @@ export const tideHeight = (tides: MT.Tide[], date: DateTime): number => {
 
   if (!proceeding) return height;
 
-  upcoming = _tides[_tides.indexOf(proceeding) + 1];
+  const upcoming: MT.Tide | nullish = _tides[_tides.indexOf(proceeding) + 1];
 
   if (!upcoming) return height;
 

@@ -14,13 +14,7 @@ export const moneyColors = (byName('Red and Green 9') as esri.supportColorRampsC
  *
  * Useful for getting money colors by index.
  */
-export const moneyTypeIndex = [
-  'not-money',
-  'potentially-money',
-  'kinda-money',
-  'mostly-money',
-  'money',
-];
+export const moneyTypeIndex = ['not-money', 'potentially-money', 'kinda-money', 'mostly-money', 'money'];
 
 /**
  * Return tide color by money type in hex or a style.
