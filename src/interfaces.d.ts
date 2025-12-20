@@ -63,11 +63,6 @@ declare namespace MT {
 
   type StationGraphics = {
     /**
-     * Heatmap feature layer graphic
-     */
-    heatmapGraphic: esri.Graphic;
-
-    /**
      * Marker graphic
      */
     markerGraphic: esri.Graphic;

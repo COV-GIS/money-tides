@@ -26,14 +26,12 @@ import { tsx } from '@arcgis/core/widgets/support/widget';
 import Collection from '@arcgis/core/core/Collection';
 import Map from '@arcgis/core/Map';
 import MapView from '@arcgis/core/views/MapView';
-import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import { createRenderer } from '@arcgis/core/smartMapping/renderers/heatmap';
 import Graphic from '@arcgis/core/Graphic';
 import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
 import TextSymbol from '@arcgis/core/symbols/TextSymbol';
-import Color from '@arcgis/core/Color';
 import Point from '@arcgis/core/geometry/Point';
-import { moneyTypeColors, moneyColorsHeatmap } from '../utils/colorUtils';
+import { moneyTypeColors } from '../utils/colorUtils';
 import DateTime, { NOAADate, setNoon, setTime, twelveHourTime } from '../utils/dateAndTimeUtils';
 import { sunAndMoon, sunAndMoonPosition } from '../utils/sunAndMoonUtils';
 import { tideHeight } from '../utils/tideUtils';
@@ -184,8 +182,6 @@ export default class MoneyTides extends Widget {
 
   private datePicker!: HTMLCalciteInputDatePickerElement;
 
-  private heatmapLayer!: esri.FeatureLayer;
-
   private lunarPhaseModal = new LunarPhaseModal();
 
   private plotModal = new PlotModal();
@@ -255,19 +251,6 @@ export default class MoneyTides extends Widget {
       longitude,
     });
 
-    const heatmapGraphic = new Graphic({
-      attributes: { id, height: 0 },
-      geometry,
-    });
-
-    if (!this.heatmapLayer) {
-      this.createLayer(heatmapGraphic);
-    } else {
-      this.heatmapLayer.applyEdits({
-        addFeatures: [heatmapGraphic],
-      });
-    }
-
     const stationGraphic = new Graphic({
       attributes,
       geometry,
@@ -305,57 +288,7 @@ export default class MoneyTides extends Widget {
 
     graphics.addMany([markerGraphic, stationGraphic, tidesGraphic]);
 
-    return { heatmapGraphic, markerGraphic, stationGraphic, tidesGraphic };
-  }
-
-  private async createLayer(graphic: esri.Graphic): Promise<void> {
-    const { view } = this;
-
-    const layer = (this.heatmapLayer = new FeatureLayer({
-      fields: [
-        {
-          name: 'OBJECTID',
-          type: 'oid',
-        },
-        {
-          name: 'id',
-          type: 'string',
-        },
-        {
-          name: 'height',
-          type: 'double',
-        },
-      ],
-      geometryType: 'point',
-      objectIdField: 'OBJECTID',
-      outFields: ['*'],
-      source: [graphic],
-      opacity: 0.7,
-      visible: false,
-    }));
-
-    view.map?.add(layer);
-
-    const renderer = (
-      await createRenderer({
-        layer,
-        view,
-        field: 'height',
-        radius: 125,
-        fadeRatio: 0.5,
-        heatmapScheme: {
-          colors: moneyColorsHeatmap,
-          name: 'money',
-          tags: ['money'],
-          id: 'money',
-          opacity: 1,
-        },
-      })
-    ).renderer;
-
-    renderer.referenceScale = 2000000;
-
-    layer.renderer = renderer;
+    return { markerGraphic, stationGraphic, tidesGraphic };
   }
 
   private async getTides(
@@ -842,7 +775,7 @@ export default class MoneyTides extends Widget {
 
   private updateGraphics(station: MT.Station): void {
     const {
-      graphics: { heatmapGraphic, markerGraphic, stationGraphic, tidesGraphic },
+      graphics: { markerGraphic, stationGraphic, tidesGraphic },
       money,
       // predictionUpdateError,
       tides,
@@ -872,13 +805,6 @@ export default class MoneyTides extends Widget {
       color: primary,
       haloColor: secondary,
       text: this.tidesSymbolText(tides),
-    });
-
-    // TODO handle error for heatmap layer
-    Object.assign(heatmapGraphic.attributes, { height: 0 });
-
-    this.heatmapLayer.applyEdits({
-      updateFeatures: [heatmapGraphic],
     });
   }
 

@@ -10,12 +10,6 @@ import Color from '@arcgis/core/Color';
 export const moneyColors = (byName('Red and Green 9') as esri.supportColorRampsColorRamp).colors;
 
 /**
- * Array of money colors for heatmap.
- */
-export const moneyColorsHeatmap = (byName('Blue 2') as esri.supportColorRampsColorRamp).colorsForClassBreaks[9]
-  .colors as esri.Color[];
-
-/**
  * Array of money types by array index; `not-money = 0`, `potentially-money = 1`, etc.
  *
  * Useful for getting money colors by index.
