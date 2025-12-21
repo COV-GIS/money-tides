@@ -75,21 +75,23 @@ export const magneticDeclination = async (
 };
 
 export const moonPhaseName = (phase: number): string => {
-  return phase === 0
+  console.log(phase);
+
+  return phase <= 0.05
     ? 'New Moon'
-    : phase > 0 && phase < 0.25
+    : phase > 0.05 && phase < 0.2
       ? 'Waxing Crescent'
-      : phase === 0.25
+      : phase >= 0.2 && phase <= 0.3
         ? 'First Quarter'
-        : phase > 0.25 && phase < 0.5
+        : phase > 0.3 && phase < 0.45
           ? 'Waxing Gibbous'
-          : phase === 0.5
+          : phase >= 0.45 && phase <= 0.55
             ? 'Full Moon'
-            : phase > 0.5 && phase < 0.75
+            : phase > 0.55 && phase < 0.7
               ? 'Waning Gibbous'
-              : phase === 0.75
+              : phase >= 0.7 && phase <= 0.8
                 ? 'Last Quarter'
-                : phase > 0.75 && phase <= 1
+                : phase > 0.8
                   ? 'Waning Crescent'
                   : 'Invalid Phase';
 };
