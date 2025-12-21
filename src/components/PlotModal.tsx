@@ -20,11 +20,19 @@ import Widget from '@arcgis/core/widgets/Widget';
 import { tsx } from '@arcgis/core/widgets/support/widget';
 import { getDocumentStyle } from '../utils/colorUtils';
 import DateTime, { setTime, twelveHourTime } from '../utils/dateAndTimeUtils';
-import Chart from 'chart.js/auto';
+import { Chart, LineController, LineElement, PointElement, CategoryScale, LinearScale, Title } from 'chart.js';
 import annotationPlugin from 'chartjs-plugin-annotation';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
-Chart.register(annotationPlugin);
-Chart.register(ChartDataLabels);
+Chart.register([
+  LineController,
+  LineElement,
+  PointElement,
+  CategoryScale,
+  LinearScale,
+  Title,
+  ChartDataLabels,
+  annotationPlugin,
+]);
 
 //#endregion
 
@@ -38,7 +46,13 @@ const COLORS = {
   transparent: 'rgba(0, 0, 0, 0)',
 };
 
-const FONT_FAMILY = getDocumentStyle('--calcite-sans-family');
+const FONT_FAMILY = getDocumentStyle('--calcite-font-family');
+
+const FONT = {
+  family: FONT_FAMILY,
+  lineHeight: 1,
+  size: 12,
+};
 
 //#endregion
 
@@ -79,34 +93,32 @@ export default class PlotModal extends Widget {
 
   //#region private methods
 
-  private createChart(canvas: HTMLCanvasElement): void {
-    if (!this.station) return;
+  private data(tides: MT.Tide[]): {
+    lunarData: ChartDataValue[];
+    solarData: ChartDataValue[];
+    tideData: ChartDataValue[];
+    tideHeightMax: number;
+    tideHeightMin: number;
+  } {
+    let tideHeightMax = 0;
 
-    const { tides } = this.station;
+    let tideHeightMin = 0;
 
-    const altitideScales = [-90, -45, 0, 45, 90];
+    const lunarData: ChartDataValue[] = tides
+      .filter((tide: MT.Tide): boolean => {
+        return tide.isLunar;
+      })
+      .map((tide: MT.Tide): ChartDataValue => {
+        return { x: tide.date.toMillis(), y: tide.moonPosition.altitude, tide };
+      });
 
-    const currentTime = DateTime.now().setZone('America/Los_Angeles').toMillis();
-
-    let maxAltitude = 0;
-
-    let minAltitude = 0;
-
-    let maxHeight = 0;
-
-    let minHeight = 0;
-
-    const labels: number[] = [
-      setTime(this.station.date.minus({ day: 1 }), { hour: 12 }).toMillis(),
-      setTime(this.station.date.minus({ day: 1 }), { hour: 18 }).toMillis(),
-      setTime(this.station.date, { hour: 0 }).toMillis(),
-      setTime(this.station.date, { hour: 6 }).toMillis(),
-      setTime(this.station.date, { hour: 12 }).toMillis(),
-      setTime(this.station.date, { hour: 18 }).toMillis(),
-      setTime(this.station.date, { hour: 24 }).toMillis(),
-      setTime(this.station.date.plus({ day: 1 }), { hour: 6 }).toMillis(),
-      setTime(this.station.date.plus({ day: 1 }), { hour: 12 }).toMillis(),
-    ];
+    const solarData: ChartDataValue[] = tides
+      .filter((tide: MT.Tide): boolean => {
+        return tide.isSolar;
+      })
+      .map((tide: MT.Tide): ChartDataValue => {
+        return { x: tide.date.toMillis(), y: tide.sunPosition.altitude, tide };
+      });
 
     const tideData: ChartDataValue[] = tides
       .filter((tide: MT.Tide): boolean => {
@@ -115,36 +127,46 @@ export default class PlotModal extends Widget {
       .map((tide: MT.Tide): ChartDataValue => {
         const { date, height } = tide;
 
-        if (height > maxHeight) maxHeight = height;
+        if (height > tideHeightMax) tideHeightMax = height;
 
-        if (height < minHeight) minHeight = height;
+        if (height < tideHeightMin) tideHeightMin = height;
 
         return { x: date.toMillis(), y: height, tide };
       });
 
-    const solarData: ChartDataValue[] = tides
-      .filter((tide: MT.Tide): boolean => {
-        return tide.isSolar;
-      })
-      .map((tide: MT.Tide): ChartDataValue => {
-        if (tide.sunPosition.altitude > maxAltitude) maxAltitude = tide.sunPosition.altitude;
+    return {
+      lunarData,
+      solarData,
+      tideData,
+      tideHeightMax: Math.ceil(tideHeightMax) + 1,
+      tideHeightMin: Math.floor(tideHeightMin) - 1,
+    };
+  }
 
-        if (tide.sunPosition.altitude < minAltitude) minAltitude = tide.sunPosition.altitude;
+  private labels(date: DateTime): number[] {
+    return [
+      setTime(date.minus({ day: 1 }), { hour: 12 }).toMillis(),
+      setTime(date.minus({ day: 1 }), { hour: 18 }).toMillis(),
+      setTime(date, { hour: 0 }).toMillis(),
+      setTime(date, { hour: 6 }).toMillis(),
+      setTime(date, { hour: 12 }).toMillis(),
+      setTime(date, { hour: 18 }).toMillis(),
+      setTime(date, { hour: 24 }).toMillis(),
+      setTime(date.plus({ day: 1 }), { hour: 6 }).toMillis(),
+      setTime(date.plus({ day: 1 }), { hour: 12 }).toMillis(),
+    ];
+  }
 
-        return { x: tide.date.toMillis(), y: tide.sunPosition.altitude, tide };
-      });
+  private createChart(canvas: HTMLCanvasElement): void {
+    if (!this.station) return;
 
-    const lunarData: ChartDataValue[] = tides
-      .filter((tide: MT.Tide): boolean => {
-        return tide.isLunar;
-      })
-      .map((tide: MT.Tide): ChartDataValue => {
-        if (tide.moonPosition.altitude > maxAltitude) maxAltitude = tide.moonPosition.altitude;
+    const labels = this.labels(this.station.date);
 
-        if (tide.moonPosition.altitude < minAltitude) minAltitude = tide.moonPosition.altitude;
+    const { lunarData, solarData, tideData, tideHeightMax, tideHeightMin } = this.data(this.station.tides);
 
-        return { x: tide.date.toMillis(), y: tide.moonPosition.altitude, tide };
-      });
+    const altitideScales = [-75, -50, -25, 0, 25, 50, 75];
+
+    const currentTime = DateTime.now().setZone('America/Los_Angeles').toMillis();
 
     this.chart = new Chart(canvas, {
       type: 'line',
@@ -181,10 +203,7 @@ export default class PlotModal extends Widget {
         ],
       },
       options: {
-        font: {
-          family: FONT_FAMILY,
-          lineHeight: 1,
-        },
+        font: FONT,
         scales: {
           x: {
             type: 'linear',
@@ -192,30 +211,39 @@ export default class PlotModal extends Widget {
             max: labels[labels.length - 1],
             ticks: {
               count: labels.length,
+              font: FONT,
               callback: (tickValue: string | number): string => {
                 return twelveHourTime(DateTime.fromMillis(tickValue as number));
               },
             },
           },
           tides: {
-            max: Math.ceil(maxHeight) + 1,
-            min: Math.floor(minHeight) - 1,
+            max: tideHeightMax,
+            min: tideHeightMin,
             position: 'left',
             title: {
               display: true,
+              font: FONT,
               text: 'Height in feet (MLLW)',
+            },
+            ticks: {
+              font: FONT,
             },
           },
           'solar-lunar': {
             grid: {
               drawOnChartArea: false,
             },
-            max: 90,
-            min: -90,
+            max: altitideScales[altitideScales.length - 1],
+            min: altitideScales[0],
             position: 'right',
             title: {
               display: true,
+              font: FONT,
               text: 'Altitude above horizon in degrees',
+            },
+            ticks: {
+              font: FONT,
             },
             afterBuildTicks: (scale: Scale<CoreScaleOptions>): void => {
               scale.ticks = altitideScales.map((value: number) => ({ value: value, label: value.toString() }));
@@ -241,9 +269,7 @@ export default class PlotModal extends Widget {
                 content: 'Current Time',
                 rotation: 90,
                 color: COLORS.time,
-                font: {
-                  family: FONT_FAMILY,
-                },
+                font: FONT,
                 textStrokeColor: 'white',
                 textStrokeWidth: 3,
                 drawTime: 'beforeDatasetsDraw',
@@ -274,11 +300,9 @@ export default class PlotModal extends Widget {
               return context.datasetIndex === 0 ? `${value.tide.time}\n${value.tide.heightLabel}` : null;
             },
             color: (context: DataLabelsContext): string => {
-              return context.datasetIndex === 0 ? COLORS.tide : 'rgba(0, 0, 0, 0)';
+              return context.datasetIndex === 0 ? COLORS.tide : COLORS.transparent;
             },
-            font: {
-              lineHeight: 1,
-            },
+            font: FONT,
             textStrokeColor: 'white',
             textStrokeWidth: 4,
             textAlign: 'center',
@@ -299,7 +323,7 @@ export default class PlotModal extends Widget {
 
   //#region render
 
-  render(): tsx.JSX.Element {
+  override render(): tsx.JSX.Element {
     return (
       <calcite-dialog
         heading={this.station ? `${this.station.name} - ${this.station.date.toLocaleString(DateTime.DATE_FULL)}` : ''}

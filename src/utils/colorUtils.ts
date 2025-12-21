@@ -19,7 +19,7 @@ export const moneyTypeIndex = ['not-money', 'potentially-money', 'kinda-money', 
 export const getDocumentStyle = (style: string, colorOptions?: { opacity?: number; type: 'hex' | 'rgba' }): string => {
   const value = getComputedStyle(document.documentElement).getPropertyValue(style);
 
-  if (!colorOptions) return style;
+  if (!colorOptions) return value;
 
   const { opacity, type } = colorOptions;
 
