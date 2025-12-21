@@ -27,13 +27,13 @@ import Collection from '@arcgis/core/core/Collection';
 import Map from '@arcgis/core/Map';
 import MapView from '@arcgis/core/views/MapView';
 import Graphic from '@arcgis/core/Graphic';
+import Color from '@arcgis/core/Color';
 import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
 import TextSymbol from '@arcgis/core/symbols/TextSymbol';
 import Point from '@arcgis/core/geometry/Point';
 import { moneyTypeColors } from '../utils/colorUtils';
 import DateTime, { NOAADate, setNoon, setTime, twelveHourTime } from '../utils/dateAndTimeUtils';
 import { sunAndMoon, sunAndMoonPosition } from '../utils/sunAndMoonUtils';
-import { tideHeight } from '../utils/tideUtils';
 import createURL from '../utils/createURL';
 import AboutModal from './AboutModal';
 import Attribution from './Attribution';
@@ -453,7 +453,7 @@ export default class MoneyTides extends Widget {
     tideEvents.forEach((tideEvent: MT.TideEvent): void => {
       const { date: tideDate, event, type: eventType } = tideEvent;
 
-      const height = tideHeight(tides, tideDate);
+      const height = this.tideHeight(tides, tideDate);
 
       tides.push({
         date: tideDate,
@@ -481,8 +481,6 @@ export default class MoneyTides extends Widget {
       .forEach((tide: MT.Tide, index: number, array: MT.Tide[]): void => {
         const { date: tideDate, type } = tide;
 
-        // if ((index = array.length - 1)) return;
-
         let culminationDate: DateTime | nullish;
 
         let height: number | nullish;
@@ -493,7 +491,7 @@ export default class MoneyTides extends Widget {
           if (moonset) {
             culminationDate = DateTime.fromMillis(Math.floor((tideDate.toMillis() + moonset.date.toMillis()) / 2));
 
-            height = tideHeight(tides, culminationDate);
+            height = this.tideHeight(tides, culminationDate);
 
             tides.push({
               date: culminationDate,
@@ -517,7 +515,7 @@ export default class MoneyTides extends Widget {
           if (moonrise) {
             culminationDate = DateTime.fromMillis(Math.floor((tideDate.toMillis() + moonrise.date.toMillis()) / 2));
 
-            height = tideHeight(tides, culminationDate);
+            height = this.tideHeight(tides, culminationDate);
 
             tides.push({
               date: culminationDate,
@@ -678,6 +676,45 @@ export default class MoneyTides extends Widget {
     return 'not-money';
   }
 
+  private tideHeight(tides: MT.Tide[], date: DateTime): number {
+    const _tides = tides.filter((tide: MT.Tide): boolean => {
+      return tide.isPrediction;
+    });
+
+    const height = -999;
+
+    let proceeding: MT.Tide | nullish;
+
+    _tides.forEach((tide: MT.Tide): void => {
+      if (tide.date.toMillis() < date.toMillis()) proceeding = tide;
+    });
+
+    if (!proceeding) return height;
+
+    const upcoming: MT.Tide | nullish = _tides[_tides.indexOf(proceeding) + 1];
+
+    if (!upcoming) return height;
+
+    const { date: proceedingDate, height: startHeight } = proceeding;
+
+    const { date: upcomingDate, height: endHeight } = upcoming;
+
+    const startTime = proceedingDate.toMillis();
+
+    const endTime = upcomingDate.toMillis();
+
+    const time = date.toMillis();
+
+    // time does not fall between predictions
+    if ((time < startTime && time < endTime) || (time > startTime && time > endTime)) {
+      return height;
+    } else {
+      return Number(
+        (startHeight + ((endHeight - startHeight) * (time - startTime)) / (endTime - startTime)).toFixed(2),
+      );
+    }
+  }
+
   private tidesSymbolText(tides: MT.Tide[]): string {
     return tides
       .filter((tide: MT.Tide): boolean => {
@@ -692,11 +729,11 @@ export default class MoneyTides extends Widget {
   }
 
   private async updateStation(station: MT.Station): Promise<void> {
+    const { date, tidesDialog } = this;
+
+    const { id, latitude, longitude } = station;
+
     try {
-      const { date, tidesDialog } = this;
-
-      const { id, latitude, longitude } = station;
-
       const { money, moon, sun, tides } = await this.getTides({
         date,
         id,
@@ -754,6 +791,10 @@ export default class MoneyTides extends Widget {
 
       station.errorCount = 0;
 
+      if (tidesDialog.container.open && tidesDialog.station.id === id) {
+        tidesDialog.close();
+      }
+
       this.alerts.add(
         <calcite-alert
           auto-close=""
@@ -774,19 +815,19 @@ export default class MoneyTides extends Widget {
 
   private updateGraphics(station: MT.Station): void {
     const {
+      error,
       graphics: { markerGraphic, stationGraphic, tidesGraphic },
       money,
-      // predictionUpdateError,
       tides,
     } = station;
 
     let { primary, secondary } = moneyTypeColors(money);
 
-    // if (predictionUpdateError) {
-    //   primary = new Color('black');
+    if (error) {
+      primary = new Color('black');
 
-    //   secondary = new Color('white');
-    // }
+      secondary = new Color('white');
+    }
 
     stationGraphic.symbol = Object.assign((stationGraphic.symbol as esri.TextSymbol).clone(), {
       color: primary,
@@ -799,10 +840,8 @@ export default class MoneyTides extends Widget {
     });
 
     tidesGraphic.symbol = Object.assign((tidesGraphic.symbol as esri.TextSymbol).clone(), {
-      // color: predictionUpdateError ? null : primary,
-      // haloColor: predictionUpdateError ? null : secondary,
-      color: primary,
-      haloColor: secondary,
+      color: error ? null : primary,
+      haloColor: error ? null : secondary,
       text: this.tidesSymbolText(tides),
     });
   }
@@ -848,9 +887,7 @@ export default class MoneyTides extends Widget {
       return station.id === result.graphic.attributes.id;
     });
 
-    // if (!station || (station && station.predictionUpdateError)) return;
-
-    if (!station) return;
+    if (!station || (station && station.error)) return;
 
     tidesDialog.open(station);
   }

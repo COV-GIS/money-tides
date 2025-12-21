@@ -16,6 +16,20 @@ export const moneyColors = (byName('Red and Green 9') as esri.supportColorRampsC
  */
 export const moneyTypeIndex = ['not-money', 'potentially-money', 'kinda-money', 'mostly-money', 'money'];
 
+export const getDocumentStyle = (style: string, colorOptions?: { opacity?: number; type: 'hex' | 'rgba' }): string => {
+  const value = getComputedStyle(document.documentElement).getPropertyValue(style);
+
+  if (!colorOptions) return style;
+
+  const { opacity, type } = colorOptions;
+
+  const color = new Color(value);
+
+  color.a = opacity || 1;
+
+  return type === 'hex' ? color.toHex({ digits: 8 }) : color.toCss(true);
+};
+
 /**
  * Return tide color by money type in hex or a style.
  *

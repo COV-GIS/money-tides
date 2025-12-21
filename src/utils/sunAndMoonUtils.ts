@@ -1,6 +1,5 @@
 import type { MT } from '../interfaces';
 
-import { DateTime } from 'luxon';
 import {
   getTimes as suncalcSunTimes,
   getPosition as suncalcSunPosition,
@@ -8,6 +7,7 @@ import {
   getMoonTimes as suncalcMoonTimes,
   getMoonIllumination as suncalcMoonIllumination,
 } from 'suncalc';
+import DateTime from './dateAndTimeUtils';
 import createURL from './createURL';
 
 export const MOON_DISTANCE = {

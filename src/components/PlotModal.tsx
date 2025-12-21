@@ -1,6 +1,7 @@
 //#region types
 
 import type { MT } from '../interfaces';
+import type { Scale, CoreScaleOptions } from 'chart.js';
 import type { Context as DataLabelsContext } from 'chartjs-plugin-datalabels';
 type ChartDataValue = { x: number; y: number; tide: MT.Tide };
 
@@ -17,8 +18,8 @@ import '@esri/calcite-components/dist/components/calcite-dialog';
 import { property, subclass } from '@arcgis/core/core/accessorSupport/decorators';
 import Widget from '@arcgis/core/widgets/Widget';
 import { tsx } from '@arcgis/core/widgets/support/widget';
-import DateTime from '../utils/dateAndTimeUtils';
-import { setTime, twelveHourTime } from '../utils/dateAndTimeUtils';
+import { getDocumentStyle } from '../utils/colorUtils';
+import DateTime, { setTime, twelveHourTime } from '../utils/dateAndTimeUtils';
 import Chart from 'chart.js/auto';
 import annotationPlugin from 'chartjs-plugin-annotation';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
@@ -30,12 +31,14 @@ Chart.register(ChartDataLabels);
 //#region constants
 
 const COLORS = {
-  moon: 'rgba(74, 74, 74, 0.25)',
-  sun: 'rgba(248, 153, 39, 0.25)',
-  tide: '#00619b',
-  time: '#35ac46',
+  moon: getDocumentStyle('--calcite-color-text-2', { opacity: 0.3, type: 'rgba' }),
+  sun: getDocumentStyle('--calcite-color-status-warning', { opacity: 0.3, type: 'rgba' }),
+  tide: getDocumentStyle('--calcite-color-status-info', { type: 'hex' }),
+  time: getDocumentStyle('--calcite-color-status-success', { type: 'hex' }),
   transparent: 'rgba(0, 0, 0, 0)',
 };
+
+const FONT_FAMILY = getDocumentStyle('--calcite-sans-family');
 
 //#endregion
 
@@ -89,6 +92,10 @@ export default class PlotModal extends Widget {
 
     let minAltitude = 0;
 
+    let maxHeight = 0;
+
+    let minHeight = 0;
+
     const labels: number[] = [
       setTime(this.station.date.minus({ day: 1 }), { hour: 12 }).toMillis(),
       setTime(this.station.date.minus({ day: 1 }), { hour: 18 }).toMillis(),
@@ -106,7 +113,13 @@ export default class PlotModal extends Widget {
         return tide.isPrediction;
       })
       .map((tide: MT.Tide): ChartDataValue => {
-        return { x: tide.date.toMillis(), y: tide.height, tide };
+        const { date, height } = tide;
+
+        if (height > maxHeight) maxHeight = height;
+
+        if (height < minHeight) minHeight = height;
+
+        return { x: date.toMillis(), y: height, tide };
       });
 
     const solarData: ChartDataValue[] = tides
@@ -168,6 +181,10 @@ export default class PlotModal extends Widget {
         ],
       },
       options: {
+        font: {
+          family: FONT_FAMILY,
+          lineHeight: 1,
+        },
         scales: {
           x: {
             type: 'linear',
@@ -175,12 +192,14 @@ export default class PlotModal extends Widget {
             max: labels[labels.length - 1],
             ticks: {
               count: labels.length,
-              callback: (tickValue): string => {
+              callback: (tickValue: string | number): string => {
                 return twelveHourTime(DateTime.fromMillis(tickValue as number));
               },
             },
           },
           tides: {
+            max: Math.ceil(maxHeight) + 1,
+            min: Math.floor(minHeight) - 1,
             position: 'left',
             title: {
               display: true,
@@ -198,7 +217,7 @@ export default class PlotModal extends Widget {
               display: true,
               text: 'Altitude above horizon in degrees',
             },
-            afterBuildTicks: (scale): void => {
+            afterBuildTicks: (scale: Scale<CoreScaleOptions>): void => {
               scale.ticks = altitideScales.map((value: number) => ({ value: value, label: value.toString() }));
             },
           },
@@ -212,6 +231,22 @@ export default class PlotModal extends Widget {
                 xMin: currentTime,
                 borderColor: COLORS.time,
                 borderWidth: 2,
+                drawTime: 'beforeDatasetsDraw',
+              },
+              timeLabel: {
+                type: 'label',
+                xValue: currentTime,
+                xAdjust: 8,
+                yAdjust: -100,
+                content: 'Current Time',
+                rotation: 90,
+                color: COLORS.time,
+                font: {
+                  family: FONT_FAMILY,
+                },
+                textStrokeColor: 'white',
+                textStrokeWidth: 3,
+                drawTime: 'beforeDatasetsDraw',
               },
               yesterday: {
                 type: 'box',
@@ -219,6 +254,7 @@ export default class PlotModal extends Widget {
                 xMax: labels[2],
                 backgroundColor: 'rgba(0, 0, 0, 0.1)',
                 borderWidth: 0,
+                drawTime: 'beforeDatasetsDraw',
               },
               tomorrow: {
                 type: 'box',
@@ -226,6 +262,7 @@ export default class PlotModal extends Widget {
                 xMax: labels[8],
                 backgroundColor: 'rgba(0, 0, 0, 0.1)',
                 borderWidth: 0,
+                drawTime: 'beforeDatasetsDraw',
               },
             },
           },
@@ -241,10 +278,9 @@ export default class PlotModal extends Widget {
             },
             font: {
               lineHeight: 1,
-              weight: 'bold',
             },
             textStrokeColor: 'white',
-            textStrokeWidth: 5,
+            textStrokeWidth: 4,
             textAlign: 'center',
             clip: true,
           },
