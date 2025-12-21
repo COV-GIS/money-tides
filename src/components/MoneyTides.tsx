@@ -33,7 +33,7 @@ import TextSymbol from '@arcgis/core/symbols/TextSymbol';
 import Point from '@arcgis/core/geometry/Point';
 import { moneyTypeColors } from '../utils/colorUtils';
 import DateTime, { NOAADate, setNoon, setTime, twelveHourTime } from '../utils/dateAndTimeUtils';
-import { sunAndMoon, sunAndMoonPosition } from '../utils/sunAndMoonUtils';
+import { magneticDeclination, sunAndMoon, sunAndMoonPosition } from '../utils/sunAndMoonUtils';
 import createURL from '../utils/createURL';
 import AboutModal from './AboutModal';
 import Attribution from './Attribution';
@@ -185,6 +185,11 @@ export default class MoneyTides extends Widget {
   private disclaimerModal = new DisclaimerModal();
 
   private lunarPhaseModal = new LunarPhaseModal();
+
+  @property()
+  private magneticDeclination = 'unknown';
+
+  private magneticDeclinationAlert!: HTMLCalciteAlertElement;
 
   private plotModal = new PlotModal();
 
@@ -629,6 +634,7 @@ export default class MoneyTides extends Widget {
           kind="danger"
           open
           scale="s"
+          slot="alerts"
         >
           <div slot="title">Error</div>
           <div slot="message">Failed to load station data for {stationInfo.name}</div>
@@ -808,6 +814,7 @@ export default class MoneyTides extends Widget {
           kind="danger"
           open
           scale="s"
+          slot="alerts"
         >
           <div slot="title">Error</div>
           <div slot="message">Failed to load station data for {station.name}</div>
@@ -873,6 +880,16 @@ export default class MoneyTides extends Widget {
     this.datePicker.dispatchEvent(new Event('calciteInputDatePickerChange'));
   }
 
+  private async magneticDeclinationDropdownItemClickEvent(): Promise<void> {
+    try {
+      this.magneticDeclination = (await magneticDeclination(this.date, 44.927, -124.013, true)) as string;
+
+      this.magneticDeclinationAlert.open = true;
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
   private async viewClickEvent(event: esri.ViewClickEvent): Promise<void> {
     event.stopPropagation();
 
@@ -900,7 +917,7 @@ export default class MoneyTides extends Widget {
   //#region render
 
   override render(): tsx.JSX.Element {
-    const { alerts, zoomToDropdownItems } = this;
+    const { alerts, magneticDeclination, zoomToDropdownItems } = this;
 
     return (
       <calcite-shell>
@@ -950,6 +967,12 @@ export default class MoneyTides extends Widget {
                   Lunar Phase
                 </calcite-dropdown-item>
                 <calcite-dropdown-item
+                  icon-start="explore"
+                  onclick={this.magneticDeclinationDropdownItemClickEvent.bind(this)}
+                >
+                  Magnetic Declination
+                </calcite-dropdown-item>
+                <calcite-dropdown-item
                   icon-start="question"
                   onclick={(): void => {
                     this.aboutModal.open();
@@ -970,7 +993,17 @@ export default class MoneyTides extends Widget {
         <calcite-dialog slot="dialogs" afterCreate={this.plotModalAfterCreate.bind(this)}></calcite-dialog>
 
         {/* alerts */}
-        {alerts.length ? <div slot="alerts">{alerts.toArray()}</div> : null}
+        {alerts.toArray()}
+
+        <calcite-alert
+          auto-close=""
+          icon="explore"
+          kind="info"
+          scale="s"
+          afterCreate={this.magneticDeclinationAlertAfterCreate.bind(this)}
+        >
+          <div slot="message">Today's magnetic declination is {magneticDeclination}.</div>
+        </calcite-alert>
 
         {/* view */}
         <div class={CSS.view} afterCreate={this.viewAfterCreate.bind(this)}></div>
@@ -998,6 +1031,10 @@ export default class MoneyTides extends Widget {
 
   private lunarPhaseModalAfterCreate(dialog: HTMLCalciteDialogElement): void {
     this.lunarPhaseModal.container = dialog;
+  }
+
+  private magneticDeclinationAlertAfterCreate(alert: HTMLCalciteAlertElement) {
+    this.magneticDeclinationAlert = alert;
   }
 
   private plotModalAfterCreate(dialog: HTMLCalciteDialogElement): void {
