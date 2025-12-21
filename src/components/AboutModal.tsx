@@ -1,7 +1,6 @@
 //#region components
 
 import '@esri/calcite-components/dist/components/calcite-dialog';
-import '@esri/calcite-components/dist/components/calcite-notice';
 
 //#endregion
 
@@ -51,15 +50,6 @@ export default class AboutModal extends Widget {
     return (
       <calcite-dialog heading="About" modal scale="s" width="s">
         <div style="display: flex; flex-direction: column; gap: 0.5rem; line-height: var(--calcite-font-line-height-relative-snug);">
-          <calcite-notice closable icon="exclamation-point-f" kind="danger" open scale="s">
-            <div slot="title">Disclaimer</div>
-            <div slot="message">
-              A goof made this to support his own goofy endevours. The information provided herein may or may not be
-              accurate, and therefore is not suitable for anything.
-              <br></br>
-              <span style={medium}>Use at your own risk!</span>
-            </div>
-          </calcite-notice>
           <div style={heading}>What is a money tide?</div>
           <div>When the highest high tide of the day occurs at noon.</div>
           <div style={heading}>Why are money tides important?</div>

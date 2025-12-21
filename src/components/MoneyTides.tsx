@@ -37,6 +37,7 @@ import { sunAndMoon, sunAndMoonPosition } from '../utils/sunAndMoonUtils';
 import createURL from '../utils/createURL';
 import AboutModal from './AboutModal';
 import Attribution from './Attribution';
+import DisclaimerModal from './DisclaimerModal';
 import LunarPhaseModal from './LunarPhaseModal';
 import PlotModal from './PlotModal';
 import TidesDialog from './TidesDialog';
@@ -180,6 +181,8 @@ export default class MoneyTides extends Widget {
   private date = setNoon(DateTime.now().setZone('America/Los_Angeles'));
 
   private datePicker!: HTMLCalciteInputDatePickerElement;
+
+  private disclaimerModal = new DisclaimerModal();
 
   private lunarPhaseModal = new LunarPhaseModal();
 
@@ -959,10 +962,8 @@ export default class MoneyTides extends Widget {
           </div>
         </div>
 
-        {/* view */}
-        <div class={CSS.view} afterCreate={this.viewAfterCreate.bind(this)}></div>
-
         {/* dialogs */}
+        <calcite-dialog slot="dialogs" afterCreate={this.disclaimerModalAfterCreate.bind(this)}></calcite-dialog>
         <calcite-dialog slot="dialogs" afterCreate={this.tidesDialogAfterCreate.bind(this)}></calcite-dialog>
         <calcite-dialog slot="dialogs" afterCreate={this.aboutModalAfterCreate.bind(this)}></calcite-dialog>
         <calcite-dialog slot="dialogs" afterCreate={this.lunarPhaseModalAfterCreate.bind(this)}></calcite-dialog>
@@ -970,6 +971,9 @@ export default class MoneyTides extends Widget {
 
         {/* alerts */}
         {alerts.length ? <div slot="alerts">{alerts.toArray()}</div> : null}
+
+        {/* view */}
+        <div class={CSS.view} afterCreate={this.viewAfterCreate.bind(this)}></div>
       </calcite-shell>
     );
   }
@@ -986,6 +990,10 @@ export default class MoneyTides extends Widget {
     datePicker.addEventListener('calciteInputDatePickerChange', this.dateChangeEvent.bind(this));
 
     this.datePicker = datePicker;
+  }
+
+  private disclaimerModalAfterCreate(dialog: HTMLCalciteDialogElement): void {
+    this.disclaimerModal.container = dialog;
   }
 
   private lunarPhaseModalAfterCreate(dialog: HTMLCalciteDialogElement): void {
@@ -1005,7 +1013,7 @@ export default class MoneyTides extends Widget {
   }
 
   private async viewAfterCreate(container: HTMLDivElement): Promise<void> {
-    const { stationInfos } = this;
+    const { disclaimerModal, stationInfos } = this;
 
     const view = (this.view = new MapView({
       container,
@@ -1039,6 +1047,8 @@ export default class MoneyTides extends Widget {
     });
 
     this.addHandles(view.on('click', this.viewClickEvent.bind(this)));
+
+    if (!DisclaimerModal.isAccepted()) disclaimerModal.container.open = true;
 
     this.emit('loaded');
 

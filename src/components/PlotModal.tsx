@@ -39,6 +39,7 @@ Chart.register([
 //#region constants
 
 const COLORS = {
+  horizon: 'rgba(96, 78, 71, 1)',
   moon: getDocumentStyle('--calcite-color-text-2', { opacity: 0.3, type: 'rgba' }),
   sun: getDocumentStyle('--calcite-color-status-warning', { opacity: 0.3, type: 'rgba' }),
   tide: getDocumentStyle('--calcite-color-status-info', { type: 'hex' }),
@@ -253,6 +254,15 @@ export default class PlotModal extends Widget {
         plugins: {
           annotation: {
             annotations: {
+              horizon: {
+                type: 'line',
+                yScaleID: 'solar-lunar',
+                yMax: 0,
+                yMin: 0,
+                borderColor: COLORS.horizon,
+                borderWidth: 1,
+                drawTime: 'beforeDatasetsDraw',
+              },
               time: {
                 type: 'line',
                 xMax: currentTime,
@@ -294,7 +304,7 @@ export default class PlotModal extends Widget {
           },
           datalabels: {
             display: (context: DataLabelsContext): string | boolean => {
-              return context.datasetIndex === 0;
+              return context.datasetIndex === 0 || 'auto';
             },
             formatter: (value: ChartDataValue, context: DataLabelsContext): string | null => {
               return context.datasetIndex === 0 ? `${value.tide.time}\n${value.tide.heightLabel}` : null;
