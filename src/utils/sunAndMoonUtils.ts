@@ -75,8 +75,6 @@ export const magneticDeclination = async (
 };
 
 export const moonPhaseName = (phase: number): string => {
-  console.log(phase);
-
   return phase <= 0.05
     ? 'New Moon'
     : phase > 0.05 && phase < 0.2
