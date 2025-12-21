@@ -985,13 +985,6 @@ export default class MoneyTides extends Widget {
           </div>
         </div>
 
-        {/* dialogs */}
-        <calcite-dialog slot="dialogs" afterCreate={this.disclaimerModalAfterCreate.bind(this)}></calcite-dialog>
-        <calcite-dialog slot="dialogs" afterCreate={this.tidesDialogAfterCreate.bind(this)}></calcite-dialog>
-        <calcite-dialog slot="dialogs" afterCreate={this.aboutModalAfterCreate.bind(this)}></calcite-dialog>
-        <calcite-dialog slot="dialogs" afterCreate={this.lunarPhaseModalAfterCreate.bind(this)}></calcite-dialog>
-        <calcite-dialog slot="dialogs" afterCreate={this.plotModalAfterCreate.bind(this)}></calcite-dialog>
-
         {/* alerts */}
         {alerts.toArray()}
 
@@ -1004,6 +997,13 @@ export default class MoneyTides extends Widget {
         >
           <div slot="message">Today's magnetic declination is {magneticDeclination}.</div>
         </calcite-alert>
+
+        {/* dialogs */}
+        <calcite-dialog slot="dialogs" afterCreate={this.disclaimerModalAfterCreate.bind(this)}></calcite-dialog>
+        <calcite-dialog slot="dialogs" afterCreate={this.tidesDialogAfterCreate.bind(this)}></calcite-dialog>
+        <calcite-dialog slot="dialogs" afterCreate={this.aboutModalAfterCreate.bind(this)}></calcite-dialog>
+        <calcite-dialog slot="dialogs" afterCreate={this.lunarPhaseModalAfterCreate.bind(this)}></calcite-dialog>
+        <calcite-dialog slot="dialogs" afterCreate={this.plotModalAfterCreate.bind(this)}></calcite-dialog>
 
         {/* view */}
         <div class={CSS.view} afterCreate={this.viewAfterCreate.bind(this)}></div>
