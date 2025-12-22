@@ -73,7 +73,7 @@ export default class TidesDialog extends Widget {
 
   //#region private methods
 
-  private openNOAAHome(): void {
+  private openNOAA(): void {
     const { date, id } = this.station;
 
     const noaaDate = NOAADate(date);
@@ -92,6 +92,10 @@ export default class TidesDialog extends Widget {
       }),
       '_blank',
     );
+  }
+
+  private openWeather(): void {
+    window.open(`https://www.wunderground.com/weather/${this.station.weather}`, '_blank');
   }
 
   //#endregion
@@ -125,11 +129,18 @@ export default class TidesDialog extends Widget {
             }}
           ></calcite-action>
           <calcite-action
+            icon="partly-cloudy"
+            scale="s"
+            text="Weather"
+            text-enabled=""
+            onclick={this.openWeather.bind(this)}
+          ></calcite-action>
+          <calcite-action
             icon="home"
             scale="s"
-            text="NOAA"
+            text="NOAA Station"
             text-enabled=""
-            onclick={this.openNOAAHome.bind(this)}
+            onclick={this.openNOAA.bind(this)}
           ></calcite-action>
         </calcite-action-bar>
 

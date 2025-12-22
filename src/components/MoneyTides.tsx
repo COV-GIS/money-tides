@@ -44,6 +44,47 @@ import TidesDialog from './TidesDialog';
 
 //#endregion
 
+//#region exports
+
+export const tideHeight = (tides: MT.Tide[], date: DateTime): number => {
+  const _tides = tides.filter((tide: MT.Tide): boolean => {
+    return tide.isPrediction;
+  });
+
+  const height = -999;
+
+  let proceeding: MT.Tide | nullish;
+
+  _tides.forEach((tide: MT.Tide): void => {
+    if (tide.date.toMillis() < date.toMillis()) proceeding = tide;
+  });
+
+  if (!proceeding) return height;
+
+  const upcoming: MT.Tide | nullish = _tides[_tides.indexOf(proceeding) + 1];
+
+  if (!upcoming) return height;
+
+  const { date: proceedingDate, height: startHeight } = proceeding;
+
+  const { date: upcomingDate, height: endHeight } = upcoming;
+
+  const startTime = proceedingDate.toMillis();
+
+  const endTime = upcomingDate.toMillis();
+
+  const time = date.toMillis();
+
+  // time does not fall between predictions
+  if ((time < startTime && time < endTime) || (time > startTime && time > endTime)) {
+    return height;
+  } else {
+    return Number((startHeight + ((endHeight - startHeight) * (time - startTime)) / (endTime - startTime)).toFixed(2));
+  }
+};
+
+//#endregion
+
 //#region constants
 
 const CSS_BASE = 'money-tides';
@@ -461,7 +502,7 @@ export default class MoneyTides extends Widget {
     tideEvents.forEach((tideEvent: MT.TideEvent): void => {
       const { date: tideDate, event, type: eventType } = tideEvent;
 
-      const height = this.tideHeight(tides, tideDate);
+      const height = tideHeight(tides, tideDate);
 
       tides.push({
         date: tideDate,
@@ -499,7 +540,7 @@ export default class MoneyTides extends Widget {
           if (moonset) {
             culminationDate = DateTime.fromMillis(Math.floor((tideDate.toMillis() + moonset.date.toMillis()) / 2));
 
-            height = this.tideHeight(tides, culminationDate);
+            height = tideHeight(tides, culminationDate);
 
             tides.push({
               date: culminationDate,
@@ -523,7 +564,7 @@ export default class MoneyTides extends Widget {
           if (moonrise) {
             culminationDate = DateTime.fromMillis(Math.floor((tideDate.toMillis() + moonrise.date.toMillis()) / 2));
 
-            height = this.tideHeight(tides, culminationDate);
+            height = tideHeight(tides, culminationDate);
 
             tides.push({
               date: culminationDate,
@@ -565,7 +606,7 @@ export default class MoneyTides extends Widget {
 
   private async loadStation(stationInfo: MT._StationInfo): Promise<void> {
     try {
-      const { id, latitude, longitude, name } = stationInfo;
+      const { id, latitude, longitude, name, weather } = stationInfo;
 
       const date = this.date;
 
@@ -596,6 +637,7 @@ export default class MoneyTides extends Widget {
         moon,
         sun,
         tides,
+        weather,
       });
 
       this.addZoomToItem(id, name);
@@ -683,45 +725,6 @@ export default class MoneyTides extends Widget {
     }
 
     return 'not-money';
-  }
-
-  private tideHeight(tides: MT.Tide[], date: DateTime): number {
-    const _tides = tides.filter((tide: MT.Tide): boolean => {
-      return tide.isPrediction;
-    });
-
-    const height = -999;
-
-    let proceeding: MT.Tide | nullish;
-
-    _tides.forEach((tide: MT.Tide): void => {
-      if (tide.date.toMillis() < date.toMillis()) proceeding = tide;
-    });
-
-    if (!proceeding) return height;
-
-    const upcoming: MT.Tide | nullish = _tides[_tides.indexOf(proceeding) + 1];
-
-    if (!upcoming) return height;
-
-    const { date: proceedingDate, height: startHeight } = proceeding;
-
-    const { date: upcomingDate, height: endHeight } = upcoming;
-
-    const startTime = proceedingDate.toMillis();
-
-    const endTime = upcomingDate.toMillis();
-
-    const time = date.toMillis();
-
-    // time does not fall between predictions
-    if ((time < startTime && time < endTime) || (time > startTime && time > endTime)) {
-      return height;
-    } else {
-      return Number(
-        (startHeight + ((endHeight - startHeight) * (time - startTime)) / (endTime - startTime)).toFixed(2),
-      );
-    }
   }
 
   private tidesSymbolText(tides: MT.Tide[]): string {

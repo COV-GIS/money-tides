@@ -3,12 +3,14 @@
 import type { MT } from '../interfaces';
 import type { Scale, CoreScaleOptions, TooltipItem, ScriptableTooltipContext } from 'chart.js';
 import type { Context as DataLabelsContext } from 'chartjs-plugin-datalabels';
+import type { PartialEventContext } from 'chartjs-plugin-annotation';
 type ChartDataValue = { x: number; y: number; tide: MT.Tide };
 
 //#endregion
 
 //#region components
 
+import '@esri/calcite-components/dist/components/calcite-action';
 import '@esri/calcite-components/dist/components/calcite-dialog';
 
 //#endregion
@@ -18,6 +20,7 @@ import '@esri/calcite-components/dist/components/calcite-dialog';
 import { property, subclass } from '@arcgis/core/core/accessorSupport/decorators';
 import Widget from '@arcgis/core/widgets/Widget';
 import { tsx } from '@arcgis/core/widgets/support/widget';
+import { tideHeight } from './MoneyTides';
 import { getDocumentStyle } from '../utils/colorUtils';
 import DateTime, { setTime, twelveHourTime } from '../utils/dateAndTimeUtils';
 import { Chart, LineController, LineElement, PointElement, CategoryScale, LinearScale, Title, Tooltip } from 'chart.js';
@@ -40,15 +43,16 @@ Chart.register([
 //#region constants
 
 const COLORS = {
-  horizon: 'rgba(96, 78, 71, 1)',
-  moon: getDocumentStyle('--calcite-color-text-2', { type: 'hex' }),
+  moon: getDocumentStyle('--calcite-color-text-2'),
   moonTooltip: getDocumentStyle('--calcite-color-text-2', { opacity: 0.9, type: 'rgba' }),
-  sun: getDocumentStyle('--calcite-color-status-warning', { type: 'hex' }),
+  sun: getDocumentStyle('--calcite-color-status-warning'),
   sunTooltip: getDocumentStyle('--calcite-color-status-warning', { opacity: 0.9, type: 'rgba' }),
-  tide: getDocumentStyle('--calcite-color-status-info', { type: 'hex' }),
+  tide: getDocumentStyle('--calcite-color-status-info'),
   tideTooltip: getDocumentStyle('--calcite-color-status-info', { opacity: 0.9, type: 'rgba' }),
-  time: getDocumentStyle('--calcite-color-status-success', { type: 'hex' }),
+  time: getDocumentStyle('--calcite-color-status-success'),
   transparent: 'rgba(0, 0, 0, 0)',
+  yesterdayTomorrow: getDocumentStyle('--calcite-color-text-1', { opacity: 0.1, type: 'rgba' }),
+  yesterdayTomorrowText: getDocumentStyle('--calcite-color-text-1', { opacity: 0.8, type: 'rgba' }),
 };
 
 const FONT_FAMILY = getDocumentStyle('--calcite-font-family');
@@ -93,6 +97,8 @@ export default class PlotModal extends Widget {
 
   @property()
   private station: MT.Station | null = null;
+
+  private sunAndMoonHidden = true;
 
   //#endregion
 
@@ -165,13 +171,26 @@ export default class PlotModal extends Widget {
   private createChart(canvas: HTMLCanvasElement): void {
     if (!this.station) return;
 
-    const labels = this.labels(this.station.date);
+    const {
+      station: { date, tides },
+      sunAndMoonHidden,
+    } = this;
 
-    const { lunarData, solarData, tideData, tideHeightMax, tideHeightMin } = this.data(this.station.tides);
+    const labels = this.labels(date);
 
-    const altitideScales = [-75, -50, -25, 0, 25, 50, 75];
+    const { lunarData, solarData, tideData, tideHeightMax, tideHeightMin } = this.data(tides);
 
-    const currentTime = DateTime.now().setZone('America/Los_Angeles').toMillis();
+    const altitudeScales = [-75, -50, -25, 0, 25, 50, 75];
+
+    const currentDate = DateTime.now().setZone('America/Los_Angeles');
+
+    const currentTime = currentDate.toMillis();
+
+    const currentContent = `${twelveHourTime(currentDate)} - ${tideHeight(tides, currentDate)} ft`;
+
+    const yesterdayContent = date.minus({ day: 1 }).toLocaleString(DateTime.DATE_FULL);
+
+    const tomorrowContent = date.plus({ day: 1 }).toLocaleString(DateTime.DATE_FULL);
 
     this.chart = new Chart(canvas, {
       type: 'line',
@@ -187,6 +206,7 @@ export default class PlotModal extends Widget {
             pointHitRadius: 5,
           },
           {
+            hidden: sunAndMoonHidden,
             yAxisID: 'solar-lunar',
             data: solarData,
             cubicInterpolationMode: 'monotone',
@@ -197,6 +217,7 @@ export default class PlotModal extends Widget {
             pointHitRadius: 5,
           },
           {
+            hidden: sunAndMoonHidden,
             yAxisID: 'solar-lunar',
             data: lunarData,
             cubicInterpolationMode: 'monotone',
@@ -210,6 +231,7 @@ export default class PlotModal extends Widget {
       },
       options: {
         font: FONT,
+        responsive: true,
         scales: {
           x: {
             type: 'linear',
@@ -237,11 +259,12 @@ export default class PlotModal extends Widget {
             },
           },
           'solar-lunar': {
+            display: 'auto',
             grid: {
               drawOnChartArea: false,
             },
-            max: altitideScales[altitideScales.length - 1],
-            min: altitideScales[0],
+            max: altitudeScales[altitudeScales.length - 1],
+            min: altitudeScales[0],
             position: 'right',
             title: {
               display: true,
@@ -252,38 +275,82 @@ export default class PlotModal extends Widget {
               font: FONT,
             },
             afterBuildTicks: (scale: Scale<CoreScaleOptions>): void => {
-              scale.ticks = altitideScales.map((value: number) => ({ value: value, label: value.toString() }));
+              scale.ticks = altitudeScales.map((value: number) => ({ value: value, label: value.toString() }));
             },
           },
         },
         plugins: {
           annotation: {
             annotations: {
-              horizon: {
-                type: 'line',
-                yScaleID: 'solar-lunar',
-                yMax: 0,
-                yMin: 0,
-                borderColor: COLORS.horizon,
-                borderWidth: 1,
-                drawTime: 'beforeDatasetsDraw',
-              },
-              time: {
+              // horizon: {
+              //   type: 'line',
+              //   yScaleID: 'solar-lunar',
+              //   yMax: 0,
+              //   yMin: 0,
+              //   borderColor: COLORS.horizon,
+              //   borderWidth: 1,
+              //   drawTime: 'beforeDraw',
+              //   display: (context: PartialEventContext): boolean => {
+              //     return context.chart.isDatasetVisible(1);
+              //   },
+              // },
+              currentTimeAndTide: {
                 type: 'line',
                 xMax: currentTime,
                 xMin: currentTime,
                 borderColor: COLORS.time,
-                borderWidth: 2,
+                borderWidth: 1,
                 drawTime: 'beforeDatasetsDraw',
               },
-              timeLabel: {
+              currentTimeAndTideLabel: {
                 type: 'label',
                 xValue: currentTime,
-                // xAdjust: 8,
-                // yAdjust: -100,
-                content: 'Current Time',
-                rotation: 90,
+                yAdjust(context: PartialEventContext): number {
+                  if (!context.chart.chartArea) return 5000;
+
+                  return -(Math.floor(context.chart.chartArea.height / 2) - 10);
+                },
+                content: currentContent,
                 color: COLORS.time,
+                font: FONT,
+                textStrokeColor: 'white',
+                textStrokeWidth: 5,
+                drawTime: 'beforeDatasetsDraw',
+              },
+              yesterdayLabel: {
+                type: 'label',
+                position: 'start',
+                xAdjust(context: PartialEventContext): number {
+                  if (!context.chart.chartArea) return 5000;
+                  return -(Math.floor(context.chart.chartArea.width / 2) + 4);
+                },
+                yAdjust(context: PartialEventContext): number {
+                  if (!context.chart.chartArea) return 5000;
+
+                  return Math.floor(context.chart.chartArea.height / 2) - 20;
+                },
+                content: yesterdayContent,
+                color: COLORS.yesterdayTomorrowText,
+                font: FONT,
+                textStrokeColor: 'white',
+                textStrokeWidth: 3,
+                drawTime: 'beforeDatasetsDraw',
+              },
+              tomorrowLabel: {
+                type: 'label',
+                position: 'end',
+                xAdjust(context: PartialEventContext): number {
+                  if (!context.chart.chartArea) return 5000;
+
+                  return Math.floor(context.chart.chartArea.width / 2) + 2;
+                },
+                yAdjust(context: PartialEventContext): number {
+                  if (!context.chart.chartArea) return 5000;
+
+                  return Math.floor(context.chart.chartArea.height / 2) + 8;
+                },
+                content: tomorrowContent,
+                color: COLORS.yesterdayTomorrowText,
                 font: FONT,
                 textStrokeColor: 'white',
                 textStrokeWidth: 3,
@@ -293,17 +360,17 @@ export default class PlotModal extends Widget {
                 type: 'box',
                 xMin: labels[0],
                 xMax: labels[2],
-                backgroundColor: 'rgba(0, 0, 0, 0.1)',
+                backgroundColor: COLORS.yesterdayTomorrow,
                 borderWidth: 0,
-                drawTime: 'beforeDatasetsDraw',
+                drawTime: 'beforeDraw',
               },
               tomorrow: {
                 type: 'box',
                 xMin: labels[6],
                 xMax: labels[8],
-                backgroundColor: 'rgba(0, 0, 0, 0.1)',
+                backgroundColor: COLORS.yesterdayTomorrow,
                 borderWidth: 0,
-                drawTime: 'beforeDatasetsDraw',
+                drawTime: 'beforeDraw',
               },
             },
           },
@@ -402,6 +469,24 @@ export default class PlotModal extends Widget {
     });
   }
 
+  private toggleSunAndMoon(): void {
+    const { chart } = this;
+
+    if (!chart) return;
+
+    if (this.sunAndMoonHidden) {
+      chart.getDatasetMeta(1).hidden = false;
+      chart.getDatasetMeta(2).hidden = false;
+    } else {
+      chart.getDatasetMeta(1).hidden = true;
+      chart.getDatasetMeta(2).hidden = true;
+    }
+
+    chart.update();
+
+    this.sunAndMoonHidden = !this.sunAndMoonHidden;
+  }
+
   //#endregion
 
   //#region render
@@ -414,8 +499,16 @@ export default class PlotModal extends Widget {
         scale="s"
         afterCreate={this.dialogAfterCreate.bind(this)}
       >
+        <calcite-action
+          slot="header-menu-actions"
+          scale="s"
+          style="--calcite-dialog-min-size-y: 432px;"
+          text={`${this.sunAndMoonHidden ? 'Show' : 'Hide'} Sun and Moon`}
+          text-enabled=""
+          onclick={this.toggleSunAndMoon.bind(this)}
+        ></calcite-action>
         {this.station ? (
-          <div style="width:100%; height:100%;">
+          <div style="position: relative; width:100%; height:100%;">
             <canvas afterCreate={this.createChart.bind(this)}></canvas>
           </div>
         ) : null}

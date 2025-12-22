@@ -1,7 +1,7 @@
 import esri = __esri;
 import type { DateTime } from 'luxon';
 
-declare namespace MT {
+export namespace MT {
   //#region types
 
   /**
@@ -158,6 +158,11 @@ declare namespace MT {
      * Tides
      */
     tides: Tide[];
+
+    /**
+     * Weather underground location url suffix, e.g. `us/or/lincoln-city`
+     */
+    weather: string;
   }
 
   interface StationInfo {
@@ -180,6 +185,11 @@ declare namespace MT {
      * Station name
      */
     name: string;
+
+    /**
+     * Weather underground location url suffix, e.g. `us/or/lincoln-city`
+     */
+    weather: string;
   }
 
   interface _StationInfo extends StationInfo {
