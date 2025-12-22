@@ -176,3 +176,102 @@ export const sunAndMoonPosition = (
     },
   };
 };
+
+const celestialCoordinates = (azimuth: number, altitude: number, distance: number): { x: number; y: number } => {
+  const r = distance * Math.cos(altitude);
+
+  return {
+    x: r * Math.sin(azimuth),
+    y: r * Math.cos(azimuth),
+  };
+};
+
+const earthSunDistance = (date: Date): number => {
+  // Constants
+  const AU = 149597870.7; // Astronomical Unit in km
+  const e = 0.0167086; // Orbital eccentricity of Earth
+  const deg2rad = Math.PI / 180;
+
+  // Days since J2000.0
+  const JD = date.getTime() / 86400000 + 2440587.5; // Julian Date
+  const n = JD - 2451545.0;
+
+  // Mean anomaly (degrees)
+  const M = (357.5291 + 0.98560028 * n) % 360;
+
+  // Convert to radians
+  const M_rad = M * deg2rad;
+
+  // Sun's distance in AU using Kepler's equation approximation
+  const distanceAU = (1.000001018 * (1 - e * e)) / (1 + e * Math.cos(M_rad + 102.9372 * deg2rad));
+
+  // Convert AU to kilometers
+  return distanceAU * AU;
+};
+
+const coordinateAngle = (x1: number, y1: number, x2: number, y2: number): { degrees: number; radians: number } => {
+  const radians = Math.atan2(y2 - y1, x2 - x1);
+
+  return {
+    degrees: radiansToDegrees(radians),
+    radians,
+  };
+};
+
+const rotateCoordinate = (
+  x: number,
+  y: number,
+  radians: number,
+  originX?: number,
+  originY?: number,
+): { x: number; y: number } => {
+  // translate point to origin
+  const dx = x - (originX || 0);
+
+  const dy = y - (originY || 0);
+
+  // rotate
+  const rotatedX = dx * Math.cos(radians) - dy * Math.sin(radians);
+
+  const rotatedY = dx * Math.sin(radians) + dy * Math.cos(radians);
+
+  // translate back
+  return {
+    x: rotatedX + (originX || 0),
+    y: rotatedY + (originY || 0),
+  };
+};
+
+export const earthMoonSunCoordinates = (
+  date: DateTime,
+  latitude: number,
+  longitude: number,
+): {
+  earth: { x: number; y: number };
+  moon: { angle: { degrees: number; radians: number }; x: number; y: number };
+  sun: { angle: { degrees: number; radians: number }; x: number; y: number };
+} => {
+  const _date = date.toJSDate();
+
+  const {
+    altitude: moonAltitude,
+    azimuth: moonAzimuth,
+    distance: moonDistance,
+  } = suncalcMoonPosition(_date, latitude, longitude);
+
+  const { altitude: sunAltitude, azimuth: sunAzimuth } = suncalcSunPosition(_date, latitude, longitude);
+
+  const moonCoordinates = celestialCoordinates(moonAzimuth, moonAltitude, moonDistance);
+
+  const sunCoordinates = celestialCoordinates(sunAzimuth, sunAltitude, earthSunDistance(_date));
+
+  const moonAngle = coordinateAngle(0, 0, moonCoordinates.x, moonCoordinates.y);
+
+  const sunAngle = coordinateAngle(0, 0, sunCoordinates.x, sunCoordinates.y);
+
+  return {
+    earth: { x: 0, y: 0 },
+    moon: { angle: moonAngle, ...moonCoordinates },
+    sun: { angle: sunAngle, ...sunCoordinates },
+  };
+};

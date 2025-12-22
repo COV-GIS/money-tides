@@ -176,7 +176,7 @@ export default class MoneyTides extends Widget {
     );
   }
 
-  postInitialize(): void {
+  override postInitialize(): void {
     const { date, lunarPhaseModal } = this;
 
     const latitude = 44.927;
