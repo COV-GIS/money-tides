@@ -1,7 +1,7 @@
 //#region types
 
 import type { MT } from '../interfaces';
-import type { Scale, CoreScaleOptions } from 'chart.js';
+import type { Scale, CoreScaleOptions, TooltipItem, ScriptableTooltipContext } from 'chart.js';
 import type { Context as DataLabelsContext } from 'chartjs-plugin-datalabels';
 type ChartDataValue = { x: number; y: number; tide: MT.Tide };
 
@@ -20,7 +20,7 @@ import Widget from '@arcgis/core/widgets/Widget';
 import { tsx } from '@arcgis/core/widgets/support/widget';
 import { getDocumentStyle } from '../utils/colorUtils';
 import DateTime, { setTime, twelveHourTime } from '../utils/dateAndTimeUtils';
-import { Chart, LineController, LineElement, PointElement, CategoryScale, LinearScale, Title } from 'chart.js';
+import { Chart, LineController, LineElement, PointElement, CategoryScale, LinearScale, Title, Tooltip } from 'chart.js';
 import annotationPlugin from 'chartjs-plugin-annotation';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 Chart.register([
@@ -30,6 +30,7 @@ Chart.register([
   CategoryScale,
   LinearScale,
   Title,
+  Tooltip,
   ChartDataLabels,
   annotationPlugin,
 ]);
@@ -40,9 +41,12 @@ Chart.register([
 
 const COLORS = {
   horizon: 'rgba(96, 78, 71, 1)',
-  moon: getDocumentStyle('--calcite-color-text-2', { opacity: 0.3, type: 'rgba' }),
-  sun: getDocumentStyle('--calcite-color-status-warning', { opacity: 0.3, type: 'rgba' }),
+  moon: getDocumentStyle('--calcite-color-text-2', { type: 'hex' }),
+  moonTooltip: getDocumentStyle('--calcite-color-text-2', { opacity: 0.9, type: 'rgba' }),
+  sun: getDocumentStyle('--calcite-color-status-warning', { type: 'hex' }),
+  sunTooltip: getDocumentStyle('--calcite-color-status-warning', { opacity: 0.9, type: 'rgba' }),
   tide: getDocumentStyle('--calcite-color-status-info', { type: 'hex' }),
+  tideTooltip: getDocumentStyle('--calcite-color-status-info', { opacity: 0.9, type: 'rgba' }),
   time: getDocumentStyle('--calcite-color-status-success', { type: 'hex' }),
   transparent: 'rgba(0, 0, 0, 0)',
 };
@@ -179,27 +183,28 @@ export default class PlotModal extends Widget {
             data: tideData,
             cubicInterpolationMode: 'monotone',
             borderColor: COLORS.tide,
-            hoverBorderColor: COLORS.transparent,
-            pointRadius: 0,
-            pointHitRadius: 0,
+            backgroundColor: COLORS.tide,
+            pointHitRadius: 5,
           },
           {
             yAxisID: 'solar-lunar',
             data: solarData,
             cubicInterpolationMode: 'monotone',
             borderColor: COLORS.sun,
-            hoverBorderColor: COLORS.transparent,
-            pointRadius: 0,
-            pointHitRadius: 0,
+            backgroundColor: COLORS.sun,
+            borderWidth: 1.5,
+            pointRadius: 2,
+            pointHitRadius: 5,
           },
           {
             yAxisID: 'solar-lunar',
             data: lunarData,
             cubicInterpolationMode: 'monotone',
             borderColor: COLORS.moon,
-            hoverBorderColor: COLORS.transparent,
-            pointRadius: 0,
-            pointHitRadius: 0,
+            backgroundColor: COLORS.moon,
+            borderWidth: 1.5,
+            pointRadius: 2,
+            pointHitRadius: 5,
           },
         ],
       },
@@ -274,8 +279,8 @@ export default class PlotModal extends Widget {
               timeLabel: {
                 type: 'label',
                 xValue: currentTime,
-                xAdjust: 8,
-                yAdjust: -100,
+                // xAdjust: 8,
+                // yAdjust: -100,
                 content: 'Current Time',
                 rotation: 90,
                 color: COLORS.time,
@@ -303,16 +308,31 @@ export default class PlotModal extends Widget {
             },
           },
           datalabels: {
+            offset: 0,
             display: (context: DataLabelsContext): string | boolean => {
-              return context.datasetIndex === 0 || 'auto';
+              return context.datasetIndex === 0 || false;
             },
             formatter: (value: ChartDataValue, context: DataLabelsContext): string | null => {
-              return context.datasetIndex === 0 ? `${value.tide.time}\n${value.tide.heightLabel}` : null;
+              // return context.datasetIndex === 0 ? `${value.tide.time}\n${value.tide.heightLabel}` : null;
+              return context.datasetIndex === 0 ? value.tide.heightLabel : null;
             },
             color: (context: DataLabelsContext): string => {
-              return context.datasetIndex === 0 ? COLORS.tide : COLORS.transparent;
+              return context.datasetIndex === 0 ? COLORS.tide : '';
             },
-            font: FONT,
+            align: (context: DataLabelsContext): 'center' | 'end' | 'start' => {
+              const { dataIndex, dataset, datasetIndex } = context;
+
+              let align = 'center';
+
+              if (datasetIndex === 0 && (dataset.data[dataIndex] as ChartDataValue).tide.type === 'high tide')
+                align = 'end';
+
+              if (datasetIndex === 0 && (dataset.data[dataIndex] as ChartDataValue).tide.type === 'low tide')
+                align = 'start';
+
+              return align as 'center' | 'end' | 'start';
+            },
+            font: { ...FONT, weight: 'bold' },
             textStrokeColor: 'white',
             textStrokeWidth: 4,
             textAlign: 'center',
@@ -322,7 +342,60 @@ export default class PlotModal extends Widget {
             display: false,
           },
           tooltip: {
-            enabled: false,
+            callbacks: {
+              label: (tooltipItem: TooltipItem<'line'>): string => {
+                const {
+                  dataset: { data },
+                  dataIndex,
+                  datasetIndex,
+                } = tooltipItem;
+
+                const { heightLabel, moonPosition, sunPosition } = (data[dataIndex] as ChartDataValue).tide;
+
+                switch (datasetIndex) {
+                  case 0:
+                    return heightLabel;
+                  case 1:
+                    return `${sunPosition.azimuthBearing} ${
+                      sunPosition.altitudeDegrees === '0°' ? '' : `@ ${sunPosition.altitudeDegrees}`
+                    }`;
+                  case 2:
+                    return `${moonPosition.azimuthBearing} ${
+                      moonPosition.altitudeDegrees === '0°' ? '' : `@ ${moonPosition.altitudeDegrees}`
+                    }`;
+                  default:
+                    return '';
+                }
+              },
+              title: (tooltipItem: TooltipItem<'line'>[]): string => {
+                const {
+                  dataset: { data },
+                  dataIndex,
+                } = tooltipItem[0];
+
+                const { time, type } = (data[dataIndex] as ChartDataValue).tide;
+
+                return `${time} - ${type}`;
+              },
+            },
+            backgroundColor: (context: ScriptableTooltipContext<'line'>): string => {
+              const { datasetIndex } = context.tooltip.dataPoints[0];
+
+              switch (datasetIndex) {
+                case 0:
+                  return COLORS.tideTooltip;
+                case 1:
+                  return COLORS.sunTooltip;
+                case 2:
+                  return COLORS.moonTooltip;
+                default:
+                  return '';
+              }
+            },
+            enabled: true,
+            bodyFont: FONT,
+            titleFont: { ...FONT, weight: 'normal' },
+            displayColors: false,
           },
         },
       },

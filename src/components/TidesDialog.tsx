@@ -98,7 +98,7 @@ export default class TidesDialog extends Widget {
 
   //#region render
 
-  render(): tsx.JSX.Element {
+  override render(): tsx.JSX.Element {
     const { station } = this;
 
     if (!station) return <calcite-dialog></calcite-dialog>;
