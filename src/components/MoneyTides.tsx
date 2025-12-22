@@ -761,15 +761,15 @@ export default class MoneyTides extends Widget {
         tides,
       });
 
+      station.error = false;
+
+      station.errorCount = 0;
+
       this.updateGraphics(station);
 
       if (tidesDialog.container.open && tidesDialog.station.id === id) {
         tidesDialog.open(station);
       }
-
-      station.error = false;
-
-      station.errorCount = 0;
 
       const errorAlert = this.container.querySelector(`#station-error-alert-${id}`) as
         | HTMLCalciteAlertElement
@@ -778,6 +778,10 @@ export default class MoneyTides extends Widget {
       if (errorAlert) errorAlert.open = false;
     } catch (error) {
       console.log('update error', error);
+
+      station.error = true;
+
+      this.updateGraphics(station);
 
       if (station.errorCount !== 10) {
         station.errorCount++;
@@ -798,8 +802,6 @@ export default class MoneyTides extends Widget {
 
         return;
       }
-
-      station.error = true;
 
       station.errorCount = 0;
 
