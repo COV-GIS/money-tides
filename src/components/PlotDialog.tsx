@@ -65,8 +65,8 @@ const FONT = {
 
 //#endregion
 
-@subclass('PlotModal')
-export default class PlotModal extends Widget {
+@subclass('PlotDialog')
+export default class PlotDialog extends Widget {
   //#region lifecycle
 
   private _container!: HTMLCalciteDialogElement;

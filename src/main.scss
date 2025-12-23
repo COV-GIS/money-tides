@@ -69,41 +69,47 @@
   height: 100%;
 }
 
-/** moon **/
+/** lunar phase **/
 
-$moon-size: 140px;
+$moon-size: 76px;
 $moon-dark: var(--calcite-color-text-2);
 $moon-light: var(--calcite-color-border-3);
 
-.lunar-phase-modal {
-  --calcite-dialog-content-space: 0;
-  --calcite-dialog-max-size-x: 400px;
-  --calcite-dialog-background-color: var(--calcite-ui-brand-press);
+.lunar-phase-panel {
+  --calcite-panel-content-space: 0.75rem;
+  --calcite-panel-min-size-x: 400px;
+  --calcite-panel-background-color: var(--calcite-ui-brand-press);
 }
 
-.lunar-phase-modal_container {
+.lunar-phase-panel_container {
   display: flex;
   flex-direction: row;
+  gap: 1rem;
   background-color: var(--calcite-ui-brand-press);
   align-items: center;
+  font-size: var(--calcite-font-size-sm);
 }
 
-.lunar-phase-modal_medium {
+.lunar-phase-panel_medium {
   font-weight: var(--calcite-font-weight-medium);
 }
 
-.lunar-phase-modal_info {
+.lunar-phase-panel_info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  line-height: 1;
   color: var(--calcite-color-text-inverse);
 }
 
-.lunar-phase-modal_sky {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 2rem;
-}
+// .lunar-phase-panel_sky {
+//   display: flex;
+//   justify-content: center;
+//   align-items: center;
+//   // padding: 2rem;
+// }
 
-.lunar-phase-modal_moon {
+.lunar-phase-panel_moon {
   border-radius: 100%;
   width: $moon-size;
   height: $moon-size;
@@ -113,21 +119,21 @@ $moon-light: var(--calcite-color-border-3);
   position: relative;
 }
 
-.lunar-phase-modal_hemisphere {
+.lunar-phase-panel_hemisphere {
   width: 50%;
   height: 100%;
 }
 
-.lunar-phase-modal_light {
+.lunar-phase-panel_light {
   background-color: $moon-light;
 }
 
-.lunar-phase-modal_dark {
+.lunar-phase-panel_dark {
   background-color: $moon-dark;
 }
 
-.lunar-phase-modal_divider,
-.lunar-phase-modal_divider:after {
+.lunar-phase-panel_divider,
+.lunar-phase-panel_divider:after {
   top: 0;
   left: 0;
   width: $moon-size;
@@ -138,12 +144,12 @@ $moon-light: var(--calcite-color-border-3);
   backface-visibility: hidden;
 }
 
-.lunar-phase-modal_divider {
+.lunar-phase-panel_divider {
   background-color: $moon-dark;
 }
 
-.lunar-phase-modal_divider:after {
-  content: "";
+.lunar-phase-panel_divider:after {
+  content: '';
   background-color: $moon-light;
   transform: rotateY(180deg);
 }

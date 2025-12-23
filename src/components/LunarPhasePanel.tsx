@@ -4,16 +4,10 @@ import type { MT } from '../interfaces';
 
 //#endregion
 
-//#region components
-
-import '@esri/calcite-components/dist/components/calcite-dialog';
-
-//#endregion
-
 //#region modules
 
 import { property, subclass } from '@arcgis/core/core/accessorSupport/decorators';
-import Widget from '@arcgis/core/widgets/Widget';
+import Panel from './Panel';
 import { tsx } from '@arcgis/core/widgets/support/widget';
 import DateTime from '../utils/dateAndTimeUtils';
 
@@ -21,7 +15,7 @@ import DateTime from '../utils/dateAndTimeUtils';
 
 //#region constants
 
-const CSS_BASE = 'lunar-phase-modal';
+const CSS_BASE = 'lunar-phase-panel';
 
 const CSS = {
   container: `${CSS_BASE}_container`,
@@ -37,19 +31,10 @@ const CSS = {
 
 //#endregion
 
-@subclass('LunarPhaseModal')
-export default class LunarPhaseModal extends Widget {
+@subclass('LunarPhasePanel')
+export default class LunarPhasePanel extends Panel {
   //#region lifecycle
-
-  private _container!: HTMLCalciteDialogElement;
-
-  get container() {
-    return this._container;
-  }
-
-  set container(value: HTMLCalciteDialogElement) {
-    this._container = value;
-  }
+  //#endregion
 
   //#region public properties
 
@@ -61,20 +46,18 @@ export default class LunarPhaseModal extends Widget {
 
   //#endregion
 
-  //#endregion
-
   //#region public methods
-
-  public open() {
-    this.container.open = true;
-  }
-
   //#endregion
 
   //#region render
 
   render(): tsx.JSX.Element {
-    if (!this.date || !this.moon) return <calcite-dialog></calcite-dialog>;
+    if (!this.date || !this.moon)
+      return (
+        <calcite-panel heading="Lunar Phase" scale="s">
+          {this.closeAction()}
+        </calcite-panel>
+      );
 
     const {
       date,
@@ -84,13 +67,8 @@ export default class LunarPhaseModal extends Widget {
     const degrees = 360 - Math.floor(phase * 360);
 
     return (
-      <calcite-dialog
-        class={CSS_BASE}
-        heading={`Lunar Phase - ${date.toLocaleString(DateTime.DATE_FULL)}`}
-        modal
-        scale="s"
-        width="s"
-      >
+      <calcite-panel class={CSS_BASE} heading="Lunar Phase" scale="s">
+        {this.closeAction()}
         <div class={CSS.container}>
           <div class={CSS.sky}>
             <div class={CSS.moon}>
@@ -120,7 +98,7 @@ export default class LunarPhaseModal extends Widget {
             </div>
           </div>
         </div>
-      </calcite-dialog>
+      </calcite-panel>
     );
   }
 

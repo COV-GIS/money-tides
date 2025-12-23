@@ -13,8 +13,8 @@ import { moneyTypeColorHex } from '../utils/colorUtils';
 
 //#endregion
 
-@subclass('AboutModal')
-export default class AboutModal extends Widget {
+@subclass('AboutDialog')
+export default class AboutDialog extends Widget {
   //#region lifecycle
 
   private _container!: HTMLCalciteDialogElement;
@@ -42,14 +42,15 @@ export default class AboutModal extends Widget {
   render(): tsx.JSX.Element {
     const medium = 'font-weight: var(--calcite-font-weight-medium);';
 
-    const heading = `font-size: var(--calcite-font-size--1); ${medium}`;
+    // const heading = `font-size: var(--calcite-font-size--1); ${medium}`;
+    const heading = `font-size: var(--calcite-font-size); ${medium}`;
 
     const shadow =
       'text-shadow: -1px -1px 2px rgba(0, 0, 0, 128), 1px -1px 2px rgba(0, 0, 0, 128), -1px 1px 2px rgba(0, 0, 0, 128), 1px 1px 2px rgba(0, 0, 0, 128);';
 
     return (
       <calcite-dialog heading="About" modal scale="s" width="s">
-        <div style="display: flex; flex-direction: column; gap: 0.5rem; line-height: var(--calcite-font-line-height-relative-snug);">
+        <div style="display: flex; flex-direction: column; gap: 0.5rem; font-size: var(--calcite-font-size-sm); line-height: var(--calcite-font-line-height-relative-snug);">
           <div style={heading}>What is a money tide?</div>
           <div>When the highest high tide of the day occurs at noon.</div>
           <div style={heading}>Why are money tides important?</div>

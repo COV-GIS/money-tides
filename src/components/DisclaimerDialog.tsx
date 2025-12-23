@@ -16,8 +16,8 @@ import Cookies from 'js-cookie';
 
 const COOKIE = 'money-tides-disclaimer-accepted';
 
-@subclass('DisclaimerModal')
-export default class DisclaimerModal extends Widget {
+@subclass('DisclaimerDialog')
+export default class DisclaimerDialog extends Widget {
   //#region lifecycle
 
   private _container!: HTMLCalciteDialogElement;
