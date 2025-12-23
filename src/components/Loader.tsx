@@ -43,13 +43,13 @@ export default class Loader extends Widget {
 
     setTimeout((): void => {
       container.style.opacity = '0';
-    }, 2000);
+    }, 1000);
 
     setTimeout((): void => {
       document.body.removeChild(container);
 
       this.destroy();
-    }, 3000);
+    }, 2000);
   }
 
   //#endregion

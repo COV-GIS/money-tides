@@ -2,6 +2,8 @@ import '@esri/calcite-components/dist/calcite/calcite.css';
 import '@arcgis/core/assets/esri/css/main.css';
 import './main.scss';
 
+import Map from '@arcgis/core/Map';
+import MapView from '@arcgis/core/views/MapView';
 import Loader from './components/Loader';
 import MoneyTides from './components/MoneyTides';
 
@@ -122,6 +124,23 @@ const moneyTides = new MoneyTides({
       weather: 'us/or/newport',
     },
   ],
+  view: new MapView({
+    constraints: {
+      rotationEnabled: false,
+    },
+    extent: {
+      spatialReference: {
+        wkid: 102100,
+      },
+      xmin: -13927811,
+      ymin: 5308864,
+      xmax: -13626955,
+      ymax: 5844535,
+    },
+    map: new Map({
+      basemap: 'topo-vector',
+    }),
+  }),
 });
 
 moneyTides.on('loaded', (): void => {

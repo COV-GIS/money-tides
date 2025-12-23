@@ -4,6 +4,7 @@
     "strict": true,
     "esModuleInterop": true,
     "importHelpers": true,
+    "downlevelIteration": true,
     "paths": {
       "tslib": ["./node_modules/tslib/tslib.d.ts"]
     },

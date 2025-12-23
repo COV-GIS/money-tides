@@ -24,8 +24,6 @@ import { property, subclass } from '@arcgis/core/core/accessorSupport/decorators
 import Widget from '@arcgis/core/widgets/Widget';
 import { tsx } from '@arcgis/core/widgets/support/widget';
 import Collection from '@arcgis/core/core/Collection';
-import Map from '@arcgis/core/Map';
-import MapView from '@arcgis/core/views/MapView';
 import Graphic from '@arcgis/core/Graphic';
 import Color from '@arcgis/core/Color';
 import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
@@ -159,7 +157,10 @@ export default class MoneyTides extends Widget {
   }
 
   constructor(
-    properties?: esri.WidgetProperties & { stationInfos: MT.StationInfo[] | esri.Collection<MT.StationInfo> },
+    properties: esri.WidgetProperties & {
+      stationInfos: MT.StationInfo[] | esri.Collection<MT.StationInfo>;
+      view: esri.MapView;
+    },
   ) {
     super(properties);
 
@@ -1061,7 +1062,7 @@ export default class MoneyTides extends Widget {
   }
 
   private async viewAfterCreate(container: HTMLDivElement): Promise<void> {
-    const { disclaimerModal, stationInfos } = this;
+    const { disclaimerModal, stationInfos, view } = this;
 
     // https://www.weather.gov/gis/cloudgiswebservices
 
@@ -1104,50 +1105,20 @@ export default class MoneyTides extends Widget {
     //   }, 500);
     // });
 
-    const view = (this.view = new MapView({
-      container,
-      constraints: {
-        rotationEnabled: false,
-      },
-      extent: {
-        spatialReference: {
-          wkid: 102100,
-        },
-        xmin: -13927811,
-        ymin: 5308864,
-        xmax: -13626955,
-        ymax: 5844535,
-      },
-      map: new Map({
-        basemap: 'topo-vector',
-        layers: [
-          // radar,
-          // wave height
-          // new WMSLayer({
-          //   url: 'https://mapservices.weather.noaa.gov/geoserver/ndfd/waveh/ows',
-          //   opacity: 0.5,
-          //   visible: false,
-          // }),
-          // 3 day forecast
-          // new MapImageLayer({
-          //   url: 'https://mapservices.weather.noaa.gov/vector/rest/services/outlooks/natl_fcst_wx_chart/MapServer',
-          //   visible: false,
-          // }),
-        ],
-      }),
-    }));
+    view.container = container;
 
     view.ui.remove(['attribution', 'zoom']);
 
     view.ui.add(new Attribution({ container: document.createElement('calcite-action-bar'), view }), 'bottom-right');
 
-    stationInfos.forEach((stationInfo: MT._StationInfo): void => {
-      stationInfo.errorCount = 0;
+    for (const stationInfo of stationInfos) {
+      Object.assign(stationInfo, {
+        errorCount: 0,
+        loaded: false,
+      });
 
-      stationInfo.loaded = false;
-
-      this.loadStation(stationInfo);
-    });
+      await this.loadStation(stationInfo);
+    }
 
     this.addHandles(view.on('click', this.viewClickEvent.bind(this)));
 
