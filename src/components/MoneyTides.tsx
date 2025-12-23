@@ -33,6 +33,7 @@ import TextSymbol from '@arcgis/core/symbols/TextSymbol';
 import Point from '@arcgis/core/geometry/Point';
 import { moneyTypeColors } from '../utils/colorUtils';
 import DateTime, { NOAADate, setNoon, setTime, twelveHourTime } from '../utils/dateAndTimeUtils';
+// import { Interval } from 'luxon';
 import { magneticDeclination, sunAndMoon, sunAndMoonPosition } from '../utils/sunAndMoonUtils';
 import createURL from '../utils/createURL';
 import AboutModal from './AboutModal';
@@ -41,6 +42,11 @@ import DisclaimerModal from './DisclaimerModal';
 import LunarPhaseModal from './LunarPhaseModal';
 import PlotModal from './PlotModal';
 import TidesDialog from './TidesDialog';
+
+// import WMSLayer from '@arcgis/core/layers/WMSLayer';
+// import MapImageLayer from '@arcgis/core/layers/MapImageLayer';
+// import ImageryLayer from '@arcgis/core/layers/ImageryLayer';
+// import Layer from '@arcgis/core/layers/Layer';
 
 //#endregion
 
@@ -1057,6 +1063,47 @@ export default class MoneyTides extends Widget {
   private async viewAfterCreate(container: HTMLDivElement): Promise<void> {
     const { disclaimerModal, stationInfos } = this;
 
+    // https://www.weather.gov/gis/cloudgiswebservices
+
+    // const radar = new ImageryLayer({
+    //   url: 'https://mapservices.weather.noaa.gov/eventdriven/rest/services/radar/radar_base_reflectivity_time/ImageServer',
+    //   opacity: 0.5,
+    // });
+
+    // radar.when((): void => {
+    //   console.log('time info', radar.timeInfo);
+
+    //   radar.timeExtent = {
+    //     start: radar.timeInfo?.fullTimeExtent?.start,
+    //     end: radar.timeInfo?.fullTimeExtent?.end,
+    //   };
+
+    //   console.log('start', radar.timeInfo?.fullTimeExtent?.start);
+    //   console.log('end', radar.timeInfo?.fullTimeExtent?.end);
+    //   console.log('now', new Date());
+
+    //   const start = DateTime.fromJSDate(radar.timeInfo?.fullTimeExtent?.start);
+    //   const end = DateTime.fromJSDate(radar.timeInfo?.fullTimeExtent?.end);
+
+    //   const intervals = Interval.fromDateTimes(start, end).divideEqually(15);
+
+    //   console.log(intervals);
+
+    //   let index = 0;
+
+    //   setInterval((): void => {
+    //     const { end, start } = intervals[index];
+
+    //     radar.timeExtent = {
+    //       start: start.toJSDate(),
+    //       end: start.toJSDate(),
+    //     };
+
+    //     index = intervals.length - 2 === index ? 0 : index + 1;
+
+    //   }, 500);
+    // });
+
     const view = (this.view = new MapView({
       container,
       constraints: {
@@ -1073,6 +1120,20 @@ export default class MoneyTides extends Widget {
       },
       map: new Map({
         basemap: 'topo-vector',
+        layers: [
+          // radar,
+          // wave height
+          // new WMSLayer({
+          //   url: 'https://mapservices.weather.noaa.gov/geoserver/ndfd/waveh/ows',
+          //   opacity: 0.5,
+          //   visible: false,
+          // }),
+          // 3 day forecast
+          // new MapImageLayer({
+          //   url: 'https://mapservices.weather.noaa.gov/vector/rest/services/outlooks/natl_fcst_wx_chart/MapServer',
+          //   visible: false,
+          // }),
+        ],
       }),
     }));
 
