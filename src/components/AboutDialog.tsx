@@ -1,9 +1,3 @@
-//#region components
-
-import '@esri/calcite-components/dist/components/calcite-dialog';
-
-//#endregion
-
 //#region modules
 
 import { subclass } from '@arcgis/core/core/accessorSupport/decorators';

@@ -8,13 +8,6 @@ type ChartDataValue = { x: number; y: number; tide: MT.Tide };
 
 //#endregion
 
-//#region components
-
-import '@esri/calcite-components/dist/components/calcite-action';
-import '@esri/calcite-components/dist/components/calcite-dialog';
-
-//#endregion
-
 //#region modules
 
 import { property, subclass } from '@arcgis/core/core/accessorSupport/decorators';

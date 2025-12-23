@@ -1,9 +1,5 @@
 import esri = __esri;
 
-import '@esri/calcite-components/dist/components/calcite-action';
-import '@esri/calcite-components/dist/components/calcite-action-bar';
-import '@esri/calcite-components/dist/components/calcite-popover';
-
 import { property, subclass } from '@arcgis/core/core/accessorSupport/decorators';
 import Widget from '@arcgis/core/widgets/Widget';
 import { tsx } from '@arcgis/core/widgets/support/widget';

@@ -4,6 +4,7 @@ import './main.scss';
 
 import Map from '@arcgis/core/Map';
 import MapView from '@arcgis/core/views/MapView';
+import './components/components';
 import Loader from './components/Loader';
 import MoneyTides from './components/MoneyTides';
 

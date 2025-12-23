@@ -4,17 +4,6 @@ import type { MT } from '../interfaces';
 
 //#endregion
 
-//#region components
-
-import '@esri/calcite-components/dist/components/calcite-action';
-import '@esri/calcite-components/dist/components/calcite-action-bar';
-import '@esri/calcite-components/dist/components/calcite-dialog';
-import '@esri/calcite-components/dist/components/calcite-table';
-import '@esri/calcite-components/dist/components/calcite-table-cell';
-import '@esri/calcite-components/dist/components/calcite-table-row';
-
-//#endregion
-
 //#region modules
 
 import { property, subclass } from '@arcgis/core/core/accessorSupport/decorators';

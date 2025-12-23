@@ -71,7 +71,7 @@
 
 /** lunar phase **/
 
-$moon-size: 76px;
+$moon-size: 66px;
 $moon-dark: var(--calcite-color-text-2);
 $moon-light: var(--calcite-color-border-3);
 
@@ -83,6 +83,7 @@ $moon-light: var(--calcite-color-border-3);
 
 .lunar-phase-panel_container {
   display: flex;
+  flex: 1;
   flex-direction: row;
   gap: 1rem;
   background-color: var(--calcite-ui-brand-press);
@@ -101,13 +102,6 @@ $moon-light: var(--calcite-color-border-3);
   line-height: 1;
   color: var(--calcite-color-text-inverse);
 }
-
-// .lunar-phase-panel_sky {
-//   display: flex;
-//   justify-content: center;
-//   align-items: center;
-//   // padding: 2rem;
-// }
 
 .lunar-phase-panel_moon {
   border-radius: 100%;

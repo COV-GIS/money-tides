@@ -39,39 +39,45 @@ export const azimuthToBearing = (azimuth: number): string => {
 };
 
 export const magneticDeclination = async (
-  date: Date | DateTime,
+  date: DateTime,
   latitude: number,
   longitude: number,
-  format?: boolean,
-): Promise<number | string> => {
-  date = date instanceof Date ? DateTime.fromJSDate(date) : date;
+): Promise<{ bearing: string; declination: number }> => {
+  try {
+    const url = createURL('https://www.ngdc.noaa.gov/geomag-web/calculators/calculateDeclination', {
+      key: 'zNEw7',
+      lat1: latitude,
+      lon1: longitude,
+      model: 'WMM',
+      startYear: date.get('year'),
+      startMonth: date.get('month'),
+      startDay: date.get('day'),
+      resultFormat: 'json',
+    });
 
-  const url = createURL('https://www.ngdc.noaa.gov/geomag-web/calculators/calculateDeclination', {
-    key: 'zNEw7',
-    lat1: latitude,
-    lon1: longitude,
-    model: 'WMM',
-    startYear: date.get('year'),
-    startMonth: date.get('month'),
-    startDay: date.get('day'),
-    resultFormat: 'json',
-  });
+    const magneticDeclinationResponse: MT.ApiMagneticDeclinationResponse = await (await fetch(url)).json();
 
-  const magneticDeclinationResponse: MT.ApiMagneticDeclinationResponse = await (await fetch(url)).json();
+    const declination = magneticDeclinationResponse.result[0].declination;
 
-  let declination = magneticDeclinationResponse.result[0].declination;
-
-  if (format) {
-    if (declination === 0) return '0°';
+    const degrees = Math.abs(declination);
 
     const direction = declination > 0 ? 'E' : 'W';
 
-    declination = Math.abs(declination);
+    return {
+      bearing:
+        declination === 0
+          ? '0°'
+          : `${Math.floor(degrees)}° ${Math.floor((degrees - Math.floor(degrees)) * 60)}' ${direction}`,
+      declination,
+    };
+  } catch (error) {
+    console.log(error);
 
-    return `${Math.floor(declination)}° ${Math.floor((declination - Math.floor(declination)) * 60)}' ${direction}`;
+    return {
+      bearing: 'invalid',
+      declination: -999,
+    };
   }
-
-  return declination;
 };
 
 export const moonPhaseName = (phase: number): string => {

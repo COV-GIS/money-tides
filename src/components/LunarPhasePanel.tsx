@@ -1,15 +1,10 @@
-//#region types
-
-import type { MT } from '../interfaces';
-
-//#endregion
-
 //#region modules
 
 import { property, subclass } from '@arcgis/core/core/accessorSupport/decorators';
 import Panel from './Panel';
 import { tsx } from '@arcgis/core/widgets/support/widget';
-import DateTime from '../utils/dateAndTimeUtils';
+import DateTime, { setNoon } from '../utils/dateAndTimeUtils';
+import { sunAndMoon } from '../utils/sunAndMoonUtils';
 
 //#endregion
 
@@ -26,43 +21,31 @@ const CSS = {
   light: `${CSS_BASE}_light`,
   medium: `${CSS_BASE}_medium`,
   moon: `${CSS_BASE}_moon`,
-  sky: `${CSS_BASE}_sky`,
 };
 
 //#endregion
 
 @subclass('LunarPhasePanel')
 export default class LunarPhasePanel extends Panel {
-  //#region lifecycle
-  //#endregion
-
   //#region public properties
 
   @property()
-  public date?: DateTime;
+  public date = setNoon(DateTime.now());
 
-  @property()
-  public moon?: MT.Moon;
+  public latitude = 44.927;
 
-  //#endregion
+  public longitude = -124.013;
 
-  //#region public methods
   //#endregion
 
   //#region render
 
   render(): tsx.JSX.Element {
-    if (!this.date || !this.moon)
-      return (
-        <calcite-panel heading="Lunar Phase" scale="s">
-          {this.closeAction()}
-        </calcite-panel>
-      );
+    const { date, latitude, longitude } = this;
 
     const {
-      date,
       moon: { distance, illuminationPercent, phase, phaseName },
-    } = this;
+    } = sunAndMoon(date, latitude, longitude);
 
     const degrees = 360 - Math.floor(phase * 360);
 
@@ -70,12 +53,10 @@ export default class LunarPhasePanel extends Panel {
       <calcite-panel class={CSS_BASE} heading="Lunar Phase" scale="s">
         {this.closeAction()}
         <div class={CSS.container}>
-          <div class={CSS.sky}>
-            <div class={CSS.moon}>
-              <div class={degrees < 180 ? `${CSS.hemisphere} ${CSS.light}` : `${CSS.hemisphere} ${CSS.dark}`}></div>
-              <div class={degrees < 180 ? `${CSS.hemisphere} ${CSS.dark}` : `${CSS.hemisphere} ${CSS.light}`}></div>
-              <div class={CSS.divider} style={`transform: rotate3d(0, 1, 0, ${degrees}deg)`}></div>
-            </div>
+          <div class={CSS.moon}>
+            <div class={degrees < 180 ? `${CSS.hemisphere} ${CSS.light}` : `${CSS.hemisphere} ${CSS.dark}`}></div>
+            <div class={degrees < 180 ? `${CSS.hemisphere} ${CSS.dark}` : `${CSS.hemisphere} ${CSS.light}`}></div>
+            <div class={CSS.divider} style={`transform: rotate3d(0, 1, 0, ${degrees}deg)`}></div>
           </div>
           <div class={CSS.info}>
             <div>

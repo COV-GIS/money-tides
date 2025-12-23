@@ -3,22 +3,7 @@
 import esri = __esri;
 import type { MT } from '../interfaces';
 type Dialogs = 'about' | 'disclaimer' | 'plot' | 'tides';
-type Panels = 'lunarPhase' | 'declination' | 'weather';
-
-//#endregion
-
-//#region components
-
-import '@esri/calcite-components/dist/components/calcite-action';
-import '@esri/calcite-components/dist/components/calcite-action-bar';
-import '@esri/calcite-components/dist/components/calcite-alert';
-import '@esri/calcite-components/dist/components/calcite-button';
-import '@esri/calcite-components/dist/components/calcite-dropdown';
-import '@esri/calcite-components/dist/components/calcite-dropdown-group';
-import '@esri/calcite-components/dist/components/calcite-dropdown-item';
-import '@esri/calcite-components/dist/components/calcite-input-date-picker';
-import '@esri/calcite-components/dist/components/calcite-shell';
-import '@esri/calcite-components/dist/components/calcite-shell-panel';
+type Panels = 'lunarPhase' | 'weather';
 
 //#endregion
 
@@ -37,7 +22,7 @@ import Point from '@arcgis/core/geometry/Point';
 import { moneyTypeColors } from '../utils/colorUtils';
 import DateTime, { NOAADate, setNoon, setTime, twelveHourTime } from '../utils/dateAndTimeUtils';
 // import { Interval } from 'luxon';
-import { sunAndMoon, sunAndMoonPosition } from '../utils/sunAndMoonUtils';
+import { magneticDeclination, sunAndMoon, sunAndMoonPosition } from '../utils/sunAndMoonUtils';
 import createURL from '../utils/createURL';
 import AboutDialog from './AboutDialog';
 import Attribution from './Attribution';
@@ -46,7 +31,6 @@ import PlotDialog from './PlotDialog';
 import TidesDialog from './TidesDialog';
 import WeatherPanel from './WeatherPanel';
 import LunarPhasePanel from './LunarPhasePanel';
-import DeclinationPanel from './DeclinationPanel';
 
 // import WMSLayer from '@arcgis/core/layers/WMSLayer';
 // import MapImageLayer from '@arcgis/core/layers/MapImageLayer';
@@ -105,7 +89,6 @@ const CSS = {
   headerButtons: `${CSS_BASE}_header--buttons`,
   headerDate: `${CSS_BASE}_header--date`,
   headerTitle: `${CSS_BASE}_header--title`,
-  view: `${CSS_BASE}_view`,
 };
 
 let KEY = 0;
@@ -190,31 +173,16 @@ export default class MoneyTides extends Widget {
     );
   }
 
-  override postInitialize(): void {
-    const {
-      date,
-      panels: { lunarPhase },
-    } = this;
-
-    const latitude = 44.927;
-
-    const longitude = -124.013;
-
-    const { moon } = sunAndMoon(date, latitude, longitude);
-
-    lunarPhase.date = date;
-
-    lunarPhase.moon = moon;
+  override async postInitialize(): Promise<void> {
+    this.updateDeclination();
 
     this.addHandles(
       watch(
         (): DateTime => this.date,
         (_date: DateTime): void => {
-          const { moon: _moon } = sunAndMoon(_date, latitude, longitude);
+          this.panels.lunarPhase.date = _date;
 
-          lunarPhase.date = _date;
-
-          lunarPhase.moon = _moon;
+          this.updateDeclination();
         },
       ),
     );
@@ -240,6 +208,9 @@ export default class MoneyTides extends Widget {
 
   private datePicker!: HTMLCalciteInputDatePickerElement;
 
+  @property()
+  private declinationBearing = '';
+
   private dialogs = {
     about: new AboutDialog(),
     disclaimer: new DisclaimerDialog(),
@@ -252,7 +223,6 @@ export default class MoneyTides extends Widget {
 
   private panels = {
     lunarPhase: new LunarPhasePanel(),
-    declination: new DeclinationPanel(),
     weather: new WeatherPanel(),
   };
 
@@ -758,6 +728,43 @@ export default class MoneyTides extends Widget {
       .join('\n');
   }
 
+  private async updateDeclination(): Promise<void> {
+    this.declinationBearing = (await magneticDeclination(this.date, 44.927, -124.013)).bearing;
+  }
+
+  private updateGraphics(station: MT.Station): void {
+    const {
+      error,
+      graphics: { markerGraphic, stationGraphic, tidesGraphic },
+      money,
+      tides,
+    } = station;
+
+    let { primary, secondary } = moneyTypeColors(money);
+
+    if (error) {
+      primary = new Color('black');
+
+      secondary = new Color('white');
+    }
+
+    stationGraphic.symbol = Object.assign((stationGraphic.symbol as esri.TextSymbol).clone(), {
+      color: primary,
+      haloColor: secondary,
+    });
+
+    markerGraphic.symbol = Object.assign((markerGraphic.symbol as esri.SimpleMarkerSymbol).clone(), {
+      color: primary,
+      outline: { color: secondary, width: SYMBOL_POINT.outline.width },
+    });
+
+    tidesGraphic.symbol = Object.assign((tidesGraphic.symbol as esri.TextSymbol).clone(), {
+      color: error ? null : primary,
+      haloColor: error ? null : secondary,
+      text: this.tidesSymbolText(tides),
+    });
+  }
+
   private async updateStation(station: MT.Station): Promise<void> {
     const {
       date,
@@ -849,39 +856,6 @@ export default class MoneyTides extends Widget {
     }
   }
 
-  private updateGraphics(station: MT.Station): void {
-    const {
-      error,
-      graphics: { markerGraphic, stationGraphic, tidesGraphic },
-      money,
-      tides,
-    } = station;
-
-    let { primary, secondary } = moneyTypeColors(money);
-
-    if (error) {
-      primary = new Color('black');
-
-      secondary = new Color('white');
-    }
-
-    stationGraphic.symbol = Object.assign((stationGraphic.symbol as esri.TextSymbol).clone(), {
-      color: primary,
-      haloColor: secondary,
-    });
-
-    markerGraphic.symbol = Object.assign((markerGraphic.symbol as esri.SimpleMarkerSymbol).clone(), {
-      color: primary,
-      outline: { color: secondary, width: SYMBOL_POINT.outline.width },
-    });
-
-    tidesGraphic.symbol = Object.assign((tidesGraphic.symbol as esri.TextSymbol).clone(), {
-      color: error ? null : primary,
-      haloColor: error ? null : secondary,
-      text: this.tidesSymbolText(tides),
-    });
-  }
-
   //#endregion
 
   //#region events
@@ -962,14 +936,17 @@ export default class MoneyTides extends Widget {
   //#region render
 
   override render(): tsx.JSX.Element {
-    const { alerts, panel, zoomToDropdownItems } = this;
+    const { id, alerts, declinationBearing, panel, zoomToDropdownItems } = this;
+
+    const shellPanelStyle = panel === 'lunarPhase' ? '--calcite-shell-panel-min-width: 250px;' : '';
+
+    const declinationId = `money-tides-declination-${id}`;
 
     return (
       <calcite-shell content-behind="">
         {/* header */}
         <div class={CSS.header} slot="header">
           <div class={CSS.headerTitle}>Money Tides</div>
-
           <div class={CSS.headerDate}>
             <calcite-button
               icon-start="chevron-left"
@@ -987,17 +964,11 @@ export default class MoneyTides extends Widget {
               onclick={this.dateButtonClickEvent.bind(this)}
             ></calcite-button>
           </div>
-
           <div class={CSS.headerButtons}></div>
         </div>
 
         {/* shell panel */}
-        <calcite-shell-panel
-          display-mode="float-content"
-          position="end"
-          slot="panel-end"
-          style="--calcite-shell-panel-min-width: 280px;"
-        >
+        <calcite-shell-panel display-mode="float-content" position="end" slot="panel-end" style={shellPanelStyle}>
           <calcite-action-bar
             floating
             scale="s"
@@ -1035,11 +1006,11 @@ export default class MoneyTides extends Widget {
               onclick={this.shellPanelActionClickEvent.bind(this, 'lunarPhase')}
             ></calcite-action>
             <calcite-action
-              active={panel === 'declination'}
               icon="explore"
+              id={declinationId}
               scale="s"
               text="Declination"
-              onclick={this.shellPanelActionClickEvent.bind(this, 'declination')}
+              onclick={this.shellPanelActionClickEvent.bind(this, null)}
             ></calcite-action>
             <calcite-action
               icon="question"
@@ -1059,23 +1030,34 @@ export default class MoneyTides extends Widget {
             hidden={panel !== 'lunarPhase'}
             afterCreate={this.panelAfterCreate.bind(this, 'lunarPhase')}
           ></calcite-panel>
-          <calcite-panel
-            hidden={panel !== 'declination'}
-            afterCreate={this.panelAfterCreate.bind(this, 'declination')}
-          ></calcite-panel>
         </calcite-shell-panel>
 
+        {/* declination popover */}
+        <calcite-popover
+          auto-close=""
+          closable
+          heading="Declination"
+          overlay-positioning="fixed"
+          scale="s"
+          style="--calcite-popover-text-color: var(--calcite-color-text-2);"
+          reference-element={declinationId}
+        >
+          <div style="padding: var(--calcite-spacing-sm); font-size: var(--calcite-font-size--2);">
+            Set your compass to {declinationBearing}.
+          </div>
+        </calcite-popover>
+
         {/* view */}
-        <div class={CSS.view} afterCreate={this.viewAfterCreate.bind(this)}></div>
+        <div style="width: 100%; height: 100%;" afterCreate={this.viewAfterCreate.bind(this)}></div>
 
         {/* alerts */}
         {alerts.toArray()}
 
         {/* dialogs */}
+        <calcite-dialog slot="dialogs" afterCreate={this.dialogAfterCreate.bind(this, 'tides')}></calcite-dialog>
         <calcite-dialog slot="dialogs" afterCreate={this.dialogAfterCreate.bind(this, 'about')}></calcite-dialog>
         <calcite-dialog slot="dialogs" afterCreate={this.dialogAfterCreate.bind(this, 'disclaimer')}></calcite-dialog>
         <calcite-dialog slot="dialogs" afterCreate={this.dialogAfterCreate.bind(this, 'plot')}></calcite-dialog>
-        <calcite-dialog slot="dialogs" afterCreate={this.dialogAfterCreate.bind(this, 'tides')}></calcite-dialog>
       </calcite-shell>
     );
   }
