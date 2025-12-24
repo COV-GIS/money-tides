@@ -46,8 +46,6 @@ export default class WeatherPanel extends Panel {
   @property()
   private loaded = false;
 
-  private radarIntervals!: Interval[];
-
   private radarLayer!: esri.ImageryLayer;
 
   private async load(view: esri.MapView | undefined): Promise<void> {
@@ -56,9 +54,9 @@ export default class WeatherPanel extends Panel {
     if (LOAD_HANDLE) LOAD_HANDLE.remove();
 
     const radarLayer = (this.radarLayer = new ImageryLayer({
-      effect: 'blur(10px)',
+      effect: `blur(${view.zoom * 2}px)`,
       interpolation: 'cubic',
-      opacity: 0.75,
+      opacity: 0.8,
       popupEnabled: false,
       popupTemplate: null,
       refreshInterval: 5,
@@ -68,9 +66,78 @@ export default class WeatherPanel extends Panel {
 
     view.map?.add(radarLayer);
 
+    this.addHandles(
+      watch(
+        (): number => view.zoom,
+        (zoom: number): void => {
+          if (!Number.isInteger(zoom)) return;
+
+          radarLayer.effect = `blur(${zoom < 10 ? zoom * 2 : zoom * 4}px)`;
+        },
+      ),
+    );
+
     await radarLayer.load();
 
+    console.log(radarLayer);
+
     this.loaded = true;
+  }
+
+  private radarLoopInterval: number | nullish = null;
+
+  private async radarLoop(event: Event): Promise<void> {
+    const action = event.target as HTMLCalciteActionElement;
+
+    const { radarLayer } = this;
+
+    if (action.icon === 'pause' && this.radarLoopInterval) {
+      action.icon = 'play';
+
+      clearInterval(this.radarLoopInterval);
+
+      this.radarLoopInterval = null;
+
+      radarLayer.refresh();
+
+      return;
+    }
+
+    action.icon = 'pause';
+
+    if (!radarLayer.visible) radarLayer.visible = true;
+
+    radarLayer.refresh();
+
+    const fullTimeExtent = (radarLayer.timeInfo as esri.TimeInfo).fullTimeExtent as esri.TimeExtent; // know layer has time extent
+
+    const start = DateTime.fromJSDate(fullTimeExtent.start as Date) as DateTime;
+    const end = DateTime.fromJSDate(fullTimeExtent.end as Date) as DateTime;
+
+    const intervals = Interval.fromDateTimes(start, end).divideEqually(100);
+
+    let index = 0;
+
+    this.radarLoopInterval = setInterval((): void => {
+      if (this.radarLoopInterval && intervals.length === index) {
+        action.icon = 'play';
+
+        clearInterval(this.radarLoopInterval);
+
+        this.radarLoopInterval = null;
+
+        return;
+      }
+
+      const { end, start } = intervals[index] as Interval;
+
+      radarLayer.timeExtent = {
+        start: (start as DateTime).toJSDate(),
+        end: (end as DateTime).toJSDate(),
+      };
+
+      index++;
+    }, 100);
   }
 
   //#region render
@@ -99,12 +166,21 @@ export default class WeatherPanel extends Panel {
         <calcite-list-item
           label="Radar Base Reflectivity"
           scale="s"
+          selected={this.radarLayer.visible}
+          style="--calcite-list-background-color-hover: transparent; --calcite-list-background-color-press: transparent;"
           afterCreate={(listItem: HTMLCalciteListItemElement): void => {
             listItem.addEventListener('calciteListItemSelect', (): void => {
               this.radarLayer.visible = listItem.selected;
             });
           }}
         >
+          <calcite-action
+            icon="play"
+            scale="s"
+            slot="actions-end"
+            text="Play Loop"
+            onclick={this.radarLoop.bind(this)}
+          ></calcite-action>
           <calcite-action
             icon="chevron-left"
             scale="s"
@@ -126,11 +202,7 @@ export default class WeatherPanel extends Panel {
             hidden
             slot="content-bottom"
             style="border-top: 1px solid var(--calcite-color-border-3); padding: 0.75rem; font-size: var(--calcite-font-size--2);"
-          >
-            <calcite-button icon-start="play" scale="s">
-              Radar Loop
-            </calcite-button>
-          </div>
+          ></div>
         </calcite-list-item>
       </calcite-list>,
     ];
