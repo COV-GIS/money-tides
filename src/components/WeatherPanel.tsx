@@ -1,3 +1,11 @@
+// https://www.weather.gov/gis/cloudgiswebservices
+
+// https://www.wxtools.org/reflectivity
+
+// https://services9.arcgis.com/RHVPKKiFTONKtxq3/arcgis/rest/services/NOAA_METAR_current_wind_speed_direction_v1/FeatureServer
+
+// https://services9.arcgis.com/RHVPKKiFTONKtxq3/ArcGIS/rest/services/NWS_Watches_Warnings_v1/FeatureServer
+
 //#region types
 
 import esri = __esri;
@@ -6,16 +14,31 @@ import esri = __esri;
 
 //#region modules
 
+import './WeatherPanel.scss';
+
 import { watch } from '@arcgis/core/core/reactiveUtils';
 import { property, subclass } from '@arcgis/core/core/accessorSupport/decorators';
 import Panel from './Panel';
 import { tsx } from '@arcgis/core/widgets/support/widget';
+// import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import ImageryLayer from '@arcgis/core/layers/ImageryLayer';
+// import MapImageLayer from '@arcgis/core/layers/MapImageLayer';
 import DateTime, { Interval } from '../utils/dateAndTimeUtils';
 
 //#endregion
 
+//#region constants
+
+const CSS_BASE = 'weather-panel';
+
+const CSS = {
+  content: `${CSS_BASE}_content`,
+  item: `${CSS_BASE}_item`,
+};
+
 let LOAD_HANDLE: IHandle | nullish;
+
+//#endregion
 
 @subclass('WeatherPanel')
 export default class WeatherPanel extends Panel {
@@ -40,13 +63,20 @@ export default class WeatherPanel extends Panel {
 
   //#endregion
 
-  //#region public methods
-  //#endregion
+  //#region private properties
 
   @property()
   private loaded = false;
 
+  private layers: Record<string, esri.Layer> = {};
+
   private radarLayer!: esri.ImageryLayer;
+
+  private loopRadarInterval: number | nullish = null;
+
+  //#endregion
+
+  //#region private methods
 
   private async load(view: esri.MapView | undefined): Promise<void> {
     if (!view) return;
@@ -60,11 +90,12 @@ export default class WeatherPanel extends Panel {
       popupEnabled: false,
       popupTemplate: null,
       refreshInterval: 5,
+      title: 'Radar Base Reflectivity',
       url: 'https://mapservices.weather.noaa.gov/eventdriven/rest/services/radar/radar_base_reflectivity_time/ImageServer',
       visible: false,
     }));
 
-    view.map?.add(radarLayer);
+    view.map?.addMany([radarLayer]);
 
     this.addHandles(
       watch(
@@ -79,24 +110,20 @@ export default class WeatherPanel extends Panel {
 
     await radarLayer.load();
 
-    console.log(radarLayer);
-
     this.loaded = true;
   }
 
-  private radarLoopInterval: number | nullish = null;
-
-  private async radarLoop(event: Event): Promise<void> {
+  private async loopRadar(event: Event): Promise<void> {
     const action = event.target as HTMLCalciteActionElement;
 
     const { radarLayer } = this;
 
-    if (action.icon === 'pause' && this.radarLoopInterval) {
+    if (action.icon === 'pause' && this.loopRadarInterval) {
       action.icon = 'play';
 
-      clearInterval(this.radarLoopInterval);
+      clearInterval(this.loopRadarInterval);
 
-      this.radarLoopInterval = null;
+      this.loopRadarInterval = null;
 
       radarLayer.refresh();
 
@@ -107,38 +134,56 @@ export default class WeatherPanel extends Panel {
 
     if (!radarLayer.visible) radarLayer.visible = true;
 
-    radarLayer.refresh();
+    // radarLayer.refresh();
 
     const fullTimeExtent = (radarLayer.timeInfo as esri.TimeInfo).fullTimeExtent as esri.TimeExtent; // know layer has time extent
 
     const start = DateTime.fromJSDate(fullTimeExtent.start as Date) as DateTime;
     const end = DateTime.fromJSDate(fullTimeExtent.end as Date) as DateTime;
 
-    const intervals = Interval.fromDateTimes(start, end).divideEqually(100);
+    const intervals = Interval.fromDateTimes(start, end).divideEqually(20);
 
     let index = 0;
 
-    this.radarLoopInterval = setInterval((): void => {
-      if (this.radarLoopInterval && intervals.length === index) {
+    this.loopRadarInterval = setInterval((): void => {
+      if (this.loopRadarInterval && intervals.length === index) {
         action.icon = 'play';
 
-        clearInterval(this.radarLoopInterval);
+        clearInterval(this.loopRadarInterval);
 
-        this.radarLoopInterval = null;
+        this.loopRadarInterval = null;
+
+        radarLayer.timeExtent = null;
 
         return;
       }
 
-      const { end, start } = intervals[index] as Interval;
+      const interval = intervals[index] as Interval;
 
       radarLayer.timeExtent = {
-        start: (start as DateTime).toJSDate(),
-        end: (end as DateTime).toJSDate(),
+        start: (interval.start as DateTime).toJSDate(),
+        end: (interval.end as DateTime).toJSDate(),
       };
 
       index++;
-    }, 100);
+    }, 250);
   }
+
+  private toggleListItemContent(event: Event): void {
+    const action = event.target as HTMLCalciteActionElement;
+
+    const content = (action.parentElement as HTMLCalciteListItemElement).querySelector(
+      'div[slot="content-bottom"]',
+    ) as HTMLDivElement | null;
+
+    if (!content) return;
+
+    content.hidden = !content.hidden;
+
+    action.icon = content.hidden ? 'chevron-left' : 'chevron-down';
+  }
+
+  //#endregion
 
   //#region render
 
@@ -164,116 +209,51 @@ export default class WeatherPanel extends Panel {
     return [
       <calcite-list scale="s" selection-mode="multiple">
         <calcite-list-item
-          label="Radar Base Reflectivity"
+          class={CSS.item}
           scale="s"
-          selected={this.radarLayer.visible}
-          style="--calcite-list-background-color-hover: transparent; --calcite-list-background-color-press: transparent;"
-          afterCreate={(listItem: HTMLCalciteListItemElement): void => {
-            listItem.addEventListener('calciteListItemSelect', (): void => {
-              this.radarLayer.visible = listItem.selected;
-            });
-          }}
+          afterCreate={this.layerListItemAfterCreate.bind(this, this.radarLayer)}
         >
           <calcite-action
             icon="play"
             scale="s"
             slot="actions-end"
             text="Play Loop"
-            onclick={this.radarLoop.bind(this)}
+            onclick={this.loopRadar.bind(this)}
           ></calcite-action>
-          <calcite-action
+          {/* TODO: add current time and better loop controls in content */}
+          {/* <calcite-action
             icon="chevron-left"
             scale="s"
             slot="actions-end"
             text="Expand"
-            afterCreate={(action: HTMLCalciteActionElement): void => {
-              action.addEventListener('click', (): void => {
-                const content = (action.parentElement as HTMLCalciteListItemElement).querySelector(
-                  'div[slot="content-bottom"]',
-                ) as HTMLDivElement;
-
-                content.hidden = !content.hidden;
-
-                action.icon = content.hidden ? 'chevron-left' : 'chevron-down';
-              });
-            }}
+            onclick={this.toggleListItemContent.bind(this)}
           ></calcite-action>
-          <div
-            hidden
-            slot="content-bottom"
-            style="border-top: 1px solid var(--calcite-color-border-3); padding: 0.75rem; font-size: var(--calcite-font-size--2);"
-          ></div>
+          <div class={CSS.content} hidden slot="content-bottom">
+            <div></div>
+          </div> */}
         </calcite-list-item>
       </calcite-list>,
     ];
   }
 
+  private layerListItemAfterCreate(layer: esri.Layer, listItem: HTMLCalciteListItemElement): void {
+    listItem.selected = layer.visible;
+
+    listItem.label = layer.title || 'Layer';
+
+    listItem.addEventListener('calciteListItemSelect', (): void => {
+      layer.visible = listItem.selected;
+    });
+
+    this.addHandles(
+      watch(
+        (): boolean => layer.visible,
+        (visible: boolean): void => {
+          listItem.selected = visible;
+        },
+      ),
+    );
+  }
+
   //#endregion
 }
-
-// console.log(radarLayer);
-
-// const fullTimeExtent = (radarLayer.timeInfo as esri.TimeInfo).fullTimeExtent as esri.TimeExtent; // know layer has time extent
-
-// const start = DateTime.fromJSDate(fullTimeExtent.start as Date) as DateTime;
-// const end = DateTime.fromJSDate(fullTimeExtent.end as Date) as DateTime;
-
-// const intervals = Interval.fromDateTimes(start, end).divideEqually(100);
-
-// let index = 0;
-
-// const run = setInterval((): void => {
-//   const { end, start } = intervals[index] as Interval;
-
-//   radarLayer.timeExtent = {
-//     start: start.toJSDate(),
-//     end: end.toJSDate(),
-//   };
-
-//   // if (intervals.length - 1 === index) clearInterval(run);
-
-//   index = intervals.length - 1 === index ? 0 : index++;
-
-//   index++;
-// }, 100);
-
-// https://www.weather.gov/gis/cloudgiswebservices
-
-// const radar = new ImageryLayer({
-//   url: 'https://mapservices.weather.noaa.gov/eventdriven/rest/services/radar/radar_base_reflectivity_time/ImageServer',
-//   opacity: 0.5,
-// });
-
-// radar.when((): void => {
-//   console.log('time info', radar.timeInfo);
-
-//   radar.timeExtent = {
-//     start: radar.timeInfo?.fullTimeExtent?.start,
-//     end: radar.timeInfo?.fullTimeExtent?.end,
-//   };
-
-//   console.log('start', radar.timeInfo?.fullTimeExtent?.start);
-//   console.log('end', radar.timeInfo?.fullTimeExtent?.end);
-//   console.log('now', new Date());
-
-//   const start = DateTime.fromJSDate(radar.timeInfo?.fullTimeExtent?.start);
-//   const end = DateTime.fromJSDate(radar.timeInfo?.fullTimeExtent?.end);
-
-//   const intervals = Interval.fromDateTimes(start, end).divideEqually(15);
-
-//   console.log(intervals);
-
-//   let index = 0;
-
-//   setInterval((): void => {
-//     const { end, start } = intervals[index];
-
-//     radar.timeExtent = {
-//       start: start.toJSDate(),
-//       end: start.toJSDate(),
-//     };
-
-//     index = intervals.length - 2 === index ? 0 : index + 1;
-
-//   }, 500);
-// });
