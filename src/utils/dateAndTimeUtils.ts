@@ -1,6 +1,8 @@
-import { DateTime } from 'luxon';
+import { DateTime, Interval as _Interval } from 'luxon';
 
 export default DateTime;
+
+export { _Interval as Interval };
 
 /**
  * Return a date formatted for NOAA api requests, e.g. `2021204`.

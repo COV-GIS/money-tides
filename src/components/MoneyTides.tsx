@@ -19,23 +19,17 @@ import Color from '@arcgis/core/Color';
 import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
 import TextSymbol from '@arcgis/core/symbols/TextSymbol';
 import Point from '@arcgis/core/geometry/Point';
+import AttributionViewModel from '@arcgis/core/widgets/Attribution/AttributionViewModel';
 import { moneyTypeColors } from '../utils/colorUtils';
 import DateTime, { NOAADate, setNoon, setTime, twelveHourTime } from '../utils/dateAndTimeUtils';
-// import { Interval } from 'luxon';
 import { magneticDeclination, sunAndMoon, sunAndMoonPosition } from '../utils/sunAndMoonUtils';
 import createURL from '../utils/createURL';
 import AboutDialog from './AboutDialog';
-import Attribution from './Attribution';
 import DisclaimerDialog from './DisclaimerDialog';
 import PlotDialog from './PlotDialog';
 import TidesDialog from './TidesDialog';
 import WeatherPanel from './WeatherPanel';
 import LunarPhasePanel from './LunarPhasePanel';
-
-// import WMSLayer from '@arcgis/core/layers/WMSLayer';
-// import MapImageLayer from '@arcgis/core/layers/MapImageLayer';
-// import ImageryLayer from '@arcgis/core/layers/ImageryLayer';
-// import Layer from '@arcgis/core/layers/Layer';
 
 //#endregion
 
@@ -158,7 +152,15 @@ export default class MoneyTides extends Widget {
 
     document.body.appendChild(this.container);
 
-    const { zoomToDropdownItems } = this;
+    const { attribution, zoomToDropdownItems } = this;
+
+    this.panels.weather.view = properties.view;
+
+    attribution.view = properties.view;
+
+    document.addEventListener('fullscreenchange', (): void => {
+      this.fullscreenActive = document.fullscreenElement ? true : false;
+    });
 
     this.addHandles(
       zoomToDropdownItems.on('after-add', (): void => {
@@ -203,6 +205,11 @@ export default class MoneyTides extends Widget {
 
   private alerts: esri.Collection<tsx.JSX.Element> = new Collection();
 
+  private attribution = new AttributionViewModel();
+
+  @property({ aliasOf: 'attribution.items' })
+  private attributionItems?: esri.Collection<esri.AttributionItem>;
+
   @property()
   private date = setNoon(DateTime.now().setZone('America/Los_Angeles'));
 
@@ -217,6 +224,12 @@ export default class MoneyTides extends Widget {
     plot: new PlotDialog(),
     tides: new TidesDialog(),
   };
+
+  @property()
+  private fullscreenActive = false;
+
+  @property()
+  private fullscreenDisabled = document.fullscreenEnabled ? false : true;
 
   @property()
   private panel: Panels | null = null;
@@ -325,6 +338,14 @@ export default class MoneyTides extends Widget {
     graphics.addMany([markerGraphic, stationGraphic, tidesGraphic]);
 
     return { markerGraphic, stationGraphic, tidesGraphic };
+  }
+
+  private fullscreen(): void {
+    if (this.fullscreenActive) {
+      document.exitFullscreen();
+    } else {
+      document.body.requestFullscreen();
+    }
   }
 
   private async getTides(
@@ -936,11 +957,21 @@ export default class MoneyTides extends Widget {
   //#region render
 
   override render(): tsx.JSX.Element {
-    const { id, alerts, declinationBearing, panel, zoomToDropdownItems } = this;
+    const { id, alerts, attributionItems, declinationBearing, fullscreenActive, panel, zoomToDropdownItems } = this;
 
     const shellPanelStyle = panel === 'lunarPhase' ? '--calcite-shell-panel-min-width: 250px;' : '';
 
     const declinationId = `money-tides-declination-${id}`;
+
+    const attributionId = `money-tides-attribution-${id}`;
+
+    const attribution = attributionItems
+      ?.map((item: esri.AttributionItem): string => {
+        return item.text;
+      })
+      .join(', ');
+
+    const fullscreenText = fullscreenActive ? 'Exit Fullscreen' : 'Enter Fullscreen';
 
     return (
       <calcite-shell content-behind="">
@@ -1012,6 +1043,23 @@ export default class MoneyTides extends Widget {
               text="Declination"
               onclick={this.shellPanelActionClickEvent.bind(this, null)}
             ></calcite-action>
+            {/* actions end */}
+            <calcite-action
+              disabled={this.fullscreenDisabled}
+              icon={fullscreenActive ? 'full-screen-exit' : 'extent'}
+              scale="s"
+              slot="actions-end"
+              text={fullscreenText}
+              onclick={this.fullscreen.bind(this)}
+            ></calcite-action>
+            <calcite-action
+              icon="map-information"
+              id={attributionId}
+              scale="s"
+              slot="actions-end"
+              text="Attribution"
+              onclick={this.shellPanelActionClickEvent.bind(this, null)}
+            ></calcite-action>
             <calcite-action
               icon="question"
               scale="s"
@@ -1032,7 +1080,7 @@ export default class MoneyTides extends Widget {
           ></calcite-panel>
         </calcite-shell-panel>
 
-        {/* declination popover */}
+        {/* popovers */}
         <calcite-popover
           auto-close=""
           closable
@@ -1042,8 +1090,21 @@ export default class MoneyTides extends Widget {
           style="--calcite-popover-text-color: var(--calcite-color-text-2);"
           reference-element={declinationId}
         >
-          <div style="padding: var(--calcite-spacing-sm); font-size: var(--calcite-font-size--2);">
+          <div style="padding: var(--calcite-spacing-sm); font-size: var(--calcite-font-size--2); line-height: var(--calcite-font-line-height-relative-snug);">
             Set your compass to {declinationBearing}.
+          </div>
+        </calcite-popover>
+        <calcite-popover
+          auto-close=""
+          closable
+          heading="Powered by Esri"
+          overlay-positioning="fixed"
+          scale="s"
+          style="--calcite-popover-text-color: var(--calcite-color-text-2);"
+          reference-element={attributionId}
+        >
+          <div style="max-width: 300px; padding: var(--calcite-spacing-sm); font-size: var(--calcite-font-size--2); line-height: var(--calcite-font-line-height-relative-snug);">
+            {attribution}
           </div>
         </calcite-popover>
 
@@ -1123,52 +1184,9 @@ export default class MoneyTides extends Widget {
       view,
     } = this;
 
-    // https://www.weather.gov/gis/cloudgiswebservices
-
-    // const radar = new ImageryLayer({
-    //   url: 'https://mapservices.weather.noaa.gov/eventdriven/rest/services/radar/radar_base_reflectivity_time/ImageServer',
-    //   opacity: 0.5,
-    // });
-
-    // radar.when((): void => {
-    //   console.log('time info', radar.timeInfo);
-
-    //   radar.timeExtent = {
-    //     start: radar.timeInfo?.fullTimeExtent?.start,
-    //     end: radar.timeInfo?.fullTimeExtent?.end,
-    //   };
-
-    //   console.log('start', radar.timeInfo?.fullTimeExtent?.start);
-    //   console.log('end', radar.timeInfo?.fullTimeExtent?.end);
-    //   console.log('now', new Date());
-
-    //   const start = DateTime.fromJSDate(radar.timeInfo?.fullTimeExtent?.start);
-    //   const end = DateTime.fromJSDate(radar.timeInfo?.fullTimeExtent?.end);
-
-    //   const intervals = Interval.fromDateTimes(start, end).divideEqually(15);
-
-    //   console.log(intervals);
-
-    //   let index = 0;
-
-    //   setInterval((): void => {
-    //     const { end, start } = intervals[index];
-
-    //     radar.timeExtent = {
-    //       start: start.toJSDate(),
-    //       end: start.toJSDate(),
-    //     };
-
-    //     index = intervals.length - 2 === index ? 0 : index + 1;
-
-    //   }, 500);
-    // });
-
     view.container = container;
 
     view.ui.remove(['attribution', 'zoom']);
-
-    view.ui.add(new Attribution({ container: document.createElement('calcite-action-bar'), view }), 'bottom-left');
 
     for (const stationInfo of stationInfos) {
       Object.assign(stationInfo, {

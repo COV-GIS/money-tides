@@ -12,7 +12,7 @@ export default defineConfig({
     outDir: './../dist',
     rollupOptions: {
       output: {
-        chunkFileNames: 'assets/c-[name]-[hash].js',
+        chunkFileNames: 'assets/money-tides-[name]-[hash].js',
       },
     },
   },

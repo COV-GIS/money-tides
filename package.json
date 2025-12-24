@@ -3,7 +3,7 @@
   "version": "0",
   "type": "module",
   "scripts": {
-    "build": "vite build --mode production",
+    "build": "vite build --mode production --emptyOutDir",
     "dev": "vite --mode development",
     "lint": "eslint",
     "prettier": "prettier --write \"src/**/*.ts?(x)\"",
