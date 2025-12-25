@@ -1,1 +1,0 @@
-import{O as t}from"./money-tides-geometryEngineJSON--Xx1sqLR.js";import"./money-tides-geometryEngineBase-ew0uAsjO.js";import"./index-CREVO_qW.js";function i(r){return(0,t[r.operation])(...r.parameters)}export{i as executeGEOperation};
