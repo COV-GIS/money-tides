@@ -1,15 +1,14 @@
 import esri = __esri;
-
-type LayerTypes = esri.ImageryLayer | esri.WMSLayer;
+import type { MT } from '../interfaces';
 
 import { watch } from '@arcgis/core/core/reactiveUtils';
 import { subclass } from '@arcgis/core/core/accessorSupport/decorators';
 import Assessor from '@arcgis/core/core/Accessor';
 import DateTime, { Interval } from '../utils/dateAndTimeUtils';
 
-@subclass('RadarLayer')
-export default class RadarLayer extends Assessor {
-  constructor(properties: { intervals?: number; layer: LayerTypes; rate?: number; view: esri.MapView }) {
+@subclass('RadarLayerControl')
+export default class RadarLayerControl extends Assessor {
+  constructor(properties: MT.RadarLayerControlProperties) {
     super(properties);
 
     const { layer, view } = properties;

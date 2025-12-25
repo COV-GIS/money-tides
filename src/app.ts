@@ -8,12 +8,12 @@ import './components/components';
 import Loader from './components/Loader';
 import MoneyTides from './components/MoneyTides';
 
-import { stationInfos } from './app-data.json';
+import config from './app-config';
 
 const loader = new Loader();
 
 const moneyTides = new MoneyTides({
-  stationInfos,
+  stationInfos: config.stationInfos,
   view: new MapView({
     constraints: {
       rotationEnabled: false,

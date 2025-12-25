@@ -13,6 +13,8 @@
 //#region types
 
 import esri = __esri;
+import type { MT } from '../interfaces';
+type LayerInfo = { listItem: tsx.JSX.Element; layer: esri.Layer; radarLayerControl?: RadarLayerControl };
 
 //#endregion
 
@@ -25,14 +27,15 @@ import { property, subclass } from '@arcgis/core/core/accessorSupport/decorators
 import Panel from './Panel';
 import { tsx } from '@arcgis/core/widgets/support/widget';
 import Collection from '@arcgis/core/core/Collection';
-// import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
-// import GroupLayer from '@arcgis/core/layers/GroupLayer';
-// import ImageryLayer from '@arcgis/core/layers/ImageryLayer';
+import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
+import GroupLayer from '@arcgis/core/layers/GroupLayer';
+import ImageryLayer from '@arcgis/core/layers/ImageryLayer';
 import MapImageLayer from '@arcgis/core/layers/MapImageLayer';
 import WMSLayer from '@arcgis/core/layers/WMSLayer';
-// import DateTime, { Interval } from '../utils/dateAndTimeUtils';
+import Cookies from 'js-cookie';
+import RadarLayerControl from '../support/RadarLayerControl';
 
-import RadarLayer from '../support/RadarLayer';
+import config from '../app-config';
 
 //#endregion
 
@@ -43,7 +46,12 @@ const CSS_BASE = 'weather-panel';
 const CSS = {
   content: `${CSS_BASE}_content`,
   item: `${CSS_BASE}_item`,
+  notice: `${CSS_BASE}_notice`,
 };
+
+const COOKIE = 'money-tides-weather-notice';
+
+let KEY = 0;
 
 let LOAD_HANDLE: IHandle | nullish;
 
@@ -77,7 +85,7 @@ export default class WeatherPanel extends Panel {
   @property()
   private loaded = false;
 
-  private layers: Record<string, esri.Layer> = {};
+  private layerInfos: Collection<LayerInfo> = new Collection();
 
   //#endregion
 
@@ -88,61 +96,75 @@ export default class WeatherPanel extends Panel {
 
     if (LOAD_HANDLE) LOAD_HANDLE.remove();
 
-    const waveHeight = (this.layers.waveHeight = new WMSLayer({
-      opacity: 0.8,
-      refreshInterval: 1,
-      title: 'Wave Height',
-      url: 'https://mapservices.weather.noaa.gov/geoserver/ndfd/waveh/ows?service=wms&version=1.3.0&request=GetCapabilities',
-      visible: false,
-    }));
+    const { layerInfos } = this;
 
-    new RadarLayer({ intervals: 10, layer: waveHeight, rate: 2000, view });
+    config.weatherLayers.forEach((weatherLayer: MT.WeatherLayer): void => {
+      const { properties, type } = weatherLayer;
 
-    const radarBase = (this.layers.radarBase = new WMSLayer({
-      opacity: 0.8,
-      refreshInterval: 1,
-      title: 'Radar (base)',
-      url: 'https://opengeo.ncep.noaa.gov/geoserver/conus/conus_bref_qcd/ows?service=wms&version=1.3.0&request=GetCapabilities',
-      visible: false,
-    }));
+      let layer!: esri.FeatureLayer | esri.GroupLayer | esri.ImageryLayer | esri.MapImageLayer | esri.WMSLayer;
 
-    new RadarLayer({ layer: radarBase, view });
+      let radarLayerControl: RadarLayerControl | undefined;
 
-    const radarComposite = (this.layers.radarComposite = new WMSLayer({
-      opacity: 0.8,
-      refreshInterval: 1,
-      title: 'Radar (composite)',
-      url: 'https://opengeo.ncep.noaa.gov/geoserver/conus/conus_cref_qcd/ows?service=wms&version=1.3.0&request=GetCapabilities',
-      visible: false,
-    }));
+      switch (type) {
+        case 'feature':
+          layer = new FeatureLayer(properties);
 
-    new RadarLayer({ layer: radarComposite, view });
+          break;
+        case 'group':
+          layer = new GroupLayer(properties);
 
-    const cloudCover = (this.layers.cloudCover = new WMSLayer({
-      opacity: 0.5,
-      refreshInterval: 1,
-      title: 'Cloud Cover',
-      url: 'https://mapservices.weather.noaa.gov/geoserver/ndfd/sky/ows?service=wms&version=1.3.0&request=GetCapabilities',
-      visible: false,
-    }));
+          break;
+        case 'imagery':
+          layer = new ImageryLayer(properties);
 
-    new RadarLayer({ intervals: 10, layer: cloudCover, rate: 1000, view });
+          break;
+        case 'map-image':
+          layer = new MapImageLayer(properties);
 
-    const weatherFronts = (this.layers.weatherFronts = new MapImageLayer({
-      sublayers: [
+          break;
+        case 'wms':
+          layer = new WMSLayer(properties);
+
+          if (weatherLayer.radarLayerControlProperties)
+            radarLayerControl = new RadarLayerControl({ ...weatherLayer.radarLayerControlProperties, layer, view });
+
+          break;
+      }
+
+      view.map?.add(layer);
+
+      layerInfos.add(
         {
-          id: 1,
-        },
-        {
-          id: 2,
-        },
-      ],
-      title: 'Weather Fronts',
-      url: 'https://mapservices.weather.noaa.gov/vector/rest/services/outlooks/natl_fcst_wx_chart/MapServer',
-      visible: false,
-    }));
+          listItem: (
+            <calcite-list-item
+              class={CSS.item}
+              key={KEY++}
+              label={layer.title || 'Layer'}
+              scale="s"
+              afterCreate={(listItem: HTMLCalciteListItemElement): void => {
+                listItem.selected = layer.visible;
 
-    view.map?.addMany([waveHeight, radarBase, radarComposite, cloudCover, weatherFronts]);
+                listItem.addEventListener('calciteListItemSelect', (): void => {
+                  layer.visible = listItem.selected;
+                });
+
+                this.addHandles(
+                  watch(
+                    (): boolean => layer.visible,
+                    (visible: boolean): void => {
+                      listItem.selected = visible;
+                    },
+                  ),
+                );
+              }}
+            ></calcite-list-item>
+          ),
+          layer,
+          radarLayerControl,
+        },
+        0,
+      );
+    });
 
     this.loaded = true;
   }
@@ -166,13 +188,37 @@ export default class WeatherPanel extends Panel {
   //#region render
 
   override render(): tsx.JSX.Element {
-    const { loaded } = this;
+    const { layerInfos, loaded } = this;
 
     return (
       <calcite-panel heading="Weather" scale="s" style={loaded ? '' : '--calcite-panel-space: 0.5rem;'}>
         {this.closeAction()}
+        {Cookies.get(COOKIE) ? null : (
+          <div class={CSS.notice}>
+            <calcite-notice
+              closable
+              open
+              scale="s"
+              afterCreate={(notice: HTMLCalciteNoticeElement): void => {
+                notice.addEventListener('calciteNoticeClose', (): void => {
+                  Cookies.set(COOKIE, 'noticed', { expires: 14 });
+
+                  this.scheduleRender();
+                });
+              }}
+            >
+              <div slot="message">Weather layers and advisories are current and do not reflect selected tide date.</div>
+            </calcite-notice>
+          </div>
+        )}
         {loaded ? (
-          this.renderContent()
+          <calcite-list scale="s" selection-mode="multiple">
+            {layerInfos
+              .map((layerInfo: LayerInfo): tsx.JSX.Element => {
+                return layerInfo.listItem;
+              })
+              .toArray()}
+          </calcite-list>
         ) : (
           <calcite-notice icon="exclamation-mark-triangle" kind="danger" open scale="s" style="width: 100%;">
             <div slot="title">On snap</div>
@@ -180,57 +226,6 @@ export default class WeatherPanel extends Panel {
           </calcite-notice>
         )}
       </calcite-panel>
-    );
-  }
-
-  private renderContent(): tsx.JSX.Element[] {
-    return [
-      <calcite-list scale="s" selection-mode="multiple">
-        <calcite-list-item
-          class={CSS.item}
-          scale="s"
-          afterCreate={this.layerListItemAfterCreate.bind(this, this.layers.weatherFronts)}
-        ></calcite-list-item>
-        <calcite-list-item
-          class={CSS.item}
-          scale="s"
-          afterCreate={this.layerListItemAfterCreate.bind(this, this.layers.cloudCover)}
-        ></calcite-list-item>
-        <calcite-list-item
-          class={CSS.item}
-          scale="s"
-          afterCreate={this.layerListItemAfterCreate.bind(this, this.layers.radarComposite)}
-        ></calcite-list-item>
-        <calcite-list-item
-          class={CSS.item}
-          scale="s"
-          afterCreate={this.layerListItemAfterCreate.bind(this, this.layers.radarBase)}
-        ></calcite-list-item>
-        <calcite-list-item
-          class={CSS.item}
-          scale="s"
-          afterCreate={this.layerListItemAfterCreate.bind(this, this.layers.waveHeight)}
-        ></calcite-list-item>
-      </calcite-list>,
-    ];
-  }
-
-  private layerListItemAfterCreate(layer: esri.Layer, listItem: HTMLCalciteListItemElement): void {
-    listItem.selected = layer.visible;
-
-    listItem.label = layer.title || 'Layer';
-
-    listItem.addEventListener('calciteListItemSelect', (): void => {
-      layer.visible = listItem.selected;
-    });
-
-    this.addHandles(
-      watch(
-        (): boolean => layer.visible,
-        (visible: boolean): void => {
-          listItem.selected = visible;
-        },
-      ),
     );
   }
 

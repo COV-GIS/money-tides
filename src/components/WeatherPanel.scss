@@ -8,3 +8,11 @@
   --calcite-list-background-color-hover: transparent;
   --calcite-list-background-color-press: transparent;
 }
+
+.weather-panel_notice {
+  padding: 0.5rem;
+
+  calcite-notice {
+    width: 100%;
+  }
+}

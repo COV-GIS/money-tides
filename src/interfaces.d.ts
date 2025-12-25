@@ -90,6 +90,17 @@ export namespace MT {
     | 'sunrise'
     | 'sunset';
 
+  type WeatherLayer =
+    | { type: 'feature'; properties: esri.FeatureLayerProperties }
+    | { type: 'group'; properties: esri.GroupLayerProperties }
+    | { type: 'imagery'; properties: esri.ImageryLayerProperties }
+    | { type: 'map-image'; properties: esri.MapImageLayerProperties }
+    | {
+        type: 'wms';
+        properties: esri.WMSLayerProperties;
+        radarLayerControlProperties?: Omit<RadarLayerControlProperties, 'layer' | 'view'>;
+      };
+
   //#endregion
 
   //#region interfaces
@@ -275,4 +286,11 @@ export namespace MT {
   }
 
   //#endregion
+
+  interface RadarLayerControlProperties {
+    intervals?: number;
+    layer: esri.WMSLayer;
+    rate?: number;
+    view: esri.MapView;
+  }
 }
