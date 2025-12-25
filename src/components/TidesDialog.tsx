@@ -6,6 +6,8 @@ import type { MT } from '../interfaces';
 
 //#region modules
 
+import './TidesDialog.scss';
+
 import { property, subclass } from '@arcgis/core/core/accessorSupport/decorators';
 import Widget from '@arcgis/core/widgets/Widget';
 import { tsx } from '@arcgis/core/widgets/support/widget';
@@ -16,6 +18,12 @@ import { moneyTypeColorHex } from '../utils/colorUtils';
 //#endregion
 
 //#region constants
+
+const CSS_BASE = 'tides-dialog';
+
+const CSS = {
+  table: `${CSS_BASE}_table`,
+};
 
 let KEY = 0;
 
@@ -100,41 +108,42 @@ export default class TidesDialog extends Widget {
 
     return (
       <calcite-dialog
+        class={CSS_BASE}
         heading={`${name} - ${date.toLocaleString(DateTime.DATE_FULL)}`}
         placement="bottom-start"
         scale="s"
-        style="--calcite-dialog-min-size-y: 0; --calcite-dialog-max-size-x: 380px; --calcite-dialog-content-space: 0;"
         width="s"
       >
-        {/* action bar */}
-        <calcite-action-bar expand-disabled="" layout="horizontal" scale="s" slot="action-bar">
-          <calcite-action
-            icon="graph-time-series"
-            scale="s"
-            text="Tides Plot"
-            text-enabled=""
-            onclick={(): void => {
-              this.emit('plot-tides', this.station);
-            }}
-          ></calcite-action>
-          <calcite-action
-            icon="partly-cloudy"
-            scale="s"
-            text="Weather"
-            text-enabled=""
-            onclick={this.openWeather.bind(this)}
-          ></calcite-action>
-          <calcite-action
-            icon="home"
-            scale="s"
-            text="NOAA Station"
-            text-enabled=""
-            onclick={this.openNOAA.bind(this)}
-          ></calcite-action>
-        </calcite-action-bar>
+        {/* header menu */}
+        <calcite-action
+          icon="graph-time-series"
+          scale="s"
+          slot="header-menu-actions"
+          text="Tides Plot"
+          text-enabled=""
+          onclick={(): void => {
+            this.emit('plot-tides', this.station);
+          }}
+        ></calcite-action>
+        <calcite-action
+          icon="partly-cloudy"
+          scale="s"
+          slot="header-menu-actions"
+          text="Local Weather"
+          text-enabled=""
+          onclick={this.openWeather.bind(this)}
+        ></calcite-action>
+        <calcite-action
+          icon="home"
+          scale="s"
+          slot="header-menu-actions"
+          text="NOAA Station"
+          text-enabled=""
+          onclick={this.openNOAA.bind(this)}
+        ></calcite-action>
 
         {/* tides table */}
-        <calcite-table striped scale="s" style="--calcite-table-border-color: none;">
+        <calcite-table class={CSS.table} scale="s" striped>
           <calcite-table-row slot="table-header">
             <calcite-table-header alignment="center" heading="Time"></calcite-table-header>
             <calcite-table-header alignment="center" heading="Event"></calcite-table-header>
