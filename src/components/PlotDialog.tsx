@@ -91,8 +91,6 @@ export default class PlotDialog extends Widget {
   @property()
   private station: MT.Station | null = null;
 
-  private sunAndMoonHidden = true;
-
   //#endregion
 
   //#region private methods
@@ -166,7 +164,6 @@ export default class PlotDialog extends Widget {
 
     const {
       station: { date, tides },
-      sunAndMoonHidden,
     } = this;
 
     const labels = this.labels(date);
@@ -199,7 +196,6 @@ export default class PlotDialog extends Widget {
             pointHitRadius: 5,
           },
           {
-            hidden: sunAndMoonHidden,
             yAxisID: 'solar-lunar',
             data: solarData,
             cubicInterpolationMode: 'monotone',
@@ -210,7 +206,6 @@ export default class PlotDialog extends Widget {
             pointHitRadius: 5,
           },
           {
-            hidden: sunAndMoonHidden,
             yAxisID: 'solar-lunar',
             data: lunarData,
             cubicInterpolationMode: 'monotone',
@@ -275,18 +270,6 @@ export default class PlotDialog extends Widget {
         plugins: {
           annotation: {
             annotations: {
-              // horizon: {
-              //   type: 'line',
-              //   yScaleID: 'solar-lunar',
-              //   yMax: 0,
-              //   yMin: 0,
-              //   borderColor: COLORS.horizon,
-              //   borderWidth: 1,
-              //   drawTime: 'beforeDraw',
-              //   display: (context: PartialEventContext): boolean => {
-              //     return context.chart.isDatasetVisible(1);
-              //   },
-              // },
               currentTimeAndTide: {
                 type: 'line',
                 xMax: currentTime,
@@ -462,24 +445,6 @@ export default class PlotDialog extends Widget {
     });
   }
 
-  private toggleSunAndMoon(): void {
-    const { chart } = this;
-
-    if (!chart) return;
-
-    if (this.sunAndMoonHidden) {
-      chart.getDatasetMeta(1).hidden = false;
-      chart.getDatasetMeta(2).hidden = false;
-    } else {
-      chart.getDatasetMeta(1).hidden = true;
-      chart.getDatasetMeta(2).hidden = true;
-    }
-
-    chart.update();
-
-    this.sunAndMoonHidden = !this.sunAndMoonHidden;
-  }
-
   //#endregion
 
   //#region render
@@ -492,14 +457,6 @@ export default class PlotDialog extends Widget {
         scale="s"
         afterCreate={this.dialogAfterCreate.bind(this)}
       >
-        <calcite-action
-          slot="header-menu-actions"
-          scale="s"
-          style="--calcite-dialog-min-size-y: 432px;"
-          text={`${this.sunAndMoonHidden ? 'Show' : 'Hide'} Sun and Moon`}
-          text-enabled=""
-          onclick={this.toggleSunAndMoon.bind(this)}
-        ></calcite-action>
         {this.station ? (
           <div style="position: relative; width:100%; height:100%;">
             <canvas afterCreate={this.createChart.bind(this)}></canvas>
