@@ -177,6 +177,16 @@ export namespace MT {
   }
 
   interface StationInfo {
+    coastalZone: {
+      code: string;
+      name: string;
+    };
+
+    forecastZone: {
+      code: string;
+      name: string;
+    };
+
     /**
      * Station id
      */
@@ -288,8 +298,10 @@ export namespace MT {
   //#endregion
 
   interface RadarLayerControlProperties {
+    blurEnabled?: boolean;
     intervals?: number;
     layer: esri.WMSLayer;
+    loopEnabled?: boolean;
     rate?: number;
     view: esri.MapView;
   }

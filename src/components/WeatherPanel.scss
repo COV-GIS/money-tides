@@ -1,7 +1,14 @@
 .weather-panel_content {
-  padding: 0.5rem;
-  border-top: 1px solid var(--calcite-color-border-3);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  // border-top: 1px solid var(--calcite-color-border-3);
   font-size: var(--calcite-font-size--2);
+
+  &> div {
+    padding: 0 0.5rem;
+  }
 }
 
 .weather-panel_item {

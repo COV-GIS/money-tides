@@ -7,8 +7,10 @@ import MapView from '@arcgis/core/views/MapView';
 import './components/components';
 import Loader from './components/Loader';
 import MoneyTides from './components/MoneyTides';
-
 import config from './app-config';
+
+// if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
+//   document.body.classList.add('calcite-mode-dark');
 
 const loader = new Loader();
 

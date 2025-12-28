@@ -1,35 +1,134 @@
 import esri = __esri;
 import type { MT } from '../interfaces';
 
-import { watch } from '@arcgis/core/core/reactiveUtils';
-import { subclass } from '@arcgis/core/core/accessorSupport/decorators';
+import { watch, whenOnce } from '@arcgis/core/core/reactiveUtils';
+import { property, subclass } from '@arcgis/core/core/accessorSupport/decorators';
 import Assessor from '@arcgis/core/core/Accessor';
 import DateTime, { Interval } from '../utils/dateAndTimeUtils';
+
+const BLUR_HANDLE = 'blur-handle';
+
+const LOOP_HANDLE = 'loop-handle';
 
 @subclass('RadarLayerControl')
 export default class RadarLayerControl extends Assessor {
   constructor(properties: MT.RadarLayerControlProperties) {
     super(properties);
 
-    const { layer, view } = properties;
-
-    layer.effect = `blur(${view.zoom * 2}px)`;
-
-    if (layer.visible) this.loop(true);
-
-    this.addHandles([
-      watch((): boolean => layer.visible, this.loop.bind(this)),
-      watch((): number => view.zoom, this.blur.bind(this)),
-    ]);
+    this.initialize();
   }
+
+  private async initialize(): Promise<void> {
+    await whenOnce(() => this.view);
+
+    const { blurEnabled, layer, loopEnabled, view } = this;
+
+    await layer.load();
+
+    this.setFullTimeExtent();
+
+    this.addHandles(layer.on('refresh', this.setFullTimeExtent.bind(this)));
+
+    // if (fullTimeExtent)
+    //   this.timeRange = `${DateTime.fromJSDate(fullTimeExtent.start as Date)
+    //     .setZone('America/Los_Angeles')
+    //     .toFormat('L/d h:mm a')} - ${DateTime.fromJSDate(fullTimeExtent.end as Date)
+    //     .setZone('America/Los_Angeles')
+    //     .toFormat('L/d h:mm a')}`;
+
+    if (blurEnabled) {
+      this.blur(view.zoom);
+
+      this.addHandles(
+        watch((): number => view.zoom, this.blur.bind(this)),
+        BLUR_HANDLE,
+      );
+    }
+
+    this.addHandles(
+      watch(
+        (): boolean => this.blurEnabled,
+        (_blurEnabled: boolean): void => {
+          if (_blurEnabled) {
+            this.blur(view.zoom);
+
+            this.addHandles(
+              watch((): number => view.zoom, this.blur.bind(this)),
+              BLUR_HANDLE,
+            );
+          } else {
+            layer.effect = null;
+
+            this.removeHandles(BLUR_HANDLE);
+          }
+        },
+      ),
+    );
+
+    if (layer.visible && loopEnabled) this.loop(true);
+
+    if (loopEnabled)
+      this.addHandles(
+        watch((): boolean => layer.visible, this.loop.bind(this)),
+        LOOP_HANDLE,
+      );
+
+    this.addHandles(
+      watch(
+        (): boolean => this.loopEnabled,
+        (_loopEnabled: boolean): void => {
+          if (_loopEnabled) {
+            if (layer.visible) this.loop(true);
+
+            this.addHandles(
+              watch((): boolean => layer.visible, this.loop.bind(this)),
+              LOOP_HANDLE,
+            );
+          } else {
+            this.stop();
+
+            this.removeHandles(LOOP_HANDLE);
+          }
+        },
+      ),
+    );
+  }
+
+  @property()
+  public blurEnabled = true;
 
   public intervals = 20;
 
   public layer!: esri.ImageryLayer | esri.WMSLayer;
 
+  @property()
+  public loopEnabled = true;
+
   public rate = 250;
 
+  public getTimeExtentText(): string {
+    const { fullTimeExtent, loopEnabled } = this;
+
+    if (!fullTimeExtent) return '';
+
+    const start = DateTime.fromJSDate(fullTimeExtent.start as Date)
+      .setZone('America/Los_Angeles')
+      .toFormat('ccc h:mm a');
+
+    const end = DateTime.fromJSDate(fullTimeExtent.end as Date)
+      .setZone('America/Los_Angeles')
+      .toFormat('ccc h:mm a');
+
+    if (!loopEnabled) return start;
+
+    return `${start} to ${end}`;
+  }
+
+  @property()
   public view!: esri.MapView;
+
+  @property()
+  public fullTimeExtent?: esri.TimeExtent;
 
   private interval: number | null = null;
 
@@ -51,6 +150,14 @@ export default class RadarLayerControl extends Assessor {
     // visible ? this.start() : this.stop();
   }
 
+  private setFullTimeExtent(): void {
+    const timeInfo = this.layer.timeInfo;
+
+    if (!timeInfo) return;
+
+    this.fullTimeExtent = timeInfo.fullTimeExtent || undefined;
+  }
+
   private stop(): void {
     const { layer, interval } = this;
 
@@ -64,13 +171,7 @@ export default class RadarLayerControl extends Assessor {
   }
 
   private start(): void {
-    const { intervals, layer, rate } = this;
-
-    const timeInfo = layer.timeInfo;
-
-    if (!timeInfo) return;
-
-    const fullTimeExtent = timeInfo.fullTimeExtent;
+    const { fullTimeExtent, intervals, layer, rate } = this;
 
     if (!fullTimeExtent) return;
 
@@ -96,6 +197,10 @@ export default class RadarLayerControl extends Assessor {
         start: start.toJSDate(),
         end: end.toJSDate(),
       };
+
+      // this.timeRange = `${start.setZone('America/Los_Angeles').toFormat('L/d h:mm a')} - ${end
+      //   .setZone('America/Los_Angeles')
+      //   .toFormat('L/d h:mm a')}`;
 
       index++;
     }, rate);

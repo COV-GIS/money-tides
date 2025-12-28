@@ -22,7 +22,7 @@ type LayerInfo = { listItem: tsx.JSX.Element; layer: esri.Layer; radarLayerContr
 
 import './WeatherPanel.scss';
 
-import { watch } from '@arcgis/core/core/reactiveUtils';
+import { watch, whenOnce } from '@arcgis/core/core/reactiveUtils';
 import { property, subclass } from '@arcgis/core/core/accessorSupport/decorators';
 import Panel from './Panel';
 import { tsx } from '@arcgis/core/widgets/support/widget';
@@ -32,8 +32,9 @@ import GroupLayer from '@arcgis/core/layers/GroupLayer';
 import ImageryLayer from '@arcgis/core/layers/ImageryLayer';
 import MapImageLayer from '@arcgis/core/layers/MapImageLayer';
 import WMSLayer from '@arcgis/core/layers/WMSLayer';
-import Cookies from 'js-cookie';
+import WeatherAdvisories from './WeatherAdvisories';
 import RadarLayerControl from '../support/RadarLayerControl';
+import Cookies from 'js-cookie';
 
 import config from '../app-config';
 
@@ -69,6 +70,15 @@ export default class WeatherPanel extends Panel {
     } else {
       LOAD_HANDLE = watch((): esri.MapView | undefined => this.view, this.load.bind(this));
     }
+
+    this.addHandles(
+      watch(
+        (): boolean => this.visible,
+        (visible: boolean): void => {
+          if (!visible && this.weatherAdvisories) this.weatherAdvisories.closeItems();
+        },
+      ),
+    );
   }
 
   //#endregion
@@ -86,6 +96,8 @@ export default class WeatherPanel extends Panel {
   private loaded = false;
 
   private layerInfos: Collection<LayerInfo> = new Collection();
+
+  private weatherAdvisories?: WeatherAdvisories;
 
   //#endregion
 
@@ -141,23 +153,19 @@ export default class WeatherPanel extends Panel {
               key={KEY++}
               label={layer.title || 'Layer'}
               scale="s"
-              afterCreate={(listItem: HTMLCalciteListItemElement): void => {
-                listItem.selected = layer.visible;
-
-                listItem.addEventListener('calciteListItemSelect', (): void => {
-                  layer.visible = listItem.selected;
-                });
-
-                this.addHandles(
-                  watch(
-                    (): boolean => layer.visible,
-                    (visible: boolean): void => {
-                      listItem.selected = visible;
-                    },
-                  ),
-                );
-              }}
-            ></calcite-list-item>
+              afterCreate={this.layerListItemAfterCreate.bind(this, layer, radarLayerControl)}
+            >
+              {/* <calcite-action
+                icon="chevron-left"
+                scale="s"
+                slot="actions-end"
+                text="Expand"
+                onclick={this.toggleListItemContent.bind(this)}
+              ></calcite-action>
+              <div hidden slot="content-bottom">
+                <div class={CSS.content}></div>
+              </div> */}
+            </calcite-list-item>
           ),
           layer,
           radarLayerControl,
@@ -169,20 +177,6 @@ export default class WeatherPanel extends Panel {
     this.loaded = true;
   }
 
-  private toggleListItemContent(event: Event): void {
-    const action = event.target as HTMLCalciteActionElement;
-
-    const content = (action.parentElement as HTMLCalciteListItemElement).querySelector(
-      'div[slot="content-bottom"]',
-    ) as HTMLDivElement | null;
-
-    if (!content) return;
-
-    content.hidden = !content.hidden;
-
-    action.icon = content.hidden ? 'chevron-left' : 'chevron-down';
-  }
-
   //#endregion
 
   //#region render
@@ -191,10 +185,12 @@ export default class WeatherPanel extends Panel {
     const { layerInfos, loaded } = this;
 
     return (
-      <calcite-panel heading="Weather" scale="s" style={loaded ? '' : '--calcite-panel-space: 0.5rem;'}>
+      <calcite-panel heading="Weather" loading={!loaded} scale="s">
         {this.closeAction()}
-        {Cookies.get(COOKIE) ? null : (
-          <div class={CSS.notice}>
+        {Cookies.get(COOKIE) ? (
+          <div key={KEY++}></div>
+        ) : (
+          <div class={CSS.notice} key={KEY++}>
             <calcite-notice
               closable
               open
@@ -211,7 +207,13 @@ export default class WeatherPanel extends Panel {
             </calcite-notice>
           </div>
         )}
-        {loaded ? (
+        <calcite-block
+          collapsible
+          heading="Layers"
+          icon-start="layers"
+          scale="s"
+          style="--calcite-block-content-space: 0;"
+        >
           <calcite-list scale="s" selection-mode="multiple">
             {layerInfos
               .map((layerInfo: LayerInfo): tsx.JSX.Element => {
@@ -219,14 +221,65 @@ export default class WeatherPanel extends Panel {
               })
               .toArray()}
           </calcite-list>
-        ) : (
-          <calcite-notice icon="exclamation-mark-triangle" kind="danger" open scale="s" style="width: 100%;">
-            <div slot="title">On snap</div>
-            <div slot="message">Weather seems to be having an issue loading</div>
-          </calcite-notice>
-        )}
+        </calcite-block>
+        <calcite-block
+          collapsible
+          heading="Advisories"
+          icon-start="exclamation-mark-triangle"
+          scale="s"
+          style="--calcite-block-content-space: 0;"
+          afterCreate={(block: HTMLCalciteBlockElement): void => {
+            block.addEventListener('calciteBlockClose', (): void => {
+              if (this.weatherAdvisories) this.weatherAdvisories.closeItems();
+            });
+          }}
+        >
+          <div afterCreate={this.weatherAdvisoriesAfterCreate.bind(this)}></div>
+        </calcite-block>
       </calcite-panel>
     );
+  }
+
+  private layerListItemAfterCreate(
+    layer: esri.Layer,
+    radarLayerControl: RadarLayerControl | undefined,
+    listItem: HTMLCalciteListItemElement,
+  ): void {
+    listItem.selected = layer.visible;
+
+    listItem.addEventListener('calciteListItemSelect', (): void => {
+      layer.visible = listItem.selected;
+    });
+
+    this.addHandles(
+      watch(
+        (): boolean => layer.visible,
+        (visible: boolean): void => {
+          listItem.selected = visible;
+        },
+      ),
+    );
+
+    if (radarLayerControl) {
+      listItem.description = radarLayerControl.getTimeExtentText();
+
+      this.addHandles(
+        watch(
+          (): esri.TimeExtent | nullish => radarLayerControl.fullTimeExtent,
+          (): void => {
+            listItem.description = radarLayerControl.getTimeExtentText();
+          },
+        ),
+      );
+    }
+  }
+
+  private async weatherAdvisoriesAfterCreate(container: HTMLDivElement): Promise<void> {
+    await whenOnce((): esri.MapView | undefined => this.view);
+
+    const { view } = this;
+
+    if (view) this.weatherAdvisories = new WeatherAdvisories({ container, view });
   }
 
   //#endregion

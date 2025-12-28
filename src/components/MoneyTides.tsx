@@ -1006,70 +1006,75 @@ export default class MoneyTides extends Widget {
             slot="action-bar"
             afterCreate={this.shellPanelActionBarAfterCreate.bind(this)}
           >
-            <calcite-dropdown placement="left" offset-distance="10" offset-skidding="10" scale="s">
+            {/* actions */}
+            <calcite-action-group>
+              <calcite-dropdown placement="left" offset-distance="10" offset-skidding="10" scale="s">
+                <calcite-action
+                  icon="zoom-to-object"
+                  scale="s"
+                  slot="trigger"
+                  text="Zoom To"
+                  onclick={this.shellPanelActionClickEvent.bind(this, null)}
+                ></calcite-action>
+                <calcite-dropdown-group group-title="Zoom to" selection-mode="none">
+                  {zoomToDropdownItems
+                    .map((zoomToItem: MT.ZoomToItem): tsx.JSX.Element => {
+                      return zoomToItem.element;
+                    })
+                    .toArray()}
+                </calcite-dropdown-group>
+              </calcite-dropdown>
               <calcite-action
-                icon="zoom-to-object"
+                active={panel === 'weather'}
+                icon="partly-cloudy"
                 scale="s"
-                slot="trigger"
-                text="Zoom To"
+                text="Weather"
+                onclick={this.shellPanelActionClickEvent.bind(this, 'weather')}
+              ></calcite-action>
+              <calcite-action
+                active={panel === 'lunarPhase'}
+                icon="moon"
+                scale="s"
+                text="Lunar Phase"
+                onclick={this.shellPanelActionClickEvent.bind(this, 'lunarPhase')}
+              ></calcite-action>
+              <calcite-action
+                icon="explore"
+                id={declinationId}
+                scale="s"
+                text="Declination"
                 onclick={this.shellPanelActionClickEvent.bind(this, null)}
               ></calcite-action>
-              <calcite-dropdown-group group-title="Zoom to" selection-mode="none">
-                {zoomToDropdownItems
-                  .map((zoomToItem: MT.ZoomToItem): tsx.JSX.Element => {
-                    return zoomToItem.element;
-                  })
-                  .toArray()}
-              </calcite-dropdown-group>
-            </calcite-dropdown>
-            <calcite-action
-              active={panel === 'weather'}
-              icon="partly-cloudy"
-              scale="s"
-              text="Weather"
-              onclick={this.shellPanelActionClickEvent.bind(this, 'weather')}
-            ></calcite-action>
-            <calcite-action
-              active={panel === 'lunarPhase'}
-              icon="moon"
-              scale="s"
-              text="Lunar Phase"
-              onclick={this.shellPanelActionClickEvent.bind(this, 'lunarPhase')}
-            ></calcite-action>
-            <calcite-action
-              icon="explore"
-              id={declinationId}
-              scale="s"
-              text="Declination"
-              onclick={this.shellPanelActionClickEvent.bind(this, null)}
-            ></calcite-action>
+            </calcite-action-group>
+
             {/* actions end */}
-            <calcite-action
-              disabled={this.fullscreenDisabled}
-              icon={fullscreenActive ? 'full-screen-exit' : 'extent'}
-              scale="s"
-              slot="actions-end"
-              text={fullscreenText}
-              onclick={this.fullscreen.bind(this)}
-            ></calcite-action>
-            <calcite-action
-              icon="map-information"
-              id={attributionId}
-              scale="s"
-              slot="actions-end"
-              text="Attribution"
-              onclick={this.shellPanelActionClickEvent.bind(this, null)}
-            ></calcite-action>
-            <calcite-action
-              icon="question"
-              scale="s"
-              slot="actions-end"
-              text="About"
-              onclick={(): void => {
-                this.dialogs.about.open();
-              }}
-            ></calcite-action>
+            <calcite-action-group slot="actions-end">
+              <calcite-action
+                disabled={this.fullscreenDisabled}
+                icon={fullscreenActive ? 'full-screen-exit' : 'extent'}
+                scale="s"
+                text={fullscreenText}
+                onclick={this.fullscreen.bind(this)}
+              ></calcite-action>
+              <calcite-action
+                icon="map-information"
+                id={attributionId}
+                scale="s"
+                text="Attribution"
+                onclick={this.shellPanelActionClickEvent.bind(this, null)}
+              ></calcite-action>
+              <calcite-action
+                icon="question"
+                scale="s"
+                text="About"
+                onclick={(): void => {
+                  this.dialogs.about.open();
+                }}
+              ></calcite-action>
+            </calcite-action-group>
           </calcite-action-bar>
+
+          {/* panels */}
           <calcite-panel
             hidden={panel !== 'weather'}
             afterCreate={this.panelAfterCreate.bind(this, 'weather')}
