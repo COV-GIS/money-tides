@@ -1,0 +1,1 @@
+import{b7 as i}from"./index-C7G5c8rG.js";import{a as n}from"./money-tides-hitTestSelectUtils-CSUbfIyp.js";class o extends n{constructor(t,s,r){super(s,r),this.point=t}equals(t){return t instanceof o&&i(this.point,t.point)}}export{o as n};
