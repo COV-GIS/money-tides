@@ -75,7 +75,7 @@ export default class WeatherPanel extends Panel {
       watch(
         (): boolean => this.visible,
         (visible: boolean): void => {
-          if (!visible && this.weatherAdvisories) this.weatherAdvisories.closeItems();
+          if (!visible && this.weatherAdvisories) this.weatherAdvisories.clear();
         },
       ),
     );
@@ -222,20 +222,7 @@ export default class WeatherPanel extends Panel {
               .toArray()}
           </calcite-list>
         </calcite-block>
-        <calcite-block
-          collapsible
-          heading="Advisories"
-          icon-start="exclamation-mark-triangle"
-          scale="s"
-          style="--calcite-block-content-space: 0;"
-          afterCreate={(block: HTMLCalciteBlockElement): void => {
-            block.addEventListener('calciteBlockClose', (): void => {
-              if (this.weatherAdvisories) this.weatherAdvisories.closeItems();
-            });
-          }}
-        >
-          <div afterCreate={this.weatherAdvisoriesAfterCreate.bind(this)}></div>
-        </calcite-block>
+        <calcite-block afterCreate={this.weatherAdvisoriesAfterCreate.bind(this)}></calcite-block>
       </calcite-panel>
     );
   }

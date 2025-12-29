@@ -1,28 +1,22 @@
-.weather-advisories_content {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  padding: 0.5rem;
-  font-size: var(--calcite-font-size-xs);
-  line-height: var(--calcite-font-line-height-relative-snug);
-  border-top: solid 1px var(--calcite-color-border-3);
-}
-
-.weather-advisories_loader {
-  display: flex;
-  align-items: center;
-  height: 72px;
+.weather-advisories {
+  margin-bottom: 0;
 
   calcite-loader {
-    --calcite-loader-spacing: 0;
-    // --calcite-loader-size: 24px;
+    --calcite-loader-spacing: 1.5rem;
+    --calcite-loader-size: 1.5rem;
   }
-}
-
-.weather-advisories_notice {
-  padding: 0.5rem;
 
   calcite-notice {
     width: 100%;
   }
+}
+
+.weather-advisories_content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.25rem 0;
+  font-size: var(--calcite-font-size-xs);
+  line-height: var(--calcite-font-line-height-relative-snug);
+  border-top: solid 1px var(--calcite-color-border-3);
 }

@@ -1,4 +1,8 @@
+//#region types
+
 import esri = __esri;
+
+//#endregion
 
 //#region modules
 
@@ -10,32 +14,31 @@ import { tsx } from '@arcgis/core/widgets/support/widget';
 import Collection from '@arcgis/core/core/Collection';
 import DateTime from '../utils/dateAndTimeUtils';
 import CIMSymbol from '@arcgis/core/symbols/CIMSymbol';
-// import Color from '@arcgis/core/Color';
 import config from '../app-config';
 
 //#endregion
+
+//#region constants
 
 const CSS_BASE = 'weather-advisories';
 
 const CSS = {
   content: `${CSS_BASE}_content`,
-  loader: `${CSS_BASE}_loader`,
-  notice: `${CSS_BASE}_notice`,
 };
 
-let KEY = 0;
+//#endregion
 
 @subclass('WeatherAdvisories')
 export default class WeatherAdvisories extends Widget {
   //#region lifecycle
 
-  private _container!: HTMLCalciteAccordionElement;
+  private _container!: HTMLCalciteBlockElement;
 
   get container() {
     return this._container;
   }
 
-  set container(value: HTMLCalciteAccordionElement) {
+  set container(value: HTMLCalciteBlockElement) {
     this._container = value;
   }
 
@@ -45,6 +48,8 @@ export default class WeatherAdvisories extends Widget {
 
   override postInitialize(): void {
     this.getAdvisories();
+
+    this.container.addEventListener('calciteBlockCollapse', this.clear.bind(this));
   }
 
   //#endregion
@@ -55,11 +60,17 @@ export default class WeatherAdvisories extends Widget {
 
   //#endregion
 
-  public closeItems(): void {
+  //#region public methods
+
+  public clear(): void {
     this.weatherAdvisoryItems.forEach((weatherAdvisoryItem: WeatherAdvisoryItem): void => {
       weatherAdvisoryItem.container.expanded = false;
     });
   }
+
+  //#endregion
+
+  //#region private properties
 
   @property()
   private advisoryState: 'advisories' | 'error' | 'loading' | 'no-advisories' = 'loading';
@@ -68,31 +79,20 @@ export default class WeatherAdvisories extends Widget {
 
   private weatherAdvisoryItemElements: Collection<tsx.JSX.Element> = new Collection();
 
+  //#endregion
+
   //#region private methods
 
   private async getAdvisories(): Promise<void> {
-    const { advisoryState, weatherAdvisoryItemElements, weatherAdvisoryItems } = this;
+    const { weatherAdvisoryItemElements, weatherAdvisoryItems } = this;
 
-    if (advisoryState !== 'no-advisories') this.advisoryState = 'loading';
+    this.advisoryState = 'loading';
 
     weatherAdvisoryItemElements.removeAll();
 
     weatherAdvisoryItems.removeAll();
 
     try {
-      // const x = await(await fetch('https://mapservices.weather.noaa.gov/eventdriven/rest/services/WWA/watch_warn_adv/MapServer/1?f=pjson')).json();
-      // console.log(x);
-
-      // const y = {}
-
-      // x.drawingInfo.renderer.uniqueValueInfos.forEach((x) => {
-
-      //   y[x.value] = [x.symbol.color[0], x.symbol.color[1], x.symbol.color[2]];
-
-      // });
-
-      // console.log(y);
-
       const advisoryFeatures = (
         await config.weatherAdvisoryFeatureLayer.queryFeatures({
           geometry: config.weatherAdvisoryQueryPolygon,
@@ -111,7 +111,6 @@ export default class WeatherAdvisories extends Widget {
       advisoryFeatures.forEach((feature: esri.Graphic): void => {
         this.weatherAdvisoryItemElements.add(
           <calcite-accordion-item
-            key={KEY++}
             afterCreate={(container: HTMLCalciteAccordionItemElement): void => {
               this.weatherAdvisoryItems.add(new WeatherAdvisoryItem({ container, feature, view: this.view }));
             }}
@@ -136,34 +135,39 @@ export default class WeatherAdvisories extends Widget {
 
     const content =
       advisoryState === 'loading' ? (
-        <div class={CSS.loader}>
-          <calcite-loader scale="s"></calcite-loader>
-        </div>
+        <calcite-loader scale="s"></calcite-loader>
       ) : advisoryState === 'no-advisories' ? (
-        <div class={CSS.notice}>
-          <calcite-notice icon="check" kind="success" open scale="s">
-            <div slot="message">No weather advisories</div>
-            <calcite-link slot="link" onclick={this.getAdvisories.bind(this)}>
-              Refresh
-            </calcite-link>
-          </calcite-notice>
-        </div>
+        <calcite-notice icon="check" kind="success" open scale="s">
+          <div slot="message">No weather advisories</div>
+          <calcite-link slot="link" onclick={this.getAdvisories.bind(this)}>
+            Refresh
+          </calcite-link>
+        </calcite-notice>
       ) : advisoryState === 'advisories' ? (
         <calcite-accordion appearance="transparent" selection-mode="single" scale="s">
           {weatherAdvisoryItemElements.toArray()}
         </calcite-accordion>
       ) : (
-        <div class={CSS.notice}>
-          <calcite-notice icon="exclamation-point-f" kind="danger" open scale="s">
-            <div slot="message">An error occurred loading weather advisories</div>
-            <calcite-link slot="link" onclick={this.getAdvisories.bind(this)}>
-              Try again
-            </calcite-link>
-          </calcite-notice>
-        </div>
+        <calcite-notice icon="exclamation-point-f" kind="danger" open scale="s">
+          <div slot="message">An error occurred loading weather advisories</div>
+          <calcite-link slot="link" onclick={this.getAdvisories.bind(this)}>
+            Try again
+          </calcite-link>
+        </calcite-notice>
       );
 
-    return <div>{content}</div>;
+    return (
+      <calcite-block
+        class={CSS_BASE}
+        collapsible
+        heading="Advisories"
+        icon-start="exclamation-mark-triangle"
+        scale="s"
+        style={advisoryState === 'advisories' ? '--calcite-block-content-space: 0;' : null}
+      >
+        {content}
+      </calcite-block>
+    );
   }
 
   //#endregion
@@ -199,9 +203,17 @@ class WeatherAdvisoryItem extends Widget {
     feature.symbol = this.createSymbol(config.weatherAdvisoryColors[feature.attributes.prod_type]);
   }
 
+  //#endregion
+
+  //#region public properties
+
   public feature!: esri.Graphic;
 
   public view!: esri.MapView;
+
+  //#endregion
+
+  //#region private properties
 
   @property()
   private advisoryState: 'error' | 'loaded' | 'loading' = 'loading';
@@ -210,6 +222,10 @@ class WeatherAdvisoryItem extends Widget {
   private attributes: esri.Graphic['attributes'];
 
   private advisoryContent: tsx.JSX.Element | null = null;
+
+  //#endregion
+
+  //#region private methods
 
   private createSymbol(color: [number, number, number]): esri.CIMSymbol {
     // const _color = new Color(color) as esri.Color & { isBright: boolean };
@@ -277,7 +293,7 @@ class WeatherAdvisoryItem extends Widget {
       const descriptions = description.split('\n\n');
 
       this.advisoryContent = (
-        <div class={CSS.content} key={KEY++}>
+        <div class={CSS.content}>
           <div>{areaDesc}</div>
           {descriptions.map((text: string): tsx.JSX.Element | null => {
             return text.includes('https') ? null : <div>{text.replace('* ', '')}</div>;
@@ -310,6 +326,10 @@ class WeatherAdvisoryItem extends Widget {
     }
   }
 
+  //#endregion
+
+  //#region render
+
   override render(): tsx.JSX.Element {
     const {
       advisoryContent,
@@ -323,32 +343,51 @@ class WeatherAdvisoryItem extends Widget {
 
     const content =
       advisoryState === 'loading' ? (
-        <div class={CSS.loader} key={KEY++}>
-          <calcite-loader scale="s"></calcite-loader>
-        </div>
+        <calcite-loader scale="s"></calcite-loader>
       ) : advisoryState === 'loaded' ? (
         advisoryContent
       ) : (
-        <div class={CSS.notice} key={KEY++}>
-          <calcite-notice icon="exclamation-point-f" kind="danger" open scale="s">
-            <div slot="message">An error occurred loading weather advisories</div>
-            <calcite-link slot="link" onclick={this.getAdvisory.bind(this)}>
-              Try again
-            </calcite-link>
-          </calcite-notice>
-        </div>
+        <calcite-notice icon="exclamation-point-f" kind="danger" open scale="s">
+          <div slot="message">An error occurred loading weather advisories</div>
+          <calcite-link slot="link" onclick={this.getAdvisory.bind(this)}>
+            Try again
+          </calcite-link>
+        </calcite-notice>
       );
 
     return (
       <calcite-accordion-item
-        class={CSS_BASE}
         description={`Expires ${date.toFormat('ccc h:mm a')}`}
         heading={prod_type}
         scale="s"
-        style="--calcite-accordion-item-content-space: 0;"
+        afterCreate={this.accordionItemAfterCreate.bind(this)}
       >
         {content}
       </calcite-accordion-item>
     );
   }
+
+  private accordionItemAfterCreate(accordionItem: HTMLCalciteAccordionItemElement): void {
+    const header = accordionItem.shadowRoot?.querySelector('div.header-text') as HTMLDivElement | null;
+
+    if (header) {
+      this.setHeaderStyles(header);
+    } else {
+      setTimeout(this.accordionItemAfterCreate.bind(this, accordionItem), 250);
+    }
+  }
+
+  private setHeaderStyles(header: HTMLDivElement): void {
+    // const heading = header.querySelector('.heading') as HTMLDivElement;
+
+    const description = header.querySelector('.description') as HTMLSpanElement;
+
+    // heading.style.fontWeight = 'var(--calcite-font-weight-regular)';
+
+    description.style.marginBlockStart = '0';
+
+    description.style.fontSize = 'var(--calcite-font-size-xs)';
+  }
+
+  //#endregion
 }
