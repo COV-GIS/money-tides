@@ -1,0 +1,1 @@
+import{e5 as m}from"./index-5h5l2J1r.js";import{m as e}from"./money-tides-queryTopFeatures-CmCd5PeB.js";import s from"./money-tides-TopFeaturesQuery-CKO8nsRV.js";async function n(o,r,t){const a=m(o);return(await e(a,s.from(r),{...t})).data.objectIds}export{n as executeForTopIds};
