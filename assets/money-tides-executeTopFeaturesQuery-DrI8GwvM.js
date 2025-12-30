@@ -1,0 +1,1 @@
+import{e0 as s,dk as i}from"./index-DRnqrf34.js";import{p}from"./money-tides-queryTopFeatures-Cn7uH19m.js";import n from"./money-tides-TopFeaturesQuery-C5t6V5tP.js";async function x(r,o,t,a){const e=s(r),m={...a},{data:f}=await p(e,n.from(o),t,m);return i.fromJSON(f)}export{x as executeTopFeaturesQuery};
