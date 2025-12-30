@@ -3,7 +3,6 @@
 import { subclass } from '@arcgis/core/core/accessorSupport/decorators';
 import Widget from '@arcgis/core/widgets/Widget';
 import { tsx } from '@arcgis/core/widgets/support/widget';
-import { application } from '../app-config';
 
 //#endregion
 
@@ -55,7 +54,6 @@ export default class Loader extends Widget {
     return (
       <calcite-loader
         label="Loading money tides..."
-        scale={application.scale}
         style="position: absolute; top: 0; right: 0; bottom: 0; left: 0; z-index: 999; --calcite-loader-spacing: 0; background-color: var(--calcite-color-foreground-1); transition: opacity 1s;"
         text="Loading money tides..."
       ></calcite-loader>
