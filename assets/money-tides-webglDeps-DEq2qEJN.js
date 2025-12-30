@@ -1,7 +1,0 @@
-import{o as h}from"./money-tides-BufferObject-C02B6Wt0.js";import{m as y,s as _}from"./money-tides-FramebufferObject-DZBtrxky.js";import{s as c}from"./money-tides-ProgramTemplate-Cc-wUiF0.js";import{e as j,a as F}from"./money-tides-ProgramTemplate-Cc-wUiF0.js";import{dh as v}from"./index-MjR4acop.js";import{h as w}from"./money-tides-VertexArrayObject-CpiwB8Zc.js";import"./money-tides-VertexAttributeLocations-BfZbt_DV.js";class l{constructor(e){this._rctx=e,this._store=new Map}dispose(){this._store.forEach(e=>e.dispose()),this._store.clear()}acquire(e,r,t,s){const n=e+r+JSON.stringify(Array.from(t.entries())),o=this._store.get(n);if(o!=null)return o.ref(),o;const i=new c(this._rctx,e,r,t,s);return i.ref(),this._store.set(n,i),i}get test(){}}function p(f){const{options:e,value:r}=f;return typeof e[r]=="number"}function d(f){let e="";for(const r in f){const t=f[r];if(typeof t=="boolean")t&&(e+=`#define ${r}
-`);else if(typeof t=="number")e+=`#define ${r} ${t.toFixed()}
-`;else if(typeof t=="object")if(p(t)){const{value:s,options:n,namespace:o}=t,i=o?`${o}_`:"";for(const a in n)e+=`#define ${i}${a} ${n[a].toFixed()}
-`;e+=`#define ${r} ${i}${s}
-`}else{const s=t.options;let n=0;for(const o in s)e+=`#define ${s[o]} ${(n++).toFixed()}
-`;e+=`#define ${r} ${s[t.value]}
-`}}return e}export{h as BufferObject,y as FramebufferObject,c as Program,l as ProgramCache,_ as Renderbuffer,j as ShaderCompiler,v as Texture,w as VertexArrayObject,F as createProgram,d as glslifyDefineMap};
