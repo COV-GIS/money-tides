@@ -3703,6 +3703,7 @@ export const weatherLayers: MT.WeatherLayer[] = [
       url: 'https://mapservices.weather.noaa.gov/geoserver/ndfd/waveh/ows?service=wms&version=1.3.0&request=GetCapabilities',
       visible: false,
     }),
+    blur: true,
   },
   {
     layer: new WMSLayer({
@@ -3712,7 +3713,8 @@ export const weatherLayers: MT.WeatherLayer[] = [
       url: 'https://opengeo.ncep.noaa.gov/geoserver/conus/conus_bref_qcd/ows?service=wms&version=1.3.0&request=GetCapabilities',
       visible: false,
     }),
-    loop: true,
+    blur: true,
+    layerLoopControllerOptions: {},
   },
   {
     layer: new WMSLayer({
@@ -3722,7 +3724,8 @@ export const weatherLayers: MT.WeatherLayer[] = [
       url: 'https://opengeo.ncep.noaa.gov/geoserver/conus/conus_cref_qcd/ows?service=wms&version=1.3.0&request=GetCapabilities',
       visible: false,
     }),
-    loop: true,
+    blur: true,
+    layerLoopControllerOptions: {},
   },
 
   {
@@ -3732,6 +3735,7 @@ export const weatherLayers: MT.WeatherLayer[] = [
       url: 'https://mapservices.weather.noaa.gov/geoserver/ndfd/sky/ows?service=wms&version=1.3.0&request=GetCapabilities',
       visible: false,
     }),
+    blur: true,
   },
   {
     layer: new MapImageLayer({

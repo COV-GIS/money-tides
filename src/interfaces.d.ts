@@ -1,5 +1,5 @@
 import esri = __esri;
-import type { DateTime } from 'luxon';
+import type { DateTime, DurationLikeObject } from 'luxon';
 
 export namespace MT {
   //#region types
@@ -91,8 +91,9 @@ export namespace MT {
     | 'sunset';
 
   type WeatherLayer = {
+    blur?: boolean;
     layer: esri.Layer;
-    loop?: boolean;
+    layerLoopControllerOptions?: Omit<LayerLoopControllerProperties, 'layer'>;
   };
 
   //#endregion
@@ -291,12 +292,18 @@ export namespace MT {
 
   //#endregion
 
-  interface RadarLayerControlProperties {
-    blurEnabled?: boolean;
-    intervals?: number;
-    layer: esri.WMSLayer;
-    loopEnabled?: boolean;
-    rate?: number;
+  //#region constructor properties
+
+  interface LayerBlurControllerProperties {
+    layer: esri.Layer;
     view: esri.MapView;
   }
+
+  interface LayerLoopControllerProperties {
+    duration?: DurationLikeObject;
+    layer: esri.Layer;
+    speed?: number;
+  }
+
+  //#endregion
 }

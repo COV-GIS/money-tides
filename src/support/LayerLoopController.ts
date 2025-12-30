@@ -1,5 +1,6 @@
 import esri = __esri;
-type Layers = esri.FeatureLayer | esri.ImageryLayer | esri.WMSLayer;
+import { MT } from '../interfaces';
+import type { DurationLikeObject } from 'luxon';
 
 import { whenOnce } from '@arcgis/core/core/reactiveUtils';
 import { property, subclass } from '@arcgis/core/core/accessorSupport/decorators';
@@ -9,31 +10,41 @@ import DateTime, { Duration, Interval } from '../utils/dateAndTimeUtils';
 
 @subclass('LayerLoopController')
 export default class LayerLoopController extends Assessor {
-  constructor(properties: { layer: Layers }) {
+  constructor(properties: MT.LayerLoopControllerProperties) {
     super(properties);
 
     this.initialize();
   }
 
   private async initialize(): Promise<void> {
-    await whenOnce((): Layers => this.layer);
+    await whenOnce((): esri.Layer => this.layer);
 
-    await this.layer.load();
+    const layer = this.layer as esri.Layer & {
+      on(name: 'refresh', eventHandler: () => void): IHandle;
+      refresh?: () => void;
+    };
+
+    await layer.load();
 
     this.loop();
 
-    this.addHandles(
-      this.layer.on('refresh', (): void => {
-        clearInterval(this.interval);
+    if (layer.refresh)
+      this.addHandles(
+        layer.on('refresh', (): void => {
+          clearInterval(this.interval);
 
-        this.timeExtent = null;
+          this.timeExtent = null;
 
-        this.loop();
-      }),
-    );
+          this.loop();
+        }),
+      );
   }
 
-  public layer!: Layers;
+  public duration: DurationLikeObject = { minutes: 15 };
+
+  public layer!: esri.Layer;
+
+  public speed = 400;
 
   @property({ aliasOf: 'layer.timeInfo.fullTimeExtent' })
   private fullTimeExtent?: esri.TimeExtent;
@@ -44,7 +55,7 @@ export default class LayerLoopController extends Assessor {
   private interval?: number;
 
   private loop(): void {
-    const { fullTimeExtent } = this;
+    const { duration, fullTimeExtent, speed } = this;
 
     if (!fullTimeExtent) return;
 
@@ -58,7 +69,7 @@ export default class LayerLoopController extends Assessor {
 
     const endExtent = DateTime.fromJSDate(endJS);
 
-    const timeIntervals = Interval.fromDateTimes(startExtent, endExtent).splitBy(Duration.fromObject({ minutes: 10 }));
+    const timeIntervals = Interval.fromDateTimes(startExtent, endExtent).splitBy(Duration.fromObject(duration));
 
     let index = 0;
 
@@ -81,6 +92,6 @@ export default class LayerLoopController extends Assessor {
       });
 
       index++;
-    }, 300);
+    }, speed);
   }
 }

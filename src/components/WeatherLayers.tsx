@@ -12,6 +12,7 @@ import { property, subclass } from '@arcgis/core/core/accessorSupport/decorators
 import Widget from '@arcgis/core/widgets/Widget';
 import { tsx } from '@arcgis/core/widgets/support/widget';
 import Collection from '@arcgis/core/core/Collection';
+import LayerBlurController from '../support/LayerBlurController';
 import LayerLoopController from '../support/LayerLoopController';
 import { view, weatherLayers } from '../app-config';
 
@@ -33,12 +34,13 @@ export default class WeatherAdvisories extends Widget {
 
   override postInitialize(): void {
     weatherLayers.forEach((weatherLayer: MT.WeatherLayer): void => {
-      const { layer, loop } = weatherLayer;
+      const { blur, layer, layerLoopControllerOptions } = weatherLayer;
 
       view.map?.add(layer);
 
-      // @ts-expect-error TODO: fix typing
-      if (loop) new LayerLoopController({ layer });
+      if (blur) new LayerBlurController({ layer, view });
+
+      if (layerLoopControllerOptions) new LayerLoopController({ ...layerLoopControllerOptions, layer });
 
       this.weatherLayerItemElements.add(
         <calcite-list-item
@@ -70,7 +72,7 @@ export default class WeatherAdvisories extends Widget {
         heading="Layers"
         icon-start="layers"
         scale="s"
-        style="--calcite-block-content-space: 0;"
+        style="--calcite-block-content-space: 0; --calcite-list-background-color-hover: transparent; --calcite-list-background-color-press: transparent;"
       >
         <calcite-list scale="s" selection-mode="multiple">
           {this.weatherLayerItemElements.toArray()}
@@ -139,7 +141,6 @@ class WeatherLayerItem extends Widget {
           icon={contentHidden ? 'chevron-down' : 'chevron-up'}
           scale="s"
           slot="actions-end"
-          style="--calcite-list-background-color-hover: transparent; --calcite-list-background-color-press: transparent;"
           text={contentHidden ? 'Expand' : 'Collapse'}
           onclick={this.contentActionClick.bind(this)}
         ></calcite-action>
