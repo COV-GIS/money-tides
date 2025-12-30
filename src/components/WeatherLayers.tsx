@@ -144,7 +144,27 @@ class WeatherLayerItem extends Widget {
           text={contentHidden ? 'Expand' : 'Collapse'}
           onclick={this.contentActionClick.bind(this)}
         ></calcite-action>
-        <div hidden={contentHidden} slot="content-bottom"></div>
+        <div hidden={contentHidden} slot="content-bottom">
+          <div class="test-ramp"></div>
+          <div class="test-labels">
+            <div>1</div>
+            <div>2</div>
+            <div>3</div>
+            <div>4</div>
+            <div>5</div>
+            <div>7</div>
+            <div>10</div>
+            <div>12</div>
+            <div>15</div>
+            <div>20</div>
+            <div>25</div>
+            <div>30</div>
+            <div>35</div>
+            <div>40</div>
+            <div>55</div>
+            <div>60</div>
+          </div>
+        </div>
       </calcite-list-item>
     );
   }
