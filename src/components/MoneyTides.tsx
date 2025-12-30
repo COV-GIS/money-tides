@@ -181,6 +181,29 @@ export default class MoneyTides extends Widget {
         },
       ),
     );
+
+    // this.alerts.add(
+    //   <calcite-alert
+    //     icon="smile"
+    //     key={KEY++}
+    //     open
+    //     scale={application.scale}
+    //     slot="alerts"
+    //     afterCreate={(alert: HTMLCalciteAlertElement): void => {
+    //       this.addHandles(
+    //         watch(
+    //           (): 's' | 'm' | 'l' => application.scale,
+    //           (scale: 's' | 'm' | 'l') => {
+    //             alert.scale = scale;
+    //           },
+    //         ),
+    //       );
+    //     }}
+    //   >
+    //     <div slot="title">Hello</div>
+    //     <div slot="message">A friendly message</div>
+    //   </calcite-alert>,
+    // );
   }
 
   //#endregion
