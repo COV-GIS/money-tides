@@ -3,6 +3,7 @@
 import { subclass } from '@arcgis/core/core/accessorSupport/decorators';
 import Widget from '@arcgis/core/widgets/Widget';
 import { tsx } from '@arcgis/core/widgets/support/widget';
+import { application } from '../app-config';
 
 //#endregion
 
@@ -48,7 +49,7 @@ export default class Panel extends Widget {
     return (
       <calcite-action
         icon="x"
-        scale="s"
+        scale={application.scale}
         slot="header-actions-end"
         text="Close"
         onclick={this.close.bind(this)}

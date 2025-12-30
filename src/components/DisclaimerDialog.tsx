@@ -4,6 +4,7 @@ import { subclass } from '@arcgis/core/core/accessorSupport/decorators';
 import Widget from '@arcgis/core/widgets/Widget';
 import { tsx } from '@arcgis/core/widgets/support/widget';
 import Cookies from 'js-cookie';
+import { application } from '../app-config';
 
 //#endregion
 
@@ -55,11 +56,11 @@ export default class DisclaimerDialog extends Widget {
         kind="danger"
         modal
         outside-close-disabled=""
-        scale="s"
+        scale={application.scale}
         width="s"
       >
         <div style="display: flex; flex-direction: column; gap: 0.5rem; font-size: var(--calcite-font-size-sm); line-height: var(--calcite-font-line-height-relative-snug);">
-          <div>A goof made Money Tides to support his own goofy endevours.</div>
+          <div>A goof made Money Tides to support his own goofy endeavors.</div>
           <div>
             The information provided herein may or may not be accurate. There are no warranties, expressed or implied,
             including the warranty of merchantability or fitness for a particular purpose, accompanying the use of Money
@@ -67,7 +68,7 @@ export default class DisclaimerDialog extends Widget {
           </div>
           <div style="font-weight: var(--calcite-font-weight-medium);">Use at your own risk!</div>
         </div>
-        <calcite-button scale="s" slot="footer-end" onclick={this.gotIt.bind(this)}>
+        <calcite-button scale={application.scale} slot="footer-end" onclick={this.gotIt.bind(this)}>
           Got It
         </calcite-button>
       </calcite-dialog>

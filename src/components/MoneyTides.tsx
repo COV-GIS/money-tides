@@ -31,7 +31,7 @@ import TidesDialog from './TidesDialog';
 import WeatherPanel from './WeatherPanel';
 import LunarPhasePanel from './LunarPhasePanel';
 
-import { stationInfos, view } from '../app-config';
+import { application, stationInfos, view } from '../app-config';
 
 //#endregion
 
@@ -666,7 +666,7 @@ export default class MoneyTides extends Widget {
           key={KEY++}
           kind="danger"
           open
-          scale="s"
+          scale={application.scale}
           slot="alerts"
         >
           <div slot="title">Error</div>
@@ -849,7 +849,7 @@ export default class MoneyTides extends Widget {
           key={KEY++}
           kind="danger"
           open
-          scale="s"
+          scale={application.scale}
           slot="alerts"
         >
           <div slot="title">Error</div>
@@ -939,6 +939,8 @@ export default class MoneyTides extends Widget {
   //#region render
 
   override render(): tsx.JSX.Element {
+    const scale = application.scale;
+
     const { id, alerts, attributionItems, declinationBearing, fullscreenActive, panel, zoomToDropdownItems } = this;
 
     const shellPanelStyle = panel === 'lunarPhase' ? '--calcite-shell-panel-min-width: 250px;' : '';
@@ -963,17 +965,17 @@ export default class MoneyTides extends Widget {
           <div class={CSS.headerDate}>
             <calcite-button
               icon-start="chevron-left"
-              scale="s"
+              scale={scale}
               onclick={this.dateButtonClickEvent.bind(this)}
             ></calcite-button>
             <calcite-input-date-picker
               overlay-positioning="fixed"
-              scale="s"
+              scale={scale}
               afterCreate={this.datePickerAfterCreate.bind(this)}
             ></calcite-input-date-picker>
             <calcite-button
               icon-start="chevron-right"
-              scale="s"
+              scale={scale}
               onclick={this.dateButtonClickEvent.bind(this)}
             ></calcite-button>
           </div>
@@ -984,16 +986,16 @@ export default class MoneyTides extends Widget {
         <calcite-shell-panel display-mode="float-content" position="end" slot="panel-end" style={shellPanelStyle}>
           <calcite-action-bar
             floating
-            scale="s"
+            scale={scale}
             slot="action-bar"
             afterCreate={this.shellPanelActionBarAfterCreate.bind(this)}
           >
             {/* actions */}
             <calcite-action-group>
-              <calcite-dropdown placement="left" offset-distance="10" offset-skidding="10" scale="s">
+              <calcite-dropdown placement="left" offset-distance="10" offset-skidding="10" scale={scale}>
                 <calcite-action
                   icon="zoom-to-object"
-                  scale="s"
+                  scale={scale}
                   slot="trigger"
                   text="Zoom To"
                   onclick={this.shellPanelActionClickEvent.bind(this, null)}
@@ -1009,21 +1011,21 @@ export default class MoneyTides extends Widget {
               <calcite-action
                 active={panel === 'weather'}
                 icon="partly-cloudy"
-                scale="s"
+                scale={scale}
                 text="Weather"
                 onclick={this.shellPanelActionClickEvent.bind(this, 'weather')}
               ></calcite-action>
               <calcite-action
                 active={panel === 'lunarPhase'}
                 icon="moon"
-                scale="s"
+                scale={scale}
                 text="Lunar Phase"
                 onclick={this.shellPanelActionClickEvent.bind(this, 'lunarPhase')}
               ></calcite-action>
               <calcite-action
                 icon="explore"
                 id={declinationId}
-                scale="s"
+                scale={scale}
                 text="Declination"
                 onclick={this.shellPanelActionClickEvent.bind(this, null)}
               ></calcite-action>
@@ -1034,20 +1036,20 @@ export default class MoneyTides extends Widget {
               <calcite-action
                 disabled={this.fullscreenDisabled}
                 icon={fullscreenActive ? 'full-screen-exit' : 'extent'}
-                scale="s"
+                scale={scale}
                 text={fullscreenText}
                 onclick={this.fullscreen.bind(this)}
               ></calcite-action>
               <calcite-action
                 icon="map-information"
                 id={attributionId}
-                scale="s"
+                scale={scale}
                 text="Attribution"
                 onclick={this.shellPanelActionClickEvent.bind(this, null)}
               ></calcite-action>
               <calcite-action
                 icon="question"
-                scale="s"
+                scale={scale}
                 text="About"
                 onclick={(): void => {
                   this.dialogs.about.open();
@@ -1073,7 +1075,7 @@ export default class MoneyTides extends Widget {
           closable
           heading="Declination"
           overlay-positioning="fixed"
-          scale="s"
+          scale={scale}
           style="--calcite-popover-text-color: var(--calcite-color-text-2);"
           reference-element={declinationId}
         >
@@ -1086,7 +1088,7 @@ export default class MoneyTides extends Widget {
           closable
           heading="Powered by Esri"
           overlay-positioning="fixed"
-          scale="s"
+          scale={scale}
           style="--calcite-popover-text-color: var(--calcite-color-text-2);"
           reference-element={attributionId}
         >

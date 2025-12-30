@@ -14,7 +14,7 @@ import { tsx } from '@arcgis/core/widgets/support/widget';
 import Collection from '@arcgis/core/core/Collection';
 import DateTime from '../utils/dateAndTimeUtils';
 import CIMSymbol from '@arcgis/core/symbols/CIMSymbol';
-import { view, weatherAdvisoryColors, weatherAdvisoryFeatureLayer, weatherAdvisoryQueryPolygon } from '../app-config';
+import { application, view, weatherAdvisoryColors, weatherAdvisoryFeatureLayer, weatherAdvisoryQueryPolygon } from '../app-config';
 
 //#endregion
 
@@ -128,20 +128,20 @@ export default class WeatherAdvisories extends Widget {
 
     const content =
       advisoryState === 'loading' ? (
-        <calcite-loader scale="s"></calcite-loader>
+        <calcite-loader scale={application.scale}></calcite-loader>
       ) : advisoryState === 'no-advisories' ? (
-        <calcite-notice icon="check" kind="success" open scale="s">
+        <calcite-notice icon="check" kind="success" open scale={application.scale}>
           <div slot="message">No weather advisories</div>
           <calcite-link slot="link" onclick={this.getAdvisories.bind(this)}>
             Refresh
           </calcite-link>
         </calcite-notice>
       ) : advisoryState === 'advisories' ? (
-        <calcite-accordion appearance="transparent" selection-mode="single" scale="s">
+        <calcite-accordion appearance="transparent" selection-mode="single" scale={application.scale}>
           {weatherAdvisoryItemElements.toArray()}
         </calcite-accordion>
       ) : (
-        <calcite-notice icon="exclamation-point-f" kind="danger" open scale="s">
+        <calcite-notice icon="exclamation-point-f" kind="danger" open scale={application.scale}>
           <div slot="message">An error occurred loading weather advisories</div>
           <calcite-link slot="link" onclick={this.getAdvisories.bind(this)}>
             Try again
@@ -155,7 +155,7 @@ export default class WeatherAdvisories extends Widget {
         collapsible
         heading="Advisories"
         icon-start="exclamation-mark-triangle"
-        scale="s"
+        scale={application.scale}
         style={advisoryState === 'advisories' ? '--calcite-block-content-space: 0;' : null}
       >
         {content}
@@ -336,11 +336,11 @@ class WeatherAdvisoryItem extends Widget {
 
     const content =
       advisoryState === 'loading' ? (
-        <calcite-loader scale="s"></calcite-loader>
+        <calcite-loader scale={application.scale}></calcite-loader>
       ) : advisoryState === 'loaded' ? (
         advisoryContent
       ) : (
-        <calcite-notice icon="exclamation-point-f" kind="danger" open scale="s">
+        <calcite-notice icon="exclamation-point-f" kind="danger" open scale={application.scale}>
           <div slot="message">An error occurred loading weather advisories</div>
           <calcite-link slot="link" onclick={this.getAdvisory.bind(this)}>
             Try again
@@ -352,7 +352,7 @@ class WeatherAdvisoryItem extends Widget {
       <calcite-accordion-item
         description={`Expires ${date.toFormat('ccc h:mm a')}`}
         heading={prod_type}
-        scale="s"
+        scale={application.scale}
         afterCreate={this.accordionItemAfterCreate.bind(this)}
       >
         {content}

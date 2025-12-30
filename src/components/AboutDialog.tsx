@@ -4,6 +4,7 @@ import { subclass } from '@arcgis/core/core/accessorSupport/decorators';
 import Widget from '@arcgis/core/widgets/Widget';
 import { tsx } from '@arcgis/core/widgets/support/widget';
 import { moneyTypeColorHex } from '../utils/colorUtils';
+import { application } from '../app-config';
 
 //#endregion
 
@@ -43,7 +44,7 @@ export default class AboutDialog extends Widget {
       'text-shadow: -1px -1px 2px rgba(0, 0, 0, 128), 1px -1px 2px rgba(0, 0, 0, 128), -1px 1px 2px rgba(0, 0, 0, 128), 1px 1px 2px rgba(0, 0, 0, 128);';
 
     return (
-      <calcite-dialog heading="About" modal scale="s" width="s">
+      <calcite-dialog heading="About" modal scale={application.scale} width="s">
         <div style="display: flex; flex-direction: column; gap: 0.5rem; font-size: var(--calcite-font-size-sm); line-height: var(--calcite-font-line-height-relative-snug);">
           <div style={heading}>What is a money tide?</div>
           <div>When the highest high tide of the day occurs at noon.</div>

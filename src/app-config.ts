@@ -8,6 +8,8 @@ import MapImageLayer from '@arcgis/core/layers/MapImageLayer';
 import WMSLayer from '@arcgis/core/layers/WMSLayer';
 import Polygon from '@arcgis/core/geometry/Polygon';
 
+import Application from './support/Application';
+
 // import Graphic from '@arcgis/core/Graphic';
 
 const radarGradientScaleOptions: MT.GradientScaleOptions = {
@@ -57,6 +59,8 @@ const radarGradientScaleOptions: MT.GradientScaleOptions = {
 };
 
 export const URLs = {};
+
+export const application = new Application();
 
 export const stationInfos: MT.StationInfo[] = [
   {

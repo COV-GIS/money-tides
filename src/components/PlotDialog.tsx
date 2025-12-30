@@ -16,6 +16,7 @@ import { tsx } from '@arcgis/core/widgets/support/widget';
 import { tideHeight } from './MoneyTides';
 import { getDocumentStyle } from '../utils/colorUtils';
 import DateTime, { setTime, twelveHourTime } from '../utils/dateAndTimeUtils';
+import { application } from '../app-config';
 import { Chart, LineController, LineElement, PointElement, CategoryScale, LinearScale, Title, Tooltip } from 'chart.js';
 import annotationPlugin from 'chartjs-plugin-annotation';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
@@ -454,7 +455,7 @@ export default class PlotDialog extends Widget {
       <calcite-dialog
         heading={this.station ? `${this.station.name} - ${this.station.date.toLocaleString(DateTime.DATE_FULL)}` : ''}
         modal
-        scale="s"
+        scale={application.scale}
         afterCreate={this.dialogAfterCreate.bind(this)}
       >
         {this.station ? (
