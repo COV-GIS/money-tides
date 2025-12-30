@@ -34,7 +34,7 @@ export default class WeatherAdvisories extends Widget {
 
   override postInitialize(): void {
     weatherLayers.forEach((weatherLayer: MT.WeatherLayer): void => {
-      const { blur, layer, layerLoopControllerOptions } = weatherLayer;
+      const { blur, gradientScaleOptions, layer, layerLoopControllerOptions } = weatherLayer;
 
       view.map?.add(layer);
 
@@ -45,7 +45,7 @@ export default class WeatherAdvisories extends Widget {
       this.weatherLayerItemElements.add(
         <calcite-list-item
           afterCreate={(listItem: HTMLCalciteListItemElement): void => {
-            this.weatherLayerItems.add(new WeatherLayerItem({ container: listItem, layer }));
+            this.weatherLayerItems.add(new WeatherLayerItem({ container: listItem, gradientScaleOptions, layer }));
           }}
         ></calcite-list-item>,
         0,
@@ -98,7 +98,9 @@ class WeatherLayerItem extends Widget {
     this._container = value;
   }
 
-  constructor(properties: esri.WidgetProperties & { layer: esri.Layer }) {
+  constructor(
+    properties: esri.WidgetProperties & { gradientScaleOptions?: MT.GradientScaleOptions; layer: esri.Layer },
+  ) {
     super(properties);
   }
 
@@ -107,6 +109,8 @@ class WeatherLayerItem extends Widget {
   //#endregion
 
   //#region public properties
+
+  public gradientScaleOptions?: MT.GradientScaleOptions;
 
   public layer!: esri.Layer;
 
@@ -132,6 +136,7 @@ class WeatherLayerItem extends Widget {
   override render(): tsx.JSX.Element {
     const {
       contentHidden,
+      gradientScaleOptions,
       layer: { title },
     } = this;
 
@@ -145,24 +150,14 @@ class WeatherLayerItem extends Widget {
           onclick={this.contentActionClick.bind(this)}
         ></calcite-action>
         <div hidden={contentHidden} slot="content-bottom">
-          <div class="test-ramp"></div>
-          <div class="test-labels">
-            <div>1</div>
-            <div>2</div>
-            <div>3</div>
-            <div>4</div>
-            <div>5</div>
-            <div>7</div>
-            <div>10</div>
-            <div>12</div>
-            <div>15</div>
-            <div>20</div>
-            <div>25</div>
-            <div>30</div>
-            <div>35</div>
-            <div>40</div>
-            <div>55</div>
-            <div>60</div>
+          <div style="display: flex; flex-direction: column; gap: 0.75rem; padding: 0.5rem">
+            {gradientScaleOptions ? (
+              <div
+                afterCreate={(container: HTMLDivElement): void => {
+                  new GradientScale({ container, ...gradientScaleOptions });
+                }}
+              ></div>
+            ) : null}
           </div>
         </div>
       </calcite-list-item>
@@ -189,4 +184,41 @@ class WeatherLayerItem extends Widget {
   }
 
   //#endregion
+}
+
+@subclass('GradientScale')
+class GradientScale extends Widget {
+  constructor(properties: MT.GradientScaleProperties) {
+    super(properties);
+  }
+
+  override postInitialize(): void {
+    this.gradientInfos.forEach((gradientInfo: MT.GradientInfo): void => {
+      this.labels.push(<span>{gradientInfo.label}</span>);
+
+      this.values.push(gradientInfo.value);
+    });
+  }
+
+  public description = '';
+
+  public gradientInfos!: MT.GradientInfo[];
+
+  private labels: tsx.JSX.Element[] = [];
+
+  private values: string[] = ['90deg'];
+
+  override render(): tsx.JSX.Element {
+    return (
+      <div style="font-size: var(--calcite-font-size-xs);">
+        <div style="width: 100%; display: flex; flex-direction: row; justify-content: space-between;">
+          <div style="width: 0.125rem;"></div>
+          <div style={`width: 100%; height: 16px; background: linear-gradient(${this.values.join(', ')});`}></div>
+          <div style="width: 0.125rem;"></div>
+        </div>
+        <div style="display: flex; flex-direction: row; justify-content: space-between;">{this.labels}</div>
+        <div style="width: 100; text-align: center;">{this.description}</div>
+      </div>
+    );
+  }
 }

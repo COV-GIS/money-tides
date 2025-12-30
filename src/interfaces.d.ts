@@ -59,6 +59,13 @@ export namespace MT {
     longitude: number;
   };
 
+  type GradientInfo = { label: number | string; value: string };
+
+  type GradientScaleOptions = {
+    description: string;
+    gradientInfos: GradientInfo[];
+  };
+
   type MoneyType = 'not-money' | 'potentially-money' | 'kinda-money' | 'mostly-money' | 'money';
 
   type StationGraphics = {
@@ -94,11 +101,12 @@ export namespace MT {
     blur?: boolean;
     layer: esri.Layer;
     layerLoopControllerOptions?: Omit<LayerLoopControllerProperties, 'layer'>;
+    gradientScaleOptions?: GradientScaleOptions;
   };
 
   //#endregion
 
-  //#region interfaces
+  //#region object interfaces
 
   interface Moon {
     distance: number;
@@ -293,6 +301,11 @@ export namespace MT {
   //#endregion
 
   //#region constructor properties
+
+  interface GradientScaleProperties extends esri.WidgetProperties {
+    description: string;
+    gradientInfos: GradientInfo[];
+  }
 
   interface LayerBlurControllerProperties {
     layer: esri.Layer;

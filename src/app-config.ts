@@ -8,6 +8,52 @@ import MapImageLayer from '@arcgis/core/layers/MapImageLayer';
 import WMSLayer from '@arcgis/core/layers/WMSLayer';
 import Polygon from '@arcgis/core/geometry/Polygon';
 
+const radarGradientScaleOptions: MT.GradientScaleOptions = {
+  description: 'dB',
+  gradientInfos: [
+    {
+      label: -20,
+      value: '#6b6b2b 0.00%',
+    },
+    {
+      label: -10,
+      value: '#bfb7a0 11.11%',
+    },
+    {
+      label: 0,
+      value: '#6fa0d9 22.22%',
+    },
+    {
+      label: 10,
+      value: '#345fb8 33.33%',
+    },
+    {
+      label: 20,
+      value: '#19a92f 44.44%',
+    },
+    {
+      label: 30,
+      value: '#2aa84f 55.56%',
+    },
+    {
+      label: 40,
+      value: '#ffea3b 66.67%, #ff8c00 66.67%',
+    },
+    {
+      label: 50,
+      value: '#ff8c00 77.78%, #d9252b 88.89%',
+    },
+    {
+      label: 60,
+      value: '#d9252b 88.89%',
+    },
+    {
+      label: 70,
+      value: '#8b1a70 100.00%',
+    },
+  ],
+};
+
 export const URLs = {};
 
 export const stationInfos: MT.StationInfo[] = [
@@ -3704,6 +3750,27 @@ export const weatherLayers: MT.WeatherLayer[] = [
       visible: false,
     }),
     blur: true,
+    gradientScaleOptions: {
+      description: 'Height (ft)',
+      gradientInfos: [
+        { label: 1, value: '#e9feff 0%' },
+        { label: 2, value: '#c9f6f8 6.67%' },
+        { label: 3, value: '#92ecf0 13.33%' },
+        { label: 4, value: '#4cd5e2 20%' },
+        { label: 5, value: '#22b7c0 26.67%' },
+        { label: 7, value: '#2fb381 33.33%' },
+        { label: 10, value: '#90e86a 40%' },
+        { label: 12, value: '#dff27a 46.67%' },
+        { label: 15, value: '#ffd36b 53.33%' },
+        { label: 20, value: '#ffb45a 60%' },
+        { label: 25, value: '#ff7a40 66.67%' },
+        { label: 30, value: '#e03b2a 73.33%' },
+        { label: 35, value: '#b61a1a 80%' },
+        { label: 40, value: '#6e0d20 86.67%' },
+        { label: 55, value: '#300019 93.33%' },
+        { label: 60, value: '#1b0010 100%' },
+      ],
+    },
   },
   {
     layer: new WMSLayer({
@@ -3714,6 +3781,7 @@ export const weatherLayers: MT.WeatherLayer[] = [
       visible: false,
     }),
     blur: true,
+    gradientScaleOptions: radarGradientScaleOptions,
     layerLoopControllerOptions: {},
   },
   {
@@ -3725,17 +3793,33 @@ export const weatherLayers: MT.WeatherLayer[] = [
       visible: false,
     }),
     blur: true,
+    gradientScaleOptions: radarGradientScaleOptions,
     layerLoopControllerOptions: {},
   },
 
   {
     layer: new WMSLayer({
       opacity: 0.8,
-      title: 'Cloud Cover',
+      title: 'Sky (cloud cover)',
       url: 'https://mapservices.weather.noaa.gov/geoserver/ndfd/sky/ows?service=wms&version=1.3.0&request=GetCapabilities',
       visible: false,
     }),
     blur: true,
+    gradientScaleOptions: {
+      description: '% Cloud Cover',
+      gradientInfos: [
+        { label: 0, value: '#2aa6f6  0.00%' },
+        { label: 10, value: '#4fbaf2 11.11%' },
+        { label: 20, value: '#9fd9f9 22.22%' },
+        { label: 30, value: '#d9eefc 33.33%' },
+        { label: 40, value: '#f3f8fb 44.44%' },
+        { label: 50, value: '#e6e6e6 55.56%' },
+        { label: 60, value: '#c1c1c1 66.67%' },
+        { label: 70, value: '#9b9b9b 77.78%' },
+        { label: 80, value: '#6b6b6b 88.89%' },
+        { label: 90, value: '#222222 100.00%' },
+      ],
+    },
   },
   {
     layer: new MapImageLayer({
