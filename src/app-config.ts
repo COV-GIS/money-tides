@@ -8,6 +8,8 @@ import MapImageLayer from '@arcgis/core/layers/MapImageLayer';
 import WMSLayer from '@arcgis/core/layers/WMSLayer';
 import Polygon from '@arcgis/core/geometry/Polygon';
 
+// import Graphic from '@arcgis/core/Graphic';
+
 const radarGradientScaleOptions: MT.GradientScaleOptions = {
   description: 'dB',
   gradientInfos: [
@@ -3839,3 +3841,17 @@ export const weatherLayers: MT.WeatherLayer[] = [
     legend: true,
   },
 ];
+
+// view.graphics.add(
+//   new Graphic({
+//     geometry: weatherAdvisoryQueryPolygon,
+//     symbol: {
+//       type: 'simple-fill',
+//       color: [0, 0, 0, 0],
+//       outline: {
+//         color: [255, 0, 0],
+//         width: 2,
+//       },
+//     },
+//   }),
+// );

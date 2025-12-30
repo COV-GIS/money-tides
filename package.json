@@ -11,7 +11,6 @@
   },
   "dependencies": {
     "@arcgis/core": "^4.34.8",
-    "@arcgis/map-components": "^4.34.9",
     "@esri/calcite-components": "^3.3.3",
     "chart.js": "^4.5.1",
     "chartjs-plugin-annotation": "^3.1.0",
