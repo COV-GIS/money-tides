@@ -3751,7 +3751,7 @@ export const weatherLayers: MT.WeatherLayer[] = [
     }),
     blur: true,
     gradientScaleOptions: {
-      description: 'Height (ft)',
+      description: 'Feet',
       gradientInfos: [
         { label: 1, value: '#e9feff 0%' },
         { label: 2, value: '#c9f6f8 6.67%' },
@@ -3796,11 +3796,10 @@ export const weatherLayers: MT.WeatherLayer[] = [
     gradientScaleOptions: radarGradientScaleOptions,
     layerLoopControllerOptions: {},
   },
-
   {
     layer: new WMSLayer({
       opacity: 0.8,
-      title: 'Sky (cloud cover)',
+      title: 'Sky',
       url: 'https://mapservices.weather.noaa.gov/geoserver/ndfd/sky/ows?service=wms&version=1.3.0&request=GetCapabilities',
       visible: false,
     }),
@@ -3826,14 +3825,17 @@ export const weatherLayers: MT.WeatherLayer[] = [
       sublayers: [
         {
           id: 1,
+          title: 'Highs and Lows',
         },
         {
           id: 2,
+          title: 'Fronts',
         },
       ],
       title: 'Weather Fronts',
       url: 'https://mapservices.weather.noaa.gov/vector/rest/services/outlooks/natl_fcst_wx_chart/MapServer',
       visible: false,
     }),
+    legend: true,
   },
 ];

@@ -102,6 +102,7 @@ export namespace MT {
     layer: esri.Layer;
     layerLoopControllerOptions?: Omit<LayerLoopControllerProperties, 'layer'>;
     gradientScaleOptions?: GradientScaleOptions;
+    legend?: boolean;
   };
 
   //#endregion

@@ -37,7 +37,11 @@ export default class WeatherPanel extends Panel {
       watch(
         (): boolean => this.visible,
         (visible: boolean): void => {
-          if (!visible && this.weatherAdvisories) this.weatherAdvisories.clear();
+          if (!visible) {
+            this.weatherLayers.clear();
+
+            this.weatherAdvisories.clear();
+          }
         },
       ),
     );
@@ -50,9 +54,9 @@ export default class WeatherPanel extends Panel {
 
   //#region private properties
 
-  private weatherAdvisories?: WeatherAdvisories;
+  private weatherAdvisories!: WeatherAdvisories;
 
-  private weatherLayers?: WeatherLayers;
+  private weatherLayers!: WeatherLayers;
 
   //#endregion
 
