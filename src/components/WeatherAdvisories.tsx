@@ -14,7 +14,7 @@ import { tsx } from '@arcgis/core/widgets/support/widget';
 import Collection from '@arcgis/core/core/Collection';
 import DateTime from '../utils/dateAndTimeUtils';
 import CIMSymbol from '@arcgis/core/symbols/CIMSymbol';
-import config from '../app-config';
+import { view, weatherAdvisoryColors, weatherAdvisoryFeatureLayer, weatherAdvisoryQueryPolygon } from '../app-config';
 
 //#endregion
 
@@ -42,10 +42,6 @@ export default class WeatherAdvisories extends Widget {
     this._container = value;
   }
 
-  constructor(properties: esri.WidgetProperties & { view: esri.MapView }) {
-    super(properties);
-  }
-
   override postInitialize(): void {
     this.getAdvisories();
 
@@ -55,9 +51,6 @@ export default class WeatherAdvisories extends Widget {
   //#endregion
 
   //#region public properties
-
-  public view!: esri.MapView;
-
   //#endregion
 
   //#region public methods
@@ -94,8 +87,8 @@ export default class WeatherAdvisories extends Widget {
 
     try {
       const advisoryFeatures = (
-        await config.weatherAdvisoryFeatureLayer.queryFeatures({
-          geometry: config.weatherAdvisoryQueryPolygon,
+        await weatherAdvisoryFeatureLayer.queryFeatures({
+          geometry: weatherAdvisoryQueryPolygon,
           outFields: ['*'],
           orderByFields: ['expiration DESC'],
           returnGeometry: true,
@@ -112,7 +105,7 @@ export default class WeatherAdvisories extends Widget {
         this.weatherAdvisoryItemElements.add(
           <calcite-accordion-item
             afterCreate={(container: HTMLCalciteAccordionItemElement): void => {
-              this.weatherAdvisoryItems.add(new WeatherAdvisoryItem({ container, feature, view: this.view }));
+              this.weatherAdvisoryItems.add(new WeatherAdvisoryItem({ container, feature, view }));
             }}
           ></calcite-accordion-item>,
         );
@@ -200,7 +193,7 @@ class WeatherAdvisoryItem extends Widget {
 
     container.addEventListener('calciteAccordionItemCollapse', this.graphicDisplay.bind(this, false));
 
-    feature.symbol = this.createSymbol(config.weatherAdvisoryColors[feature.attributes.prod_type]);
+    feature.symbol = this.createSymbol(weatherAdvisoryColors[feature.attributes.prod_type]);
   }
 
   //#endregion

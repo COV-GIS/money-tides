@@ -31,6 +31,8 @@ import TidesDialog from './TidesDialog';
 import WeatherPanel from './WeatherPanel';
 import LunarPhasePanel from './LunarPhasePanel';
 
+import { stationInfos, view } from '../app-config';
+
 //#endregion
 
 //#region exports
@@ -140,23 +142,14 @@ export default class MoneyTides extends Widget {
     this._container = value;
   }
 
-  constructor(
-    properties: esri.WidgetProperties & {
-      stationInfos: MT.StationInfo[] | esri.Collection<MT.StationInfo>;
-      view: esri.MapView;
-    },
-  ) {
+  constructor(properties?: esri.WidgetProperties) {
     super(properties);
 
     this.container = this._container;
 
     document.body.appendChild(this.container);
 
-    const { attribution, zoomToDropdownItems } = this;
-
-    this.panels.weather.view = properties.view;
-
-    attribution.view = properties.view;
+    const { zoomToDropdownItems } = this;
 
     document.addEventListener('fullscreenchange', (): void => {
       this.fullscreenActive = document.fullscreenElement ? true : false;
@@ -193,19 +186,13 @@ export default class MoneyTides extends Widget {
   //#endregion
 
   //#region public properties
-
-  @property({ type: Collection })
-  public stationInfos: esri.Collection<MT._StationInfo> = new Collection();
-
-  public view!: esri.MapView;
-
   //#endregion
 
   //#region private properties
 
   private alerts: esri.Collection<tsx.JSX.Element> = new Collection();
 
-  private attribution = new AttributionViewModel();
+  private attribution = new AttributionViewModel({ view });
 
   @property({ aliasOf: 'attribution.items' })
   private attributionItems?: esri.Collection<esri.AttributionItem>;
@@ -255,8 +242,6 @@ export default class MoneyTides extends Widget {
           icon-start="pin-tear"
           key={KEY++}
           onclick={(): void => {
-            const { view } = this;
-
             const station = this.stations.find((station: MT.Station): boolean => {
               return station.id === id;
             });
@@ -284,10 +269,7 @@ export default class MoneyTides extends Widget {
     name: string;
     tides: MT.Tide[];
   }): MT.StationGraphics {
-    const {
-      view,
-      view: { graphics },
-    } = this;
+    const { graphics } = view;
 
     const { id, latitude, longitude, money, name, tides } = params;
 
@@ -933,7 +915,7 @@ export default class MoneyTides extends Widget {
       dialogs: { tides },
     } = this;
 
-    const result = (await this.view.hitTest(event, { include: [this.view.graphics] })).results[0];
+    const result = (await view.hitTest(event, { include: [view.graphics] })).results[0];
 
     if (!result || result.type !== 'graphic') {
       tides.close();
@@ -1113,9 +1095,6 @@ export default class MoneyTides extends Widget {
           </div>
         </calcite-popover>
 
-        {/* view */}
-        <div style="width: 100%; height: 100%;" afterCreate={this.viewAfterCreate.bind(this)}></div>
-
         {/* alerts */}
         {alerts.toArray()}
 
@@ -1124,6 +1103,9 @@ export default class MoneyTides extends Widget {
         <calcite-dialog slot="dialogs" afterCreate={this.dialogAfterCreate.bind(this, 'about')}></calcite-dialog>
         <calcite-dialog slot="dialogs" afterCreate={this.dialogAfterCreate.bind(this, 'disclaimer')}></calcite-dialog>
         <calcite-dialog slot="dialogs" afterCreate={this.dialogAfterCreate.bind(this, 'plot')}></calcite-dialog>
+
+        {/* view */}
+        <div style="width: 100%; height: 100%;" afterCreate={this.viewAfterCreate.bind(this)}></div>
       </calcite-shell>
     );
   }
@@ -1165,8 +1147,6 @@ export default class MoneyTides extends Widget {
   }
 
   private shellPanelActionBarAfterCreate(actionBar: HTMLCalciteActionBarElement): void {
-    const { view } = this;
-
     const setPadding = (): void => {
       const width = actionBar.getBoundingClientRect().width;
       view.padding = {
@@ -1185,8 +1165,6 @@ export default class MoneyTides extends Widget {
   private async viewAfterCreate(container: HTMLDivElement): Promise<void> {
     const {
       dialogs: { disclaimer },
-      stationInfos,
-      view,
     } = this;
 
     view.container = container;
@@ -1199,7 +1177,8 @@ export default class MoneyTides extends Widget {
         loaded: false,
       });
 
-      await this.loadStation(stationInfo);
+      // await this.loadStation(stationInfo as MT._StationInfo);
+      this.loadStation(stationInfo as MT._StationInfo);
     }
 
     this.addHandles(view.on('click', this.viewClickEvent.bind(this)));

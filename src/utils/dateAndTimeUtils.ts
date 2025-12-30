@@ -1,6 +1,8 @@
-import { DateTime, Interval as _Interval } from 'luxon';
+import { DateTime, Duration as _Duration, Interval as _Interval } from 'luxon';
 
 export default DateTime;
+
+export { _Duration as Duration };
 
 export { _Interval as Interval };
 

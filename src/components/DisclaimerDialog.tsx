@@ -58,15 +58,16 @@ export default class DisclaimerDialog extends Widget {
         scale="s"
         width="s"
       >
-        <div style="display: flex; flex-direction: column; gap: 0.5rem; line-height: var(--calcite-font-line-height-relative-snug);">
+        <div style="display: flex; flex-direction: column; gap: 0.5rem; font-size: var(--calcite-font-size-sm); line-height: var(--calcite-font-line-height-relative-snug);">
           <div>A goof made Money Tides to support his own goofy endevours.</div>
           <div>
-            The information provided herein may or may not be accurate, and therefore is not suitable for any particular
-            purpose.
+            The information provided herein may or may not be accurate. There are no warranties, expressed or implied,
+            including the warranty of merchantability or fitness for a particular purpose, accompanying the use of Money
+            Tides.
           </div>
           <div style="font-weight: var(--calcite-font-weight-medium);">Use at your own risk!</div>
         </div>
-        <calcite-button slot="footer-end" onclick={this.gotIt.bind(this)}>
+        <calcite-button scale="s" slot="footer-end" onclick={this.gotIt.bind(this)}>
           Got It
         </calcite-button>
       </calcite-dialog>
