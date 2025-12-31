@@ -52,7 +52,7 @@ export default class AttributionPopover extends Widget {
   @property({ aliasOf: 'attribution.items' })
   private attributionItems!: esri.Collection<esri.AttributionItem>;
 
-  private referenceElementId = '';
+  private referenceElementId!: string;
 
   //#endregion
 

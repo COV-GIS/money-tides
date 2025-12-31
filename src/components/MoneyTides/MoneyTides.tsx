@@ -24,8 +24,6 @@ import { moneyTypeColors } from '../../utils/colorUtils';
 import DateTime, { NOAADate, setNoon, setTime, twelveHourTime } from '../../utils/dateAndTimeUtils';
 import { sunAndMoon, sunAndMoonPosition } from '../../utils/sunAndMoonUtils';
 import createURL from '../../utils/createURL';
-// import AboutDialog from '../AboutDialog/AboutDialog';
-// import DisclaimerDialog from '../DisclaimerDialog/DisclaimerDialog';
 import PlotDialog from '../PlotDialog/PlotDialog';
 import TidesDialog from '../TidesDialog/TidesDialog';
 import WeatherPanel from '../WeatherPanel/WeatherPanel';
@@ -1024,11 +1022,12 @@ export default class MoneyTides extends Widget {
                 }}
               ></calcite-action>
               <calcite-action
-                icon="map-information"
-                id={attributionId}
-                scale={scale}
-                text="Attribution"
-                onclick={this.shellPanelActionClickEvent.bind(this, null)}
+                afterCreate={async (action: HTMLCalciteActionElement): Promise<void> => {
+                  new (await import('../AttributionPopover/AttributionAction')).default({
+                    container: action,
+                    onClick: this.shellPanelActionClickEvent.bind(this, null),
+                  });
+                }}
               ></calcite-action>
               <calcite-action
                 afterCreate={async (action: HTMLCalciteActionElement): Promise<void> => {
@@ -1050,16 +1049,6 @@ export default class MoneyTides extends Widget {
             afterCreate={this.panelAfterCreate.bind(this, 'lunarPhase')}
           ></calcite-panel>
         </calcite-shell-panel>
-
-        {/* popovers */}
-        <calcite-popover
-          afterCreate={async (popover: HTMLCalcitePopoverElement): Promise<void> => {
-            new (await import('../AttributionPopover/AttributionPopover')).default({
-              container: popover,
-              referenceElementId: attributionId,
-            });
-          }}
-        ></calcite-popover>
 
         {/* alerts */}
         {alerts.toArray()}

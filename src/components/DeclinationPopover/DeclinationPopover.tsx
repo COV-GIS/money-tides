@@ -65,7 +65,7 @@ export default class DeclinationPopover extends Widget {
   @property()
   private declination = 'Set your compass to ???.';
 
-  private referenceElementId = '';
+  private referenceElementId!: string;
 
   //#endregion
 
