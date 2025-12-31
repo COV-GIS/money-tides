@@ -1,15 +1,19 @@
 .money-tides_header {
   display: flex;
   flex-direction: row;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   padding: 0.5rem;
   background-color: var(--calcite-color-brand);
-  color: var(--calcite-color-text-inverse);
-  font-size: var(--calcite-font-size-md);
 
   calcite-input-date-picker {
-    max-width: 200px;
+    &[scale='s'] {
+      width: 236.5px;
+    }
+
+    &[scale='m'] {
+      width: 298px;
+    }
   }
 }
 
@@ -17,16 +21,6 @@
   display: flex;
   flex-direction: row;
   gap: 0.25rem;
-}
-
-.money-tides_header--title {
-  font-weight: var(--calcite-font-weight-medium);
-}
-
-@media (max-width: 500px) {
-  .money-tides_header--title {
-    display: none;
-  }
 }
 
 .money-tides_view {

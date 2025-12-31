@@ -79,7 +79,6 @@ const CSS_BASE = 'money-tides';
 const CSS = {
   header: `${CSS_BASE}_header`,
   headerDate: `${CSS_BASE}_header--date`,
-  headerTitle: `${CSS_BASE}_header--title`,
   view: `${CSS_BASE}_view`,
 };
 
@@ -927,7 +926,6 @@ export default class MoneyTides extends Widget {
       <calcite-shell content-behind="">
         {/* header */}
         <div class={CSS.header} slot="header">
-          <div class={CSS.headerTitle}>Money Tides</div>
           <div class={CSS.headerDate}>
             <calcite-button
               icon-start="chevron-left"
@@ -945,7 +943,6 @@ export default class MoneyTides extends Widget {
               onclick={this.dateButtonClickEvent.bind(this)}
             ></calcite-button>
           </div>
-          <div>{/* placeholder */}</div>
         </div>
 
         {/* shell panel */}
