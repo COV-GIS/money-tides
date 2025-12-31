@@ -946,7 +946,12 @@ export default class MoneyTides extends Widget {
         </div>
 
         {/* shell panel */}
-        <calcite-shell-panel display-mode="float-content" position="end" slot="panel-end" style={shellPanelStyle}>
+        <calcite-shell-panel
+          display-mode="float-content"
+          position={applicationSettings.position}
+          slot={`panel-${applicationSettings.position}`}
+          style={shellPanelStyle}
+        >
           <calcite-action-bar
             scale={scale}
             slot="action-bar"

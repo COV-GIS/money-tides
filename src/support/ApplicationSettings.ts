@@ -8,6 +8,9 @@ export default class ApplicationSettings extends Assessor {
   public date = setNoon(DateTime.now().setZone('America/Los_Angeles'));
 
   @property()
+  position: 'end' | 'start' = 'end';
+
+  @property()
   protected preferredColorMode =
     window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 
