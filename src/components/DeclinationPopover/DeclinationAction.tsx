@@ -52,15 +52,6 @@ export default class AboutAction extends Widget {
     const { declinationPopover } = this;
 
     shell.appendChild(declinationPopover.container);
-
-    this.addHandles(
-      watch(
-        (): DateTime => applicationSettings.date,
-        (date: DateTime): void => {
-          declinationPopover.date = date;
-        },
-      ),
-    );
   }
 
   //#endregion
@@ -69,7 +60,6 @@ export default class AboutAction extends Widget {
 
   private declinationPopover = new DeclinationPopover({
     container: document.createElement('calcite-popover'),
-    date: applicationSettings.date,
     referenceElementId: ID,
   });
 

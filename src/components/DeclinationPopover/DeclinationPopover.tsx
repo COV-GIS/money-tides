@@ -41,14 +41,14 @@ export default class DeclinationPopover extends Widget {
     this._container = value;
   }
 
-  constructor(properties: esri.WidgetProperties & { date: DateTime; referenceElementId: string }) {
+  constructor(properties: esri.WidgetProperties & { referenceElementId: string }) {
     super(properties);
   }
 
   override postInitialize(): void {
     this.updateDeclination();
 
-    this.addHandles(watch((): DateTime => this.date, this.updateDeclination.bind(this)));
+    this.addHandles(watch((): DateTime => applicationSettings.date, this.updateDeclination.bind(this)));
   }
 
   //#endregion
@@ -56,7 +56,7 @@ export default class DeclinationPopover extends Widget {
   //#region public properties
 
   @property()
-  public date!: DateTime;
+  public date = applicationSettings.date;
 
   //#endregion
 
