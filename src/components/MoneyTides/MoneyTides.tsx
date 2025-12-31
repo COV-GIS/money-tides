@@ -2,7 +2,6 @@
 
 import esri = __esri;
 import type { MT } from '../../interfaces';
-import PlotDialog from '../PlotDialog/PlotDialog';
 type Panels = 'lunarPhase' | 'weather';
 
 //#endregion
@@ -25,6 +24,7 @@ import DateTime, { NOAADate, setNoon, setTime, twelveHourTime } from '../../util
 import { sunAndMoon, sunAndMoonPosition } from '../../utils/sunAndMoonUtils';
 import createURL from '../../utils/createURL';
 import TidesDialog from '../TidesDialog/TidesDialog';
+import PlotDialog from '../PlotDialog/PlotDialog';
 import WeatherPanel from '../WeatherPanel/WeatherPanel';
 import LunarPhasePanel from '../LunarPhasePanel/LunarPhasePanel';
 import { applicationSettings, stationInfos, view } from '../../app-config';
@@ -198,9 +198,6 @@ export default class MoneyTides extends Widget {
     // );
   }
 
-  //#endregion
-
-  //#region public properties
   //#endregion
 
   //#region private properties
