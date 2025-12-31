@@ -23,3 +23,4 @@ import '@esri/calcite-components/dist/components/calcite-shell-panel';
 import '@esri/calcite-components/dist/components/calcite-table';
 import '@esri/calcite-components/dist/components/calcite-table-cell';
 import '@esri/calcite-components/dist/components/calcite-table-row';
+import '@esri/calcite-components/dist/components/calcite-tooltip';

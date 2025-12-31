@@ -14,7 +14,7 @@ import { tsx } from '@arcgis/core/widgets/support/widget';
 import Collection from '@arcgis/core/core/Collection';
 import LayerBlurController from '../support/LayerBlurController';
 import LayerLoopController from '../support/LayerLoopController';
-import { application, view, weatherLayers } from '../app-config';
+import { applicationSettings, view, weatherLayers } from '../app-config';
 
 //#endregion
 
@@ -81,10 +81,10 @@ export default class WeatherLayers extends Widget {
         collapsible
         heading="Layers"
         icon-start="layers"
-        scale={application.scale}
+        scale={applicationSettings.scale}
         style="--calcite-block-content-space: 0; --calcite-list-background-color-hover: transparent; --calcite-list-background-color-press: transparent;"
       >
-        <calcite-list scale={application.scale} selection-mode="multiple">
+        <calcite-list scale={applicationSettings.scale} selection-mode="multiple">
           {this.weatherLayerItemElements.toArray()}
         </calcite-list>
       </calcite-block>
@@ -160,12 +160,12 @@ class WeatherLayerItem extends Widget {
     return (
       <calcite-list-item
         label={title || 'Layer'}
-        scale={application.scale}
+        scale={applicationSettings.scale}
         afterCreate={this.listItemAfterCreate.bind(this)}
       >
         <calcite-action
           icon={contentHidden ? 'chevron-down' : 'chevron-up'}
-          scale={application.scale}
+          scale={applicationSettings.scale}
           slot="actions-end"
           text={contentHidden ? 'Expand' : 'Collapse'}
           onclick={this.contentActionClick.bind(this)}

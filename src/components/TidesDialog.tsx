@@ -14,7 +14,7 @@ import { tsx } from '@arcgis/core/widgets/support/widget';
 import createURL from '../utils/createURL';
 import DateTime, { NOAADate } from '../utils/dateAndTimeUtils';
 import { moneyTypeColorHex } from '../utils/colorUtils';
-import { application } from '../app-config';
+import { applicationSettings } from '../app-config';
 
 //#endregion
 
@@ -112,13 +112,13 @@ export default class TidesDialog extends Widget {
         class={CSS_BASE}
         heading={`${name} - ${date.toLocaleString(DateTime.DATE_FULL)}`}
         placement="bottom-start"
-        scale={application.scale}
+        scale={applicationSettings.scale}
         width="s"
       >
         {/* header menu */}
         <calcite-action
           icon="graph-time-series"
-          scale={application.scale}
+          scale={applicationSettings.scale}
           slot="header-menu-actions"
           text="Tides Plot"
           text-enabled=""
@@ -128,7 +128,7 @@ export default class TidesDialog extends Widget {
         ></calcite-action>
         <calcite-action
           icon="partly-cloudy"
-          scale={application.scale}
+          scale={applicationSettings.scale}
           slot="header-menu-actions"
           text="Local Weather"
           text-enabled=""
@@ -136,7 +136,7 @@ export default class TidesDialog extends Widget {
         ></calcite-action>
         <calcite-action
           icon="home"
-          scale={application.scale}
+          scale={applicationSettings.scale}
           slot="header-menu-actions"
           text="NOAA Station"
           text-enabled=""
@@ -144,7 +144,7 @@ export default class TidesDialog extends Widget {
         ></calcite-action>
 
         {/* tides table */}
-        <calcite-table class={CSS.table} scale={application.scale} striped>
+        <calcite-table class={CSS.table} scale={applicationSettings.scale} striped>
           <calcite-table-row slot="table-header">
             <calcite-table-header alignment="center" heading="Time"></calcite-table-header>
             <calcite-table-header alignment="center" heading="Event"></calcite-table-header>

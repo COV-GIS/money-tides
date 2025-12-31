@@ -5,9 +5,9 @@ import './main.scss';
 import './components/components';
 import Loader from './components/Loader';
 import MoneyTides from './components/MoneyTides';
+// import { applicationSettings } from './app-config';
 
-// if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
-//   document.body.classList.add('calcite-mode-dark');
+// applicationSettings.setColorMode();
 
 const loader = new Loader();
 
@@ -16,3 +16,5 @@ const moneyTides = new MoneyTides();
 moneyTides.on('loaded', (): void => {
   loader.end();
 });
+
+// console.log(applicationSettings);

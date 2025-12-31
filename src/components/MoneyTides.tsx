@@ -31,7 +31,7 @@ import TidesDialog from './TidesDialog';
 import WeatherPanel from './WeatherPanel';
 import LunarPhasePanel from './LunarPhasePanel';
 
-import { application, stationInfos, view } from '../app-config';
+import { applicationSettings, stationInfos, view } from '../app-config';
 
 //#endregion
 
@@ -187,7 +187,7 @@ export default class MoneyTides extends Widget {
     //     icon="smile"
     //     key={KEY++}
     //     open
-    //     scale={application.scale}
+    //     scale={applicationSettings.scale}
     //     slot="alerts"
     //     afterCreate={(alert: HTMLCalciteAlertElement): void => {
     //       this.addHandles(
@@ -689,7 +689,7 @@ export default class MoneyTides extends Widget {
           key={KEY++}
           kind="danger"
           open
-          scale={application.scale}
+          scale={applicationSettings.scale}
           slot="alerts"
         >
           <div slot="title">Error</div>
@@ -872,7 +872,7 @@ export default class MoneyTides extends Widget {
           key={KEY++}
           kind="danger"
           open
-          scale={application.scale}
+          scale={applicationSettings.scale}
           slot="alerts"
         >
           <div slot="title">Error</div>
@@ -962,7 +962,7 @@ export default class MoneyTides extends Widget {
   //#region render
 
   override render(): tsx.JSX.Element {
-    const scale = application.scale;
+    const scale = applicationSettings.scale;
 
     const { id, alerts, attributionItems, declinationBearing, fullscreenActive, panel, zoomToDropdownItems } = this;
 

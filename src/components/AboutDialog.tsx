@@ -1,10 +1,20 @@
 //#region modules
-
+import './AboutDialog.scss';
 import { subclass } from '@arcgis/core/core/accessorSupport/decorators';
 import Widget from '@arcgis/core/widgets/Widget';
 import { tsx } from '@arcgis/core/widgets/support/widget';
-import { moneyTypeColorHex } from '../utils/colorUtils';
-import { application } from '../app-config';
+import { applicationSettings } from '../app-config';
+
+//#endregion
+
+//#region constants
+
+const CSS_BASE = 'about-dialog';
+
+const CSS = {
+  content: `${CSS_BASE}_content`,
+  heading: `${CSS_BASE}_heading`,
+};
 
 //#endregion
 
@@ -35,45 +45,47 @@ export default class AboutDialog extends Widget {
   //#region render
 
   render(): tsx.JSX.Element {
-    const medium = 'font-weight: var(--calcite-font-weight-medium);';
-
-    // const heading = `font-size: var(--calcite-font-size--1); ${medium}`;
-    const heading = `font-size: var(--calcite-font-size); ${medium}`;
-
-    const shadow =
-      'text-shadow: -1px -1px 2px rgba(0, 0, 0, 128), 1px -1px 2px rgba(0, 0, 0, 128), -1px 1px 2px rgba(0, 0, 0, 128), 1px 1px 2px rgba(0, 0, 0, 128);';
+    const scale = applicationSettings.scale;
 
     return (
-      <calcite-dialog heading="About" modal scale={application.scale} width="s">
-        <div style="display: flex; flex-direction: column; gap: 0.5rem; font-size: var(--calcite-font-size-sm); line-height: var(--calcite-font-line-height-relative-snug);">
-          <div style={heading}>What is a money tide?</div>
-          <div>When the highest high tide of the day occurs at noon.</div>
-          <div style={heading}>Why are money tides important?</div>
-          <div>If you have to ask...you will never know.</div>
-          <div style={heading}>How money is the day?</div>
+      <calcite-dialog class={CSS_BASE} heading="About Money Tides" modal scale={scale} width={scale}>
+        <div class={CSS.content}>
+          <div class={CSS.heading}>Disclaimer</div>
+          <div>A goof made Money Tides to support his own goofy endeavors.</div>
           <div>
-            <span style={this.classes(medium, moneyTypeColorHex('money', 'color'))}>Money</span>
+            The information provided herein may or may not be accurate. There are no warranties, expressed or implied,
+            including the warranty of merchantability or fitness for a particular purpose, accompanying the use of Money
+            Tides.
+          </div>
+          <div>
+            <strong>Use at your own risk!</strong>
+          </div>
+          <div class={CSS.heading}>What is a money tide?</div>
+          <div>When the highest high tide of the day occurs at noon.</div>
+          <div class={CSS.heading}>Why are money tides important?</div>
+          <div>If you have to ask...you will never know.</div>
+          <div class={CSS.heading}>How money is the day?</div>
+          <div>
+            <strong>Money</strong>
             <span> - Highest high tide occurs between 11:00 AM and 1:00 PM</span>
           </div>
           <div>
-            <span style={this.classes(medium, moneyTypeColorHex('mostly-money', 'color'), shadow)}>Mostly Money</span>
+            <strong>Mostly Money</strong>
             <span> - Highest high tide occurs between 10:00 AM and 11:00 AM or between 1:00 PM and 2:00 PM</span>
           </div>
           <div>
-            <span style={this.classes(medium, moneyTypeColorHex('kinda-money', 'color'), shadow)}>Kinda Money</span>
+            <strong>Kinda Money</strong>
             <span> - Lowest high tide occurs between 11:00 AM and 1:00 PM</span>
           </div>
           <div>
-            <span style={this.classes(medium, moneyTypeColorHex('potentially-money', 'color'), shadow)}>
-              Potentially Money
-            </span>
+            <strong>Potentially Money</strong>
             <span> - Lowest high tide occurs between 10:00 AM and 11:00 AM or between 1:00 PM and 2:00 PM</span>
           </div>
           <div>
-            <span style={this.classes(medium, moneyTypeColorHex('not-money', 'color'))}>Not Money</span>
+            <strong>Not Money</strong>
             <span> - No high tide occurs between 10:00 AM and 2:00 PM</span>
           </div>
-          <div style={heading}>A caveat about high tides</div>
+          <div class={CSS.heading}>A caveat about high tides</div>
           <div>
             Occasionally a location only experiences three tides (two high tides and one low tide, or one high tide and
             two low tides) in a calendar day. On such an occasion when a location experiences one high tide and two low

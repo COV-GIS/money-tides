@@ -13,7 +13,7 @@ import {
   isLoaded as geodesicBufferIsLoaded,
   load as geodesicBufferLoad,
 } from '@arcgis/core/geometry/operators/geodesicBufferOperator';
-import Application from './support/Application';
+import ApplicationSettings from './support/ApplicationSettings';
 
 const radarGradientScaleOptions: MT.GradientScaleOptions = {
   description: 'dB',
@@ -63,7 +63,7 @@ const radarGradientScaleOptions: MT.GradientScaleOptions = {
 
 export const URLs = {};
 
-export const application = new Application();
+export const applicationSettings = new ApplicationSettings();
 
 export const stationInfos: MT.StationInfo[] = [
   {

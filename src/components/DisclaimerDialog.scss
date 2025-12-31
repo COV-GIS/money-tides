@@ -1,0 +1,32 @@
+.disclaimer-dialog_content {
+  display: flex;
+  flex-direction: column;
+
+  strong {
+    font-weight: var(--calcite-font-weight-medium);
+    color: var(--calcite-color-text-1);
+  }
+}
+
+.disclaimer-dialog {
+  &[scale='s'] {
+    .disclaimer-dialog_content {
+      gap: 0.5rem;
+      font-size: var(--calcite-font-size-sm);
+    }
+  }
+
+  &[scale='m'] {
+    .disclaimer-dialog_content {
+      gap: 0.75rem;
+      font-size: var(--calcite-font-size);
+    }
+  }
+
+  &[scale='l'] {
+    .disclaimer-dialog_content {
+      gap: 1rem;
+      font-size: var(--calcite-font-size-md);
+    }
+  }
+}

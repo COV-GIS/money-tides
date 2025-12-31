@@ -17,7 +17,7 @@ import { tsx } from '@arcgis/core/widgets/support/widget';
 import WeatherAdvisories from './WeatherAdvisories';
 import WeatherLayers from './WeatherLayers';
 import Cookies from 'js-cookie';
-import { application } from '../app-config';
+import { applicationSettings } from '../app-config';
 
 //#endregion
 
@@ -68,7 +68,7 @@ export default class WeatherPanel extends Panel {
 
   override render(): tsx.JSX.Element {
     return (
-      <calcite-panel heading="Weather" scale={application.scale}>
+      <calcite-panel heading="Weather" scale={applicationSettings.scale}>
         {this.closeAction()}
         {this.renderNotice()}
         <calcite-block afterCreate={this.weatherLayersAfterCreate.bind(this)}></calcite-block>
@@ -85,7 +85,7 @@ export default class WeatherPanel extends Panel {
         <calcite-notice
           closable
           open
-          scale={application.scale}
+          scale={applicationSettings.scale}
           style="width: 100%;"
           afterCreate={(notice: HTMLCalciteNoticeElement): void => {
             notice.addEventListener('calciteNoticeClose', (): void => {

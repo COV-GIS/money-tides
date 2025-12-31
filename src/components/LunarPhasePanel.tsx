@@ -5,7 +5,7 @@ import Panel from './Panel';
 import { tsx } from '@arcgis/core/widgets/support/widget';
 import DateTime, { setNoon } from '../utils/dateAndTimeUtils';
 import { sunAndMoon } from '../utils/sunAndMoonUtils';
-import { application } from '../app-config';
+import { applicationSettings } from '../app-config';
 
 //#endregion
 
@@ -51,7 +51,7 @@ export default class LunarPhasePanel extends Panel {
     const degrees = 360 - Math.floor(phase * 360);
 
     return (
-      <calcite-panel class={CSS_BASE} heading="Lunar Phase" scale={application.scale}>
+      <calcite-panel class={CSS_BASE} heading="Lunar Phase" scale={applicationSettings.scale}>
         {this.closeAction()}
         <div class={CSS.container}>
           <div class={CSS.moon}>
