@@ -1,11 +1,12 @@
 //#region modules
 
+import './LunarPhasePanel.scss';
 import { property, subclass } from '@arcgis/core/core/accessorSupport/decorators';
-import Panel from './Panel';
+import PanelBase from '../PanelBase';
 import { tsx } from '@arcgis/core/widgets/support/widget';
-import DateTime, { setNoon } from '../utils/dateAndTimeUtils';
-import { sunAndMoon } from '../utils/sunAndMoonUtils';
-import { applicationSettings } from '../app-config';
+import DateTime, { setNoon } from '../../utils/dateAndTimeUtils';
+import { sunAndMoon } from '../../utils/sunAndMoonUtils';
+import { applicationSettings } from '../../app-config';
 
 //#endregion
 
@@ -27,7 +28,7 @@ const CSS = {
 //#endregion
 
 @subclass('LunarPhasePanel')
-export default class LunarPhasePanel extends Panel {
+export default class LunarPhasePanel extends PanelBase {
   //#region public properties
 
   @property()
@@ -41,7 +42,7 @@ export default class LunarPhasePanel extends Panel {
 
   //#region render
 
-  render(): tsx.JSX.Element {
+  override render(): tsx.JSX.Element {
     const { date, latitude, longitude } = this;
 
     const {

@@ -7,8 +7,8 @@ import { applicationSettings } from '../app-config';
 
 //#endregion
 
-@subclass('Panel')
-export default class Panel extends Widget {
+@subclass('PanelBase')
+export default class PanelBase extends Widget {
   //#region lifecycle
 
   private _container!: HTMLCalcitePanelElement;

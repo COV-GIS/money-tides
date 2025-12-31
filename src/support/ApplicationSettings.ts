@@ -1,10 +1,14 @@
 import { property, subclass } from '@arcgis/core/core/accessorSupport/decorators';
 import Assessor from '@arcgis/core/core/Accessor';
+import DateTime, { setNoon } from '../utils/dateAndTimeUtils';
 
 @subclass('ApplicationSettings')
 export default class ApplicationSettings extends Assessor {
   @property()
-  protected preferedColorMode =
+  public date = setNoon(DateTime.now().setZone('America/Los_Angeles'));
+
+  @property()
+  protected preferredColorMode =
     window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 
   @property()
@@ -16,7 +20,7 @@ export default class ApplicationSettings extends Assessor {
     document.body.classList.remove('calcite-mode-light');
 
     if (!mode) {
-      document.body.classList.add(`calcite-mode-${this.preferedColorMode}`);
+      document.body.classList.add(`calcite-mode-${this.preferredColorMode}`);
     } else {
       document.body.classList.add(`calcite-mode-${mode}`);
     }

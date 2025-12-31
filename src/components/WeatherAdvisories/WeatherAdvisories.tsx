@@ -12,7 +12,7 @@ import { property, subclass } from '@arcgis/core/core/accessorSupport/decorators
 import Widget from '@arcgis/core/widgets/Widget';
 import { tsx } from '@arcgis/core/widgets/support/widget';
 import Collection from '@arcgis/core/core/Collection';
-import DateTime from '../utils/dateAndTimeUtils';
+import DateTime from '../../utils/dateAndTimeUtils';
 import CIMSymbol from '@arcgis/core/symbols/CIMSymbol';
 import {
   applicationSettings,
@@ -20,7 +20,7 @@ import {
   weatherAdvisoryColors,
   weatherAdvisoryFeatureLayer,
   weatherAdvisoryQueryPolygon,
-} from '../app-config';
+} from '../../app-config';
 
 //#endregion
 

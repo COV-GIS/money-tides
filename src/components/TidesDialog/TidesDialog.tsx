@@ -1,6 +1,6 @@
 //#region types
 
-import type { MT } from '../interfaces';
+import type { MT } from '../../interfaces';
 
 //#endregion
 
@@ -11,10 +11,10 @@ import './TidesDialog.scss';
 import { property, subclass } from '@arcgis/core/core/accessorSupport/decorators';
 import Widget from '@arcgis/core/widgets/Widget';
 import { tsx } from '@arcgis/core/widgets/support/widget';
-import createURL from '../utils/createURL';
-import DateTime, { NOAADate } from '../utils/dateAndTimeUtils';
-import { moneyTypeColorHex } from '../utils/colorUtils';
-import { applicationSettings } from '../app-config';
+import createURL from '../../utils/createURL';
+import DateTime, { NOAADate } from '../../utils/dateAndTimeUtils';
+import { moneyTypeColorHex } from '../../utils/colorUtils';
+import { applicationSettings } from '../../app-config';
 
 //#endregion
 

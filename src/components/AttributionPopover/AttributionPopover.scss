@@ -1,0 +1,31 @@
+.attribution-popover {
+  &[scale="s"] {
+    --calcite-popover-max-size-x: 24rem;
+
+    .attribution-popover_content {
+      padding: var(--calcite-spacing-xs);
+      font-size: var(--calcite-font-size-sm);
+      line-height: var(--calcite-font-line-height-relative-tight);
+    }
+  }
+
+  &[scale="m"] {
+    --calcite-popover-max-size-x: 32rem;
+
+    .attribution-popover_content {
+      padding: var(--calcite-spacing-sm);
+      font-size: var(--calcite-font-size);
+      line-height: var(--calcite-font-line-height-relative-snug);
+    }
+  }
+
+  &[scale="l"] {
+    --calcite-popover-max-size-x: 40rem;
+
+    .attribution-popover_content {
+      padding: var(--calcite-spacing-md);
+      font-size: var(--calcite-font-size-md);
+      line-height: var(--calcite-font-line-height-relative-normal);
+    }
+  }
+}

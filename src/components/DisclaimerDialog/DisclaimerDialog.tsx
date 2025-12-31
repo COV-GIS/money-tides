@@ -1,3 +1,9 @@
+//#region types
+
+import esri = __esri;
+
+//#endregion
+
 //#region modules
 
 import './DisclaimerDialog.scss';
@@ -5,7 +11,7 @@ import { subclass } from '@arcgis/core/core/accessorSupport/decorators';
 import Widget from '@arcgis/core/widgets/Widget';
 import { tsx } from '@arcgis/core/widgets/support/widget';
 import Cookies from 'js-cookie';
-import { applicationSettings } from '../app-config';
+import { applicationSettings } from '../../app-config';
 
 //#endregion
 
@@ -21,11 +27,19 @@ const CSS = {
 
 //#endregion
 
+//#region exports
+
+export const isAccepted = (): boolean => {
+  return Cookies.get(COOKIE) ? true : false;
+};
+
+//#endregion
+
 @subclass('DisclaimerDialog')
 export default class DisclaimerDialog extends Widget {
   //#region lifecycle
 
-  private _container!: HTMLCalciteDialogElement;
+  private _container = document.createElement('calcite-dialog');
 
   get container() {
     return this._container;
@@ -35,12 +49,12 @@ export default class DisclaimerDialog extends Widget {
     this._container = value;
   }
 
-  //#endregion
+  constructor(properties?: esri.WidgetProperties) {
+    super(properties);
 
-  //#region static methods
+    this.container = this._container;
 
-  static isAccepted(): boolean {
-    return Cookies.get(COOKIE) ? true : false;
+    document.body.appendChild(this.container);
   }
 
   //#endregion
@@ -51,6 +65,10 @@ export default class DisclaimerDialog extends Widget {
     Cookies.set(COOKIE, 'accepted', { expires: 60 });
 
     this.container.open = false;
+
+    document.body.removeChild(this.container);
+
+    this.destroy();
   }
 
   //#endregion
@@ -67,8 +85,8 @@ export default class DisclaimerDialog extends Widget {
         escape-disabled=""
         heading="Disclaimer"
         icon="exclamation-point-f"
-        kind="brand"
         modal
+        open
         outside-close-disabled=""
         scale={scale}
         width={scale}

@@ -1,7 +1,7 @@
 //#region types
 
 import esri = __esri;
-import { MT } from '../interfaces';
+import { MT } from '../../interfaces';
 
 //#endregion
 
@@ -12,9 +12,9 @@ import { property, subclass } from '@arcgis/core/core/accessorSupport/decorators
 import Widget from '@arcgis/core/widgets/Widget';
 import { tsx } from '@arcgis/core/widgets/support/widget';
 import Collection from '@arcgis/core/core/Collection';
-import LayerBlurController from '../support/LayerBlurController';
-import LayerLoopController from '../support/LayerLoopController';
-import { applicationSettings, view, weatherLayers } from '../app-config';
+import LayerBlurController from '../../support/LayerBlurController';
+import LayerLoopController from '../../support/LayerLoopController';
+import { applicationSettings, view, weatherLayers } from '../../app-config';
 
 //#endregion
 

@@ -1,6 +1,6 @@
 //#region types
 
-import type { MT } from '../interfaces';
+import type { MT } from '../../interfaces';
 import type { Scale, CoreScaleOptions, TooltipItem, ScriptableTooltipContext } from 'chart.js';
 import type { Context as DataLabelsContext } from 'chartjs-plugin-datalabels';
 import type { PartialEventContext } from 'chartjs-plugin-annotation';
@@ -13,10 +13,10 @@ type ChartDataValue = { x: number; y: number; tide: MT.Tide };
 import { property, subclass } from '@arcgis/core/core/accessorSupport/decorators';
 import Widget from '@arcgis/core/widgets/Widget';
 import { tsx } from '@arcgis/core/widgets/support/widget';
-import { tideHeight } from './MoneyTides';
-import { getDocumentStyle } from '../utils/colorUtils';
-import DateTime, { setTime, twelveHourTime } from '../utils/dateAndTimeUtils';
-import { applicationSettings } from '../app-config';
+import { tideHeight } from '../MoneyTides/MoneyTides';
+import { getDocumentStyle } from '../../utils/colorUtils';
+import DateTime, { setTime, twelveHourTime } from '../../utils/dateAndTimeUtils';
+import { applicationSettings } from '../../app-config';
 import { Chart, LineController, LineElement, PointElement, CategoryScale, LinearScale, Title, Tooltip } from 'chart.js';
 import annotationPlugin from 'chartjs-plugin-annotation';
 import ChartDataLabels from 'chartjs-plugin-datalabels';

@@ -1,9 +1,15 @@
+//#region types
+
+import esri = __esri;
+
+//#endregion
+
 //#region modules
 import './AboutDialog.scss';
 import { subclass } from '@arcgis/core/core/accessorSupport/decorators';
 import Widget from '@arcgis/core/widgets/Widget';
 import { tsx } from '@arcgis/core/widgets/support/widget';
-import { applicationSettings } from '../app-config';
+import { applicationSettings } from '../../app-config';
 
 //#endregion
 
@@ -22,7 +28,7 @@ const CSS = {
 export default class AboutDialog extends Widget {
   //#region lifecycle
 
-  private _container!: HTMLCalciteDialogElement;
+  private _container = document.createElement('calcite-dialog');
 
   get container() {
     return this._container;
@@ -30,6 +36,14 @@ export default class AboutDialog extends Widget {
 
   set container(value: HTMLCalciteDialogElement) {
     this._container = value;
+  }
+
+  constructor(properties?: esri.WidgetProperties) {
+    super(properties);
+
+    this.container = this._container;
+
+    document.body.appendChild(this.container);
   }
 
   //#endregion
@@ -44,22 +58,12 @@ export default class AboutDialog extends Widget {
 
   //#region render
 
-  render(): tsx.JSX.Element {
+  override render(): tsx.JSX.Element {
     const scale = applicationSettings.scale;
 
     return (
       <calcite-dialog class={CSS_BASE} heading="About Money Tides" modal scale={scale} width={scale}>
         <div class={CSS.content}>
-          <div class={CSS.heading}>Disclaimer</div>
-          <div>A goof made Money Tides to support his own goofy endeavors.</div>
-          <div>
-            The information provided herein may or may not be accurate. There are no warranties, expressed or implied,
-            including the warranty of merchantability or fitness for a particular purpose, accompanying the use of Money
-            Tides.
-          </div>
-          <div>
-            <strong>Use at your own risk!</strong>
-          </div>
           <div class={CSS.heading}>What is a money tide?</div>
           <div>When the highest high tide of the day occurs at noon.</div>
           <div class={CSS.heading}>Why are money tides important?</div>
@@ -92,6 +96,16 @@ export default class AboutDialog extends Widget {
             tides, the single high tide will always occur between 10:00 AM and 2:00 PM, and so is a money or mostly
             money tide. But, it may be a low high tide in relation to the proceeding and upcoming high tides. So you
             might want to check to see if the single high tide is a high high tide.
+          </div>
+          <div class={CSS.heading}>Disclaimer</div>
+          <div>A goof made Money Tides to support his own goofy endeavors.</div>
+          <div>
+            The information provided herein may or may not be accurate. There are no warranties, expressed or implied,
+            including the warranty of merchantability or fitness for a particular purpose, accompanying the use of Money
+            Tides.
+          </div>
+          <div>
+            <strong>Use at your own risk!</strong>
           </div>
         </div>
       </calcite-dialog>

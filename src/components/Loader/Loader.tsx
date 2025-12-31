@@ -1,22 +1,30 @@
 //#region modules
 
+import './Loader.scss';
 import { subclass } from '@arcgis/core/core/accessorSupport/decorators';
 import Widget from '@arcgis/core/widgets/Widget';
 import { tsx } from '@arcgis/core/widgets/support/widget';
 
 //#endregion
 
+const CSS_BASE = 'loader';
+
+const CSS = {
+  loader: `${CSS_BASE}_loader`,
+  text: `${CSS_BASE}_text`,
+};
+
 @subclass('Loader')
 export default class Loader extends Widget {
   //#region lifecycle
 
-  private _container = document.createElement('calcite-loader');
+  private _container = document.createElement('div');
 
   get container() {
     return this._container;
   }
 
-  set container(value: HTMLCalciteLoaderElement) {
+  set container(value: HTMLDivElement) {
     this._container = value;
   }
 
@@ -52,11 +60,17 @@ export default class Loader extends Widget {
 
   render(): tsx.JSX.Element {
     return (
-      <calcite-loader
-        label="Loading money tides..."
-        style="position: absolute; top: 0; right: 0; bottom: 0; left: 0; z-index: 999; --calcite-loader-spacing: 0; background-color: var(--calcite-color-foreground-1); transition: opacity 1s;"
-        text="Loading money tides..."
-      ></calcite-loader>
+      <div class={CSS_BASE}>
+        <div class={CSS.text}>
+          <div>Money</div>
+          <div>Tides</div>
+        </div>
+        <calcite-loader
+          class={CSS.loader}
+          label="Loading money tides..."
+          // text="Loading money tides..."
+        ></calcite-loader>
+      </div>
     );
   }
 

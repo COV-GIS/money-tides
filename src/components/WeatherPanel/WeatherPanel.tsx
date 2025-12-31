@@ -12,12 +12,12 @@ import esri = __esri;
 
 import { watch } from '@arcgis/core/core/reactiveUtils';
 import { subclass } from '@arcgis/core/core/accessorSupport/decorators';
-import Panel from './Panel';
+import PanelBase from '../PanelBase';
 import { tsx } from '@arcgis/core/widgets/support/widget';
-import WeatherAdvisories from './WeatherAdvisories';
-import WeatherLayers from './WeatherLayers';
+import WeatherAdvisories from '../WeatherAdvisories/WeatherAdvisories';
+import WeatherLayers from '../WeatherLayers/WeatherLayers';
 import Cookies from 'js-cookie';
-import { applicationSettings } from '../app-config';
+import { applicationSettings } from '../../app-config';
 
 //#endregion
 
@@ -28,7 +28,7 @@ const COOKIE = 'money-tides-weather-notice';
 //#endregion
 
 @subclass('WeatherPanel')
-export default class WeatherPanel extends Panel {
+export default class WeatherPanel extends PanelBase {
   //#region lifecycle
 
   constructor(properties?: esri.WidgetProperties) {
@@ -50,18 +50,12 @@ export default class WeatherPanel extends Panel {
 
   //#endregion
 
-  //#region public properties
-  //#endregion
-
   //#region private properties
 
   private weatherAdvisories!: WeatherAdvisories;
 
   private weatherLayers!: WeatherLayers;
 
-  //#endregion
-
-  //#region private methods
   //#endregion
 
   //#region render

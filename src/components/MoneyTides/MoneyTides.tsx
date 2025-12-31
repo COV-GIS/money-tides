@@ -1,14 +1,15 @@
 //#region types
 
 import esri = __esri;
-import type { MT } from '../interfaces';
-type Dialogs = 'about' | 'disclaimer' | 'plot' | 'tides';
+import type { MT } from '../../interfaces';
+type Dialogs = 'plot' | 'tides';
 type Panels = 'lunarPhase' | 'weather';
 
 //#endregion
 
 //#region modules
 
+import './MoneyTides.scss';
 import { watch } from '@arcgis/core/core/reactiveUtils';
 import { property, subclass } from '@arcgis/core/core/accessorSupport/decorators';
 import Widget from '@arcgis/core/widgets/Widget';
@@ -19,19 +20,17 @@ import Color from '@arcgis/core/Color';
 import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
 import TextSymbol from '@arcgis/core/symbols/TextSymbol';
 import Point from '@arcgis/core/geometry/Point';
-import AttributionViewModel from '@arcgis/core/widgets/Attribution/AttributionViewModel';
-import { moneyTypeColors } from '../utils/colorUtils';
-import DateTime, { NOAADate, setNoon, setTime, twelveHourTime } from '../utils/dateAndTimeUtils';
-import { magneticDeclination, sunAndMoon, sunAndMoonPosition } from '../utils/sunAndMoonUtils';
-import createURL from '../utils/createURL';
-import AboutDialog from './AboutDialog';
-import DisclaimerDialog from './DisclaimerDialog';
-import PlotDialog from './PlotDialog';
-import TidesDialog from './TidesDialog';
-import WeatherPanel from './WeatherPanel';
-import LunarPhasePanel from './LunarPhasePanel';
-
-import { applicationSettings, stationInfos, view } from '../app-config';
+import { moneyTypeColors } from '../../utils/colorUtils';
+import DateTime, { NOAADate, setNoon, setTime, twelveHourTime } from '../../utils/dateAndTimeUtils';
+import { sunAndMoon, sunAndMoonPosition } from '../../utils/sunAndMoonUtils';
+import createURL from '../../utils/createURL';
+// import AboutDialog from '../AboutDialog/AboutDialog';
+// import DisclaimerDialog from '../DisclaimerDialog/DisclaimerDialog';
+import PlotDialog from '../PlotDialog/PlotDialog';
+import TidesDialog from '../TidesDialog/TidesDialog';
+import WeatherPanel from '../WeatherPanel/WeatherPanel';
+import LunarPhasePanel from '../LunarPhasePanel/LunarPhasePanel';
+import { applicationSettings, stationInfos, view } from '../../app-config';
 
 //#endregion
 
@@ -82,9 +81,9 @@ const CSS_BASE = 'money-tides';
 
 const CSS = {
   header: `${CSS_BASE}_header`,
-  headerButtons: `${CSS_BASE}_header--buttons`,
   headerDate: `${CSS_BASE}_header--date`,
   headerTitle: `${CSS_BASE}_header--title`,
+  view: `${CSS_BASE}_view`,
 };
 
 let KEY = 0;
@@ -151,10 +150,6 @@ export default class MoneyTides extends Widget {
 
     const { zoomToDropdownItems } = this;
 
-    document.addEventListener('fullscreenchange', (): void => {
-      this.fullscreenActive = document.fullscreenElement ? true : false;
-    });
-
     this.addHandles(
       zoomToDropdownItems.on('after-add', (): void => {
         zoomToDropdownItems.sort((a: MT.ZoomToItem, b: MT.ZoomToItem): number => {
@@ -169,15 +164,15 @@ export default class MoneyTides extends Widget {
   }
 
   override async postInitialize(): Promise<void> {
-    this.updateDeclination();
+    applicationSettings.date = this.date;
 
     this.addHandles(
       watch(
         (): DateTime => this.date,
         (_date: DateTime): void => {
-          this.panels.lunarPhase.date = _date;
+          applicationSettings.date = _date;
 
-          this.updateDeclination();
+          this.panels.lunarPhase.date = _date;
         },
       ),
     );
@@ -215,31 +210,17 @@ export default class MoneyTides extends Widget {
 
   private alerts: esri.Collection<tsx.JSX.Element> = new Collection();
 
-  private attribution = new AttributionViewModel({ view });
-
-  @property({ aliasOf: 'attribution.items' })
-  private attributionItems?: esri.Collection<esri.AttributionItem>;
-
   @property()
   private date = setNoon(DateTime.now().setZone('America/Los_Angeles'));
 
   private datePicker!: HTMLCalciteInputDatePickerElement;
 
-  @property()
-  private declinationBearing = '';
-
   private dialogs = {
-    about: new AboutDialog(),
-    disclaimer: new DisclaimerDialog(),
+    // about: new AboutDialog(),
+    // disclaimer: new DisclaimerDialog(),
     plot: new PlotDialog(),
     tides: new TidesDialog(),
   };
-
-  @property()
-  private fullscreenActive = false;
-
-  @property()
-  private fullscreenDisabled = document.fullscreenEnabled ? false : true;
 
   @property()
   private panel: Panels | null = null;
@@ -343,14 +324,6 @@ export default class MoneyTides extends Widget {
     graphics.addMany([markerGraphic, stationGraphic, tidesGraphic]);
 
     return { markerGraphic, stationGraphic, tidesGraphic };
-  }
-
-  private fullscreen(): void {
-    if (this.fullscreenActive) {
-      document.exitFullscreen();
-    } else {
-      document.body.requestFullscreen();
-    }
   }
 
   private async getTides(
@@ -754,10 +727,6 @@ export default class MoneyTides extends Widget {
       .join('\n');
   }
 
-  private async updateDeclination(): Promise<void> {
-    this.declinationBearing = (await magneticDeclination(this.date, 44.927, -124.013)).bearing;
-  }
-
   private updateGraphics(station: MT.Station): void {
     const {
       error,
@@ -964,21 +933,11 @@ export default class MoneyTides extends Widget {
   override render(): tsx.JSX.Element {
     const scale = applicationSettings.scale;
 
-    const { id, alerts, attributionItems, declinationBearing, fullscreenActive, panel, zoomToDropdownItems } = this;
+    const { id, alerts, panel, zoomToDropdownItems } = this;
 
     const shellPanelStyle = panel === 'lunarPhase' ? '--calcite-shell-panel-min-width: 250px;' : '';
 
-    const declinationId = `money-tides-declination-${id}`;
-
     const attributionId = `money-tides-attribution-${id}`;
-
-    const attribution = attributionItems
-      ?.map((item: esri.AttributionItem): string => {
-        return item.text;
-      })
-      .join(', ');
-
-    const fullscreenText = fullscreenActive ? 'Exit Fullscreen' : 'Enter Fullscreen';
 
     return (
       <calcite-shell content-behind="">
@@ -1002,7 +961,7 @@ export default class MoneyTides extends Widget {
               onclick={this.dateButtonClickEvent.bind(this)}
             ></calcite-button>
           </div>
-          <div class={CSS.headerButtons}></div>
+          <div>{/* placeholder */}</div>
         </div>
 
         {/* shell panel */}
@@ -1046,22 +1005,23 @@ export default class MoneyTides extends Widget {
                 onclick={this.shellPanelActionClickEvent.bind(this, 'lunarPhase')}
               ></calcite-action>
               <calcite-action
-                icon="explore"
-                id={declinationId}
-                scale={scale}
-                text="Declination"
-                onclick={this.shellPanelActionClickEvent.bind(this, null)}
+                afterCreate={async (action: HTMLCalciteActionElement): Promise<void> => {
+                  new (await import('../DeclinationPopover/DeclinationAction')).default({
+                    container: action,
+                    onClick: this.shellPanelActionClickEvent.bind(this, null),
+                  });
+                }}
               ></calcite-action>
             </calcite-action-group>
 
             {/* actions end */}
             <calcite-action-group slot="actions-end">
               <calcite-action
-                disabled={this.fullscreenDisabled}
-                icon={fullscreenActive ? 'full-screen-exit' : 'extent'}
-                scale={scale}
-                text={fullscreenText}
-                onclick={this.fullscreen.bind(this)}
+                afterCreate={async (action: HTMLCalciteActionElement): Promise<void> => {
+                  new (await import('../FullscreenAction/FullscreenAction')).default({
+                    container: action,
+                  });
+                }}
               ></calcite-action>
               <calcite-action
                 icon="map-information"
@@ -1071,11 +1031,10 @@ export default class MoneyTides extends Widget {
                 onclick={this.shellPanelActionClickEvent.bind(this, null)}
               ></calcite-action>
               <calcite-action
-                icon="question"
-                scale={scale}
-                text="About"
-                onclick={(): void => {
-                  this.dialogs.about.open();
+                afterCreate={async (action: HTMLCalciteActionElement): Promise<void> => {
+                  new (await import('../AboutDialog/AboutAction')).default({
+                    container: action,
+                  });
                 }}
               ></calcite-action>
             </calcite-action-group>
@@ -1094,43 +1053,23 @@ export default class MoneyTides extends Widget {
 
         {/* popovers */}
         <calcite-popover
-          auto-close=""
-          closable
-          heading="Declination"
-          overlay-positioning="fixed"
-          scale={scale}
-          style="--calcite-popover-text-color: var(--calcite-color-text-2);"
-          reference-element={declinationId}
-        >
-          <div style="padding: var(--calcite-spacing-sm); font-size: var(--calcite-font-size--2); line-height: var(--calcite-font-line-height-relative-snug);">
-            Set your compass to {declinationBearing}.
-          </div>
-        </calcite-popover>
-        <calcite-popover
-          auto-close=""
-          closable
-          heading="Powered by Esri"
-          overlay-positioning="fixed"
-          scale={scale}
-          style="--calcite-popover-text-color: var(--calcite-color-text-2);"
-          reference-element={attributionId}
-        >
-          <div style="max-width: 300px; padding: var(--calcite-spacing-sm); font-size: var(--calcite-font-size--2); line-height: var(--calcite-font-line-height-relative-snug);">
-            {attribution}
-          </div>
-        </calcite-popover>
+          afterCreate={async (popover: HTMLCalcitePopoverElement): Promise<void> => {
+            new (await import('../AttributionPopover/AttributionPopover')).default({
+              container: popover,
+              referenceElementId: attributionId,
+            });
+          }}
+        ></calcite-popover>
 
         {/* alerts */}
         {alerts.toArray()}
 
         {/* dialogs */}
         <calcite-dialog slot="dialogs" afterCreate={this.dialogAfterCreate.bind(this, 'tides')}></calcite-dialog>
-        <calcite-dialog slot="dialogs" afterCreate={this.dialogAfterCreate.bind(this, 'about')}></calcite-dialog>
-        <calcite-dialog slot="dialogs" afterCreate={this.dialogAfterCreate.bind(this, 'disclaimer')}></calcite-dialog>
         <calcite-dialog slot="dialogs" afterCreate={this.dialogAfterCreate.bind(this, 'plot')}></calcite-dialog>
 
         {/* view */}
-        <div style="width: 100%; height: 100%;" afterCreate={this.viewAfterCreate.bind(this)}></div>
+        <div class={CSS.view} afterCreate={this.viewAfterCreate.bind(this)}></div>
       </calcite-shell>
     );
   }
@@ -1188,10 +1127,6 @@ export default class MoneyTides extends Widget {
   }
 
   private async viewAfterCreate(container: HTMLDivElement): Promise<void> {
-    const {
-      dialogs: { disclaimer },
-    } = this;
-
     view.container = container;
 
     view.ui.remove(['attribution', 'zoom']);
@@ -1207,8 +1142,6 @@ export default class MoneyTides extends Widget {
     }
 
     this.addHandles(view.on('click', this.viewClickEvent.bind(this)));
-
-    if (!DisclaimerDialog.isAccepted()) disclaimer.container.open = true;
 
     this.emit('loaded');
 
