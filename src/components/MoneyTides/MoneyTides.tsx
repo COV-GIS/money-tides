@@ -951,7 +951,6 @@ export default class MoneyTides extends Widget {
         {/* shell panel */}
         <calcite-shell-panel display-mode="float-content" position="end" slot="panel-end" style={shellPanelStyle}>
           <calcite-action-bar
-            floating
             scale={scale}
             slot="action-bar"
             afterCreate={this.shellPanelActionBarAfterCreate.bind(this)}
