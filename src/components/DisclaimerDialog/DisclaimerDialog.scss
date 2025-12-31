@@ -9,6 +9,8 @@
 }
 
 .disclaimer-dialog {
+  z-index: 1000;
+  
   &[scale='s'] {
     .disclaimer-dialog_content {
       gap: 0.5rem;

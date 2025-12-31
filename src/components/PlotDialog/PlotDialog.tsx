@@ -1,5 +1,6 @@
 //#region types
 
+import esri = __esri;
 import type { MT } from '../../interfaces';
 import type { Scale, CoreScaleOptions, TooltipItem, ScriptableTooltipContext } from 'chart.js';
 import type { Context as DataLabelsContext } from 'chartjs-plugin-datalabels';
@@ -63,7 +64,7 @@ const FONT = {
 export default class PlotDialog extends Widget {
   //#region lifecycle
 
-  private _container!: HTMLCalciteDialogElement;
+  private _container = document.createElement('calcite-dialog');
 
   get container() {
     return this._container;
@@ -71,6 +72,14 @@ export default class PlotDialog extends Widget {
 
   set container(value: HTMLCalciteDialogElement) {
     this._container = value;
+  }
+
+  constructor(properties?: esri.WidgetProperties) {
+    super(properties);
+
+    this.container = this._container;
+
+    document.body.appendChild(this.container);
   }
 
   //#endregion
@@ -456,6 +465,7 @@ export default class PlotDialog extends Widget {
         heading={this.station ? `${this.station.name} - ${this.station.date.toLocaleString(DateTime.DATE_FULL)}` : ''}
         modal
         scale={applicationSettings.scale}
+        style="z-index: 1000;"
         afterCreate={this.dialogAfterCreate.bind(this)}
       >
         {this.station ? (

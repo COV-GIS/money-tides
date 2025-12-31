@@ -2,7 +2,7 @@
 
 import esri = __esri;
 import type { MT } from '../../interfaces';
-type Dialogs = 'plot' | 'tides';
+import PlotDialog from '../PlotDialog/PlotDialog';
 type Panels = 'lunarPhase' | 'weather';
 
 //#endregion
@@ -24,7 +24,6 @@ import { moneyTypeColors } from '../../utils/colorUtils';
 import DateTime, { NOAADate, setNoon, setTime, twelveHourTime } from '../../utils/dateAndTimeUtils';
 import { sunAndMoon, sunAndMoonPosition } from '../../utils/sunAndMoonUtils';
 import createURL from '../../utils/createURL';
-import PlotDialog from '../PlotDialog/PlotDialog';
 import TidesDialog from '../TidesDialog/TidesDialog';
 import WeatherPanel from '../WeatherPanel/WeatherPanel';
 import LunarPhasePanel from '../LunarPhasePanel/LunarPhasePanel';
@@ -213,13 +212,6 @@ export default class MoneyTides extends Widget {
 
   private datePicker!: HTMLCalciteInputDatePickerElement;
 
-  private dialogs = {
-    // about: new AboutDialog(),
-    // disclaimer: new DisclaimerDialog(),
-    plot: new PlotDialog(),
-    tides: new TidesDialog(),
-  };
-
   @property()
   private panel: Panels | null = null;
 
@@ -228,7 +220,11 @@ export default class MoneyTides extends Widget {
     weather: new WeatherPanel(),
   };
 
+  private plotDialog = new PlotDialog();
+
   private stations: esri.Collection<MT.Station> = new Collection();
+
+  private tidesDialog = new TidesDialog();
 
   private zoomToDropdownItems: esri.Collection<MT.ZoomToItem> = new Collection();
 
@@ -254,7 +250,7 @@ export default class MoneyTides extends Widget {
 
             view.scale = 60000;
 
-            this.dialogs.tides.open(station);
+            this.tidesDialog.open(station);
           }}
         >
           {name}
@@ -759,10 +755,7 @@ export default class MoneyTides extends Widget {
   }
 
   private async updateStation(station: MT.Station): Promise<void> {
-    const {
-      date,
-      dialogs: { tides: tidesDialog },
-    } = this;
+    const { date, tidesDialog } = this;
 
     const { id, latitude, longitude } = station;
 
@@ -890,7 +883,7 @@ export default class MoneyTides extends Widget {
 
       this.panel = null;
     } else {
-      this.dialogs.tides.close();
+      this.tidesDialog.close();
 
       this.panels[panel].visible = true;
 
@@ -901,14 +894,12 @@ export default class MoneyTides extends Widget {
   private async viewClickEvent(event: esri.ViewClickEvent): Promise<void> {
     event.stopPropagation();
 
-    const {
-      dialogs: { tides },
-    } = this;
+    const { tidesDialog } = this;
 
     const result = (await view.hitTest(event, { include: [view.graphics] })).results[0];
 
     if (!result || result.type !== 'graphic') {
-      tides.close();
+      tidesDialog.close();
 
       return;
     }
@@ -921,7 +912,7 @@ export default class MoneyTides extends Widget {
 
     this.panel = null;
 
-    tides.open(station);
+    tidesDialog.open(station);
   }
 
   //#endregion
@@ -931,11 +922,9 @@ export default class MoneyTides extends Widget {
   override render(): tsx.JSX.Element {
     const scale = applicationSettings.scale;
 
-    const { id, alerts, panel, zoomToDropdownItems } = this;
+    const { alerts, panel, zoomToDropdownItems } = this;
 
     const shellPanelStyle = panel === 'lunarPhase' ? '--calcite-shell-panel-min-width: 250px;' : '';
-
-    const attributionId = `money-tides-attribution-${id}`;
 
     return (
       <calcite-shell content-behind="">
@@ -1053,9 +1042,8 @@ export default class MoneyTides extends Widget {
         {/* alerts */}
         {alerts.toArray()}
 
-        {/* dialogs */}
-        <calcite-dialog slot="dialogs" afterCreate={this.dialogAfterCreate.bind(this, 'tides')}></calcite-dialog>
-        <calcite-dialog slot="dialogs" afterCreate={this.dialogAfterCreate.bind(this, 'plot')}></calcite-dialog>
+        {/* tide dialog */}
+        <calcite-dialog slot="dialogs" afterCreate={this.tidesDialogAfterCreate.bind(this)}></calcite-dialog>
 
         {/* view */}
         <div class={CSS.view} afterCreate={this.viewAfterCreate.bind(this)}></div>
@@ -1063,18 +1051,10 @@ export default class MoneyTides extends Widget {
     );
   }
 
-  private dialogAfterCreate(type: Dialogs, dialog: HTMLCalciteDialogElement): void {
-    const _dialog = this.dialogs[type];
+  private tidesDialogAfterCreate(dialog: HTMLCalciteDialogElement): void {
+    this.tidesDialog.container = dialog;
 
-    _dialog.container = dialog;
-
-    if (type === 'tides') {
-      const {
-        dialogs: { plot },
-      } = this;
-
-      this.addHandles(_dialog.on('plot-tides', plot.open.bind(plot)));
-    }
+    this.addHandles(this.tidesDialog.on('plot-tides', this.plotDialog.open.bind(this.plotDialog)));
   }
 
   private datePickerAfterCreate(datePicker: HTMLCalciteInputDatePickerElement): void {
