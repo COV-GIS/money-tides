@@ -164,7 +164,7 @@ class WeatherLayerItem extends Widget {
         afterCreate={this.listItemAfterCreate.bind(this)}
       >
         <calcite-action
-          icon={contentHidden ? 'chevron-down' : 'chevron-up'}
+          icon={contentHidden ? 'legend' : 'x'}
           scale={applicationSettings.scale}
           slot="actions-end"
           text={contentHidden ? 'Expand' : 'Collapse'}
