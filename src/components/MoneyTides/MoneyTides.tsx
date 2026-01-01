@@ -159,50 +159,13 @@ export default class MoneyTides extends Widget {
     );
   }
 
-  override async postInitialize(): Promise<void> {
-    applicationSettings.date = this.date;
-
-    this.addHandles(
-      watch(
-        (): DateTime => this.date,
-        (_date: DateTime): void => {
-          applicationSettings.date = _date;
-        },
-      ),
-    );
-
-    // this.alerts.add(
-    //   <calcite-alert
-    //     icon="smile"
-    //     key={KEY++}
-    //     open
-    //     scale={applicationSettings.scale}
-    //     slot="alerts"
-    //     afterCreate={(alert: HTMLCalciteAlertElement): void => {
-    //       this.addHandles(
-    //         watch(
-    //           (): 's' | 'm' | 'l' => application.scale,
-    //           (scale: 's' | 'm' | 'l') => {
-    //             alert.scale = scale;
-    //           },
-    //         ),
-    //       );
-    //     }}
-    //   >
-    //     <div slot="title">Hello</div>
-    //     <div slot="message">A friendly message</div>
-    //   </calcite-alert>,
-    // );
-  }
+  // override async postInitialize(): Promise<void> {}
 
   //#endregion
 
   //#region private properties
 
   private alerts: esri.Collection<tsx.JSX.Element> = new Collection();
-
-  @property()
-  private date = setNoon(DateTime.now().setZone('America/Los_Angeles'));
 
   private datePicker!: HTMLCalciteInputDatePickerElement;
 
@@ -583,7 +546,7 @@ export default class MoneyTides extends Widget {
     try {
       const { id, latitude, longitude, name, weather } = stationInfo;
 
-      const date = this.date;
+      const date = applicationSettings.date;
 
       const { money, moon, sun, tides } = await this.getTides({
         date,
@@ -749,7 +712,9 @@ export default class MoneyTides extends Widget {
   }
 
   private async updateStation(station: MT.Station): Promise<void> {
-    const { date, tidesDialog } = this;
+    const { tidesDialog } = this;
+
+    const date = applicationSettings.date;
 
     const { id, latitude, longitude } = station;
 
@@ -841,7 +806,7 @@ export default class MoneyTides extends Widget {
   //#region events
 
   private dateChangeEvent(event: Event): void {
-    this.date = setNoon(
+    applicationSettings.date = setNoon(
       DateTime.fromISO((event.target as HTMLCalciteInputDatePickerElement).value as string).setZone(
         'America/Los_Angeles',
       ),
@@ -853,7 +818,10 @@ export default class MoneyTides extends Widget {
   private dateButtonClickEvent(event: Event) {
     const type = (event.target as HTMLCalciteButtonElement).iconStart as 'chevron-left' | 'chevron-right';
 
-    const date = (this.date = type === 'chevron-right' ? this.date.plus({ days: 1 }) : this.date.minus({ days: 1 }));
+    const date = (applicationSettings.date =
+      type === 'chevron-right'
+        ? applicationSettings.date.plus({ days: 1 })
+        : applicationSettings.date.minus({ days: 1 }));
 
     this.datePicker.value = date.toISODate() as string;
 
@@ -1054,7 +1022,7 @@ export default class MoneyTides extends Widget {
   }
 
   private datePickerAfterCreate(datePicker: HTMLCalciteInputDatePickerElement): void {
-    const today = this.date.toISODate() as string;
+    const today = applicationSettings.date.toISODate() as string;
 
     datePicker.value = today;
 
