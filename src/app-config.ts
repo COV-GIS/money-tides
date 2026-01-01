@@ -1,6 +1,7 @@
 import esri = __esri;
 import { MT } from './interfaces';
 
+import { watch } from '@arcgis/core/core/reactiveUtils';
 import Map from '@arcgis/core/Map';
 import MapView from '@arcgis/core/views/MapView';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
@@ -8,11 +9,6 @@ import MapImageLayer from '@arcgis/core/layers/MapImageLayer';
 import WMSLayer from '@arcgis/core/layers/WMSLayer';
 import Point from '@arcgis/core/geometry/Point';
 import Polygon from '@arcgis/core/geometry/Polygon';
-import {
-  executeMany as geodesicBuffer,
-  isLoaded as geodesicBufferIsLoaded,
-  load as geodesicBufferLoad,
-} from '@arcgis/core/geometry/operators/geodesicBufferOperator';
 import ApplicationSettings from './support/ApplicationSettings';
 
 const radarGradientScaleOptions: MT.GradientScaleOptions = {
@@ -322,9 +318,16 @@ export const view = new MapView({
     ymax: 5844535,
   },
   map: new Map({
-    basemap: 'topo-vector',
+    basemap: 'gray-vector',
   }),
 });
+
+watch(
+  (): 'dark' | 'light' => applicationSettings.colorMode,
+  (mode: 'dark' | 'light') => {
+    (view.map as esri.Map).basemap = mode === 'dark' ? 'dark-gray-vector' : 'gray-vector';
+  },
+);
 
 export const weatherAdvisoryColors: Record<string, [number, number, number]> = {
   '911 Telephone Outage': [192, 192, 192],
@@ -446,15 +449,17 @@ export const weatherAdvisoryFeatureLayer = new FeatureLayer({
 });
 
 export const weatherAdvisoryPolygon = async (distance?: number, unit?: esri.LengthUnit): Promise<esri.Polygon> => {
+  const { executeMany, isLoaded, load } = await import('@arcgis/core/geometry/operators/geodesicBufferOperator');
+
   const points = stationInfos.map((stationInfo: MT.StationInfo): esri.Point => {
     const { latitude, longitude } = stationInfo;
 
     return new Point({ latitude, longitude });
   });
 
-  if (!geodesicBufferIsLoaded()) await geodesicBufferLoad();
+  if (!isLoaded()) await load();
 
-  const polygon = geodesicBuffer(points, [distance || 4], { union: true, unit: unit || 'miles' })[0];
+  const polygon = executeMany(points, [distance || 4], { union: true, unit: unit || 'miles' })[0];
 
   weatherAdvisoryQueryPolygon = polygon;
 

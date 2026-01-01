@@ -3,7 +3,11 @@ import './components/components';
 import Loader from './components/Loader/Loader';
 import MoneyTides from './components/MoneyTides/MoneyTides';
 import DisclaimerDialog, { isAccepted } from './components/DisclaimerDialog/DisclaimerDialog';
-// import { applicationSettings } from './app-config';
+import { applicationSettings } from './app-config';
+
+applicationSettings.setColorMode();
+
+// console.log(applicationSettings);
 
 const loader = new Loader();
 
