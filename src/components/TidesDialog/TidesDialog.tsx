@@ -113,7 +113,6 @@ export default class TidesDialog extends Widget {
         heading={`${name} - ${date.toLocaleString(DateTime.DATE_FULL)}`}
         placement="bottom-start"
         scale={applicationSettings.scale}
-        width="s"
       >
         {/* header menu */}
         <calcite-action

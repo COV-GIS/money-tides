@@ -1,7 +1,14 @@
 .tides-dialog {
-  --calcite-dialog-max-size-x: 380px;
-  --calcite-dialog-max-size-y: 80vh;
+  --calcite-dialog-max-size-y: 75vh;
   --calcite-dialog-content-space: 0;
+
+  &[scale="s"] {
+    --calcite-dialog-max-size-x: 380px;
+  }
+
+  &[scale="m"] {
+    --calcite-dialog-max-size-x: 460px;
+  }
 }
 
 .tides-dialog_table {
