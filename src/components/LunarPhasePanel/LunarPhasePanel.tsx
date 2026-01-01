@@ -1,10 +1,9 @@
 //#region modules
 
 import './LunarPhasePanel.scss';
-import { property, subclass } from '@arcgis/core/core/accessorSupport/decorators';
+import { subclass } from '@arcgis/core/core/accessorSupport/decorators';
 import PanelBase from '../PanelBase';
 import { tsx } from '@arcgis/core/widgets/support/widget';
-import DateTime, { setNoon } from '../../utils/dateAndTimeUtils';
 import { sunAndMoon } from '../../utils/sunAndMoonUtils';
 import { applicationSettings } from '../../app-config';
 
@@ -21,7 +20,6 @@ const CSS = {
   hemisphere: `${CSS_BASE}_hemisphere`,
   info: `${CSS_BASE}_info`,
   light: `${CSS_BASE}_light`,
-  medium: `${CSS_BASE}_medium`,
   moon: `${CSS_BASE}_moon`,
 };
 
@@ -29,25 +27,22 @@ const CSS = {
 
 @subclass('LunarPhasePanel')
 export default class LunarPhasePanel extends PanelBase {
-  //#region public properties
+  //#region private properties
 
-  @property()
-  public date = setNoon(DateTime.now());
+  private latitude = 44.927;
 
-  public latitude = 44.927;
-
-  public longitude = -124.013;
+  private longitude = -124.013;
 
   //#endregion
 
   //#region render
 
   override render(): tsx.JSX.Element {
-    const { date, latitude, longitude } = this;
+    const { latitude, longitude } = this;
 
     const {
-      moon: { distance, illuminationPercent, phase, phaseName },
-    } = sunAndMoon(date, latitude, longitude);
+      moon: { distance, distanceFromAverage, illuminationPercent, phase, phaseName },
+    } = sunAndMoon(applicationSettings.date, latitude, longitude);
 
     const degrees = 360 - Math.floor(phase * 360);
 
@@ -62,22 +57,20 @@ export default class LunarPhasePanel extends PanelBase {
           </div>
           <div class={CSS.info}>
             <div>
-              <span>Phase: </span>
-              <span class={CSS.medium}>{phaseName}</span>
+              Phase: <strong>{phaseName}</strong>
             </div>
             <div>
-              <span>Illumination: </span>
-              <span class={CSS.medium}>{illuminationPercent}</span>
+              Illumination: <strong>{illuminationPercent}</strong>
             </div>
             <div>
-              <span>Age: </span>
-              <span class={CSS.medium}>{(phase * 29.530589).toFixed(1)}</span>
-              <span> days</span>
+              Age: <strong>{(phase * 29.530589).toFixed(1)}</strong> days
             </div>
             <div>
-              <span>Distance: </span>
-              <span class={CSS.medium}>{distance.toLocaleString('en-us', { maximumFractionDigits: 0 })}</span>
-              <span> km</span>
+              Distance: <strong>{distance.toLocaleString('en-us', { maximumFractionDigits: 0 })}</strong> km
+            </div>
+            <div>
+              From average: <strong>{distanceFromAverage.toLocaleString('en-us', { maximumFractionDigits: 0 })}</strong>{' '}
+              km
             </div>
           </div>
         </div>

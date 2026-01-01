@@ -167,8 +167,6 @@ export default class MoneyTides extends Widget {
         (): DateTime => this.date,
         (_date: DateTime): void => {
           applicationSettings.date = _date;
-
-          this.panels.lunarPhase.date = _date;
         },
       ),
     );
@@ -920,7 +918,7 @@ export default class MoneyTides extends Widget {
 
     const { alerts, panel, zoomToDropdownItems } = this;
 
-    const shellPanelStyle = panel === 'lunarPhase' ? '--calcite-shell-panel-min-width: 250px;' : '';
+    const shellPanelStyle = panel === 'lunarPhase' ? '--calcite-shell-panel-min-width: 260px;' : '';
 
     return (
       <calcite-shell content-behind="">

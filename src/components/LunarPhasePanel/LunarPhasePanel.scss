@@ -1,11 +1,11 @@
 $moon-size: 66px;
-$moon-dark: var(--calcite-color-text-2);
-$moon-light: var(--calcite-color-border-3);
+$moon-dark: #31302e;
+$moon-light: #fcfeda;
 
 .lunar-phase-panel {
   --calcite-panel-content-space: 0.75rem;
   --calcite-panel-min-size-x: 400px;
-  --calcite-panel-background-color: var(--calcite-ui-brand-press);
+  --calcite-panel-background-color: var(--calcite-color-foreground-1);
 }
 
 .lunar-phase-panel_container {
@@ -13,13 +13,13 @@ $moon-light: var(--calcite-color-border-3);
   flex: 1;
   flex-direction: row;
   gap: 1rem;
-  background-color: var(--calcite-ui-brand-press);
   align-items: center;
   font-size: var(--calcite-font-size-sm);
-}
+  color: var(--calcite-color-text-1);
 
-.lunar-phase-panel_medium {
-  font-weight: var(--calcite-font-weight-medium);
+  strong {
+    font-weight: var(--calcite-font-weight-bold);
+  }
 }
 
 .lunar-phase-panel_info {
@@ -27,7 +27,6 @@ $moon-light: var(--calcite-color-border-3);
   flex-direction: column;
   gap: 0.375rem;
   line-height: 1;
-  color: var(--calcite-color-text-inverse);
 }
 
 .lunar-phase-panel_moon {
@@ -70,7 +69,7 @@ $moon-light: var(--calcite-color-border-3);
 }
 
 .lunar-phase-panel_divider:after {
-  content: "";
+  content: '';
   background-color: $moon-light;
   transform: rotateY(180deg);
 }

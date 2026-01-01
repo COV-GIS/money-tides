@@ -10,12 +10,6 @@ import {
 import DateTime from './dateAndTimeUtils';
 import createURL from './createURL';
 
-export const MOON_DISTANCE = {
-  average: 384400,
-  longest: 406700,
-  shortest: 356500,
-};
-
 export const azimuthToBearing = (azimuth: number): string => {
   const _azimuth = Number(radiansToDegrees(azimuth).toFixed(0));
 
@@ -118,6 +112,7 @@ export const sunAndMoon = (date: DateTime, latitude: number, longitude: number):
   return {
     moon: {
       distance,
+      distanceFromAverage: -(distance - 384400),
       illumination,
       illuminationPercent: `${(illumination * 100).toFixed(0)}%`,
       moonrise: moonrise ? DateTime.fromJSDate(moonrise) : undefined,

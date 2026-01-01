@@ -111,6 +111,7 @@ export namespace MT {
 
   interface Moon {
     distance: number;
+    distanceFromAverage: number;
     illumination: number;
     illuminationPercent: string;
     moonrise?: DateTime;
