@@ -1,6 +1,7 @@
 .about-dialog_content {
   display: flex;
   flex-direction: column;
+  line-height: var(--calcite-font-line-height-relative-normal);
 
   strong {
     font-weight: var(--calcite-font-weight-medium);
