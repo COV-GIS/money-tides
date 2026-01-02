@@ -9,19 +9,19 @@ import esri = __esri;
 import { subclass } from '@arcgis/core/core/accessorSupport/decorators';
 import Widget from '@arcgis/core/widgets/Widget';
 import { tsx } from '@arcgis/core/widgets/support/widget';
-import DeclinationPopover from './DeclinationPopover';
+import SettingsPopover from './SettingsPopover';
 import { applicationSettings } from '../../app-config';
 
 //#endregion
 
 //#region constants
 
-const ID = 'money-tides-declination-MDKHhMeEQm';
+const ID = 'money-tides-settings-PnJBjaRKYj';
 
 //#endregion
 
-@subclass('AboutAction')
-export default class AboutAction extends Widget {
+@subclass('SettingsAction')
+export default class SettingsAction extends Widget {
   //#region lifecycle
 
   private _container!: HTMLCalciteActionElement;
@@ -47,16 +47,14 @@ export default class AboutAction extends Widget {
 
     if (!shell) return;
 
-    const { declinationPopover } = this;
-
-    shell.appendChild(declinationPopover.container);
+    shell.appendChild(this.popover.container);
   }
 
   //#endregion
 
   //#region private properties
 
-  private declinationPopover = new DeclinationPopover({
+  private popover = new SettingsPopover({
     container: document.createElement('calcite-popover'),
     referenceElementId: ID,
   });
@@ -68,9 +66,7 @@ export default class AboutAction extends Widget {
   //#region render
 
   override render(): tsx.JSX.Element {
-    return (
-      <calcite-action icon="explore" id={ID} scale={applicationSettings.scale} text="Declination"></calcite-action>
-    );
+    return <calcite-action icon="gear" id={ID} scale={applicationSettings.scale} text="Settings"></calcite-action>;
   }
 
   //#endregion

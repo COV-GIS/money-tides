@@ -1,38 +1,68 @@
+type ApplicationSettingsColorMode = 'auto' | 'dark' | 'light';
+type ApplicationSettingsScale = 's' | 'm';
+
 import { property, subclass } from '@arcgis/core/core/accessorSupport/decorators';
 import Assessor from '@arcgis/core/core/Accessor';
 import DateTime, { setNoon } from '../utils/dateAndTimeUtils';
+import Cookies from 'js-cookie';
+
+const COOKIE = 'money-tides-user-settings';
 
 @subclass('ApplicationSettings')
 export default class ApplicationSettings extends Assessor {
   @property()
-  colorMode: 'dark' | 'light' = 'light';
+  public colorMode: ApplicationSettingsColorMode = 'auto';
 
   @property()
   public date = setNoon(DateTime.now().setZone('America/Los_Angeles'));
 
   @property()
-  position: 'end' | 'start' = 'end';
+  layout: 'end' | 'start' = 'end';
 
-  @property()
-  protected preferredColorMode: 'dark' | 'light' =
+  protected preferredColorMode: ApplicationSettingsColorMode =
     window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 
   @property()
-  public scale: 's' | 'm' = 's';
+  public scale: ApplicationSettingsScale = 's';
 
-  public setColorMode(mode?: 'dark' | 'light'): void {
+  public loadSettings(): void {
+    const settings = JSON.parse(Cookies.get(COOKIE) || '{}');
+
+    const { colorMode, scale } = settings;
+
+    if (scale) this.scale = scale;
+
+    this.setColorModeClass(colorMode || this.colorMode);
+  }
+
+  public setAndSaveSettings(settings: {
+    colorMode?: ApplicationSettingsColorMode;
+    scale?: ApplicationSettingsScale;
+  }): void {
+    const { colorMode, scale } = settings;
+
+    if (colorMode) {
+      this.colorMode = colorMode;
+
+      this.setColorModeClass(this.colorMode);
+    }
+
+    if (scale) this.scale = scale;
+
+    Cookies.set(
+      COOKIE,
+      JSON.stringify({
+        colorMode: this.colorMode,
+        scale: this.scale,
+      }),
+    );
+  }
+
+  private setColorModeClass(mode: ApplicationSettingsColorMode): void {
     document.body.classList.remove('calcite-mode-dark');
 
     document.body.classList.remove('calcite-mode-light');
 
-    if (!mode) {
-      this.colorMode = this.preferredColorMode;
-
-      document.body.classList.add(`calcite-mode-${this.preferredColorMode}`);
-    } else {
-      this.colorMode = mode;
-
-      document.body.classList.add(`calcite-mode-${mode}`);
-    }
+    document.body.classList.add(`calcite-mode-${mode === 'auto' ? this.preferredColorMode : mode}`);
   }
 }

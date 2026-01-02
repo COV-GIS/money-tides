@@ -111,7 +111,7 @@ export default class TidesDialog extends Widget {
       <calcite-dialog
         class={CSS_BASE}
         heading={`${name} - ${date.toLocaleString(DateTime.DATE_FULL)}`}
-        placement="bottom-start"
+        placement={`bottom-${applicationSettings.layout === 'end' ? 'start' : 'end'}`}
         scale={applicationSettings.scale}
       >
         {/* header menu */}

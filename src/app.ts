@@ -5,9 +5,7 @@ import MoneyTides from './components/MoneyTides/MoneyTides';
 import DisclaimerDialog, { isAccepted } from './components/DisclaimerDialog/DisclaimerDialog';
 import { applicationSettings } from './app-config';
 
-applicationSettings.setColorMode();
-
-// console.log(applicationSettings);
+applicationSettings.loadSettings();
 
 const loader = new Loader();
 

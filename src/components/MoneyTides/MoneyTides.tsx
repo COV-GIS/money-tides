@@ -914,8 +914,8 @@ export default class MoneyTides extends Widget {
         {/* shell panel */}
         <calcite-shell-panel
           display-mode="float-content"
-          position={applicationSettings.position}
-          slot={`panel-${applicationSettings.position}`}
+          position={applicationSettings.layout}
+          slot={`panel-${applicationSettings.layout}`}
           style={shellPanelStyle}
         >
           <calcite-action-bar
@@ -971,6 +971,14 @@ export default class MoneyTides extends Widget {
                 afterCreate={async (action: HTMLCalciteActionElement): Promise<void> => {
                   new (await import('../FullscreenAction/FullscreenAction')).default({
                     container: action,
+                  });
+                }}
+              ></calcite-action>
+              <calcite-action
+                afterCreate={async (action: HTMLCalciteActionElement): Promise<void> => {
+                  new (await import('../SettingsPopover/SettingsAction')).default({
+                    container: action,
+                    onClick: this.shellPanelActionClickEvent.bind(this, null),
                   });
                 }}
               ></calcite-action>
