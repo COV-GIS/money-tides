@@ -82,5 +82,9 @@ export default class ApplicationSettings extends Assessor {
     document.body.classList.remove('calcite-mode-light');
 
     document.body.classList.add(`calcite-mode-${mode === 'auto' ? this.preferredColorMode : mode}`);
+
+    const themeColor = document.querySelector('meta[name="theme-color"]');
+
+    if (themeColor) themeColor.setAttribute('content', this.colorType === 'dark' ? '#009af2' : '#007ac2');
   }
 }
