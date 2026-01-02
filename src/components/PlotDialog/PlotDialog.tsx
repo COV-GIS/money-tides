@@ -38,16 +38,27 @@ Chart.register([
 //#region constants
 
 const COLORS = {
-  moon: getDocumentStyle('--calcite-color-text-2'),
-  moonTooltip: getDocumentStyle('--calcite-color-text-2', { opacity: 0.9, type: 'rgba' }),
-  sun: getDocumentStyle('--calcite-color-status-warning'),
-  sunTooltip: getDocumentStyle('--calcite-color-status-warning', { opacity: 0.9, type: 'rgba' }),
-  tide: getDocumentStyle('--calcite-color-status-info'),
-  tideTooltip: getDocumentStyle('--calcite-color-status-info', { opacity: 0.9, type: 'rgba' }),
-  time: getDocumentStyle('--calcite-color-status-success'),
-  transparent: 'rgba(0, 0, 0, 0)',
-  yesterdayTomorrow: getDocumentStyle('--calcite-color-text-1', { opacity: 0.1, type: 'rgba' }),
-  yesterdayTomorrowText: getDocumentStyle('--calcite-color-text-1', { opacity: 0.8, type: 'rgba' }),
+  moon: (): string => {
+    return getDocumentStyle('--calcite-color-text-1', { type: 'hex' });
+  },
+  sun: (): string => {
+    return getDocumentStyle('--calcite-color-status-warning');
+  },
+  tide: (): string => {
+    return getDocumentStyle('--calcite-color-status-info', { type: 'hex' });
+  },
+  labelStroke: (): string => {
+    return getDocumentStyle('--calcite-color-background', { opacity: 0.8, type: 'rgba' });
+  },
+  time: (): string => {
+    return getDocumentStyle('--calcite-color-status-success', { type: 'hex' });
+  },
+  yesterdayTomorrow: (): string => {
+    return getDocumentStyle('--calcite-color-text-1', { opacity: 0.1, type: 'rgba' });
+  },
+  yesterdayTomorrowText: (): string => {
+    return getDocumentStyle('--calcite-color-text-1', { type: 'hex' });
+  },
 };
 
 const FONT_FAMILY = getDocumentStyle('--calcite-font-family');
@@ -56,6 +67,11 @@ const FONT = {
   family: FONT_FAMILY,
   lineHeight: 1,
   size: 12,
+};
+
+const tooltipColor = (context: ScriptableTooltipContext<'line'>): string => {
+  if (!context.tooltipItems || !context.tooltipItems.length) return '';
+  return applicationSettings.colorType === 'dark' && context.tooltipItems[0].datasetIndex === 2 ? '#000' : '#fff';
 };
 
 //#endregion
@@ -203,7 +219,9 @@ export default class PlotDialog extends Widget {
             cubicInterpolationMode: 'monotone',
             borderColor: COLORS.tide,
             backgroundColor: COLORS.tide,
-            pointHitRadius: 5,
+            borderWidth: 2,
+            pointRadius: 3,
+            pointHitRadius: 6,
           },
           {
             yAxisID: 'solar-lunar',
@@ -211,9 +229,9 @@ export default class PlotDialog extends Widget {
             cubicInterpolationMode: 'monotone',
             borderColor: COLORS.sun,
             backgroundColor: COLORS.sun,
-            borderWidth: 1.5,
-            pointRadius: 2,
-            pointHitRadius: 5,
+            borderWidth: 2,
+            pointRadius: 3,
+            pointHitRadius: 6,
           },
           {
             yAxisID: 'solar-lunar',
@@ -221,9 +239,9 @@ export default class PlotDialog extends Widget {
             cubicInterpolationMode: 'monotone',
             borderColor: COLORS.moon,
             backgroundColor: COLORS.moon,
-            borderWidth: 1.5,
-            pointRadius: 2,
-            pointHitRadius: 5,
+            borderWidth: 2,
+            pointRadius: 3,
+            pointHitRadius: 6,
           },
         ],
       },
@@ -284,8 +302,8 @@ export default class PlotDialog extends Widget {
                 type: 'line',
                 xMax: currentTime,
                 xMin: currentTime,
-                borderColor: COLORS.time,
-                borderWidth: 1,
+                borderColor: COLORS.time(),
+                borderWidth: 2,
                 drawTime: 'beforeDatasetsDraw',
               },
               currentTimeAndTideLabel: {
@@ -297,10 +315,10 @@ export default class PlotDialog extends Widget {
                   return -(Math.floor(context.chart.chartArea.height / 2) - 10);
                 },
                 content: currentContent,
-                color: COLORS.time,
+                color: COLORS.time(),
                 font: FONT,
-                textStrokeColor: 'white',
-                textStrokeWidth: 5,
+                textStrokeColor: COLORS.labelStroke(),
+                textStrokeWidth: 3,
                 drawTime: 'beforeDatasetsDraw',
               },
               yesterdayLabel: {
@@ -316,10 +334,10 @@ export default class PlotDialog extends Widget {
                   return Math.floor(context.chart.chartArea.height / 2) - 20;
                 },
                 content: yesterdayContent,
-                color: COLORS.yesterdayTomorrowText,
+                color: COLORS.yesterdayTomorrowText(),
                 font: FONT,
-                textStrokeColor: 'white',
-                textStrokeWidth: 3,
+                // textStrokeColor: 'white',
+                // textStrokeWidth: 3,
                 drawTime: 'beforeDatasetsDraw',
               },
               tomorrowLabel: {
@@ -333,20 +351,20 @@ export default class PlotDialog extends Widget {
                 yAdjust(context: PartialEventContext): number {
                   if (!context.chart.chartArea) return 5000;
 
-                  return Math.floor(context.chart.chartArea.height / 2) + 8;
+                  return Math.floor(context.chart.chartArea.height / 2) + 6;
                 },
                 content: tomorrowContent,
-                color: COLORS.yesterdayTomorrowText,
+                color: COLORS.yesterdayTomorrowText(),
                 font: FONT,
-                textStrokeColor: 'white',
-                textStrokeWidth: 3,
+                // textStrokeColor: 'white',
+                // textStrokeWidth: 3,
                 drawTime: 'beforeDatasetsDraw',
               },
               yesterday: {
                 type: 'box',
                 xMin: labels[0],
                 xMax: labels[2],
-                backgroundColor: COLORS.yesterdayTomorrow,
+                backgroundColor: COLORS.yesterdayTomorrow(),
                 borderWidth: 0,
                 drawTime: 'beforeDraw',
               },
@@ -354,7 +372,7 @@ export default class PlotDialog extends Widget {
                 type: 'box',
                 xMin: labels[6],
                 xMax: labels[8],
-                backgroundColor: COLORS.yesterdayTomorrow,
+                backgroundColor: COLORS.yesterdayTomorrow(),
                 borderWidth: 0,
                 drawTime: 'beforeDraw',
               },
@@ -369,9 +387,7 @@ export default class PlotDialog extends Widget {
               // return context.datasetIndex === 0 ? `${value.tide.time}\n${value.tide.heightLabel}` : null;
               return context.datasetIndex === 0 ? value.tide.heightLabel : null;
             },
-            color: (context: DataLabelsContext): string => {
-              return context.datasetIndex === 0 ? COLORS.tide : '';
-            },
+            color: COLORS.tide(),
             align: (context: DataLabelsContext): 'center' | 'end' | 'start' => {
               const { dataIndex, dataset, datasetIndex } = context;
 
@@ -386,8 +402,8 @@ export default class PlotDialog extends Widget {
               return align as 'center' | 'end' | 'start';
             },
             font: { ...FONT, weight: 'bold' },
-            textStrokeColor: 'white',
-            textStrokeWidth: 4,
+            textStrokeColor: COLORS.labelStroke(),
+            textStrokeWidth: 3,
             textAlign: 'center',
             clip: true,
           },
@@ -436,15 +452,17 @@ export default class PlotDialog extends Widget {
 
               switch (datasetIndex) {
                 case 0:
-                  return COLORS.tideTooltip;
+                  return COLORS.tide();
                 case 1:
-                  return COLORS.sunTooltip;
+                  return COLORS.sun();
                 case 2:
-                  return COLORS.moonTooltip;
+                  return COLORS.moon();
                 default:
                   return '';
               }
             },
+            bodyColor: tooltipColor,
+            titleColor: tooltipColor,
             enabled: true,
             bodyFont: FONT,
             titleFont: { ...FONT, weight: 'normal' },

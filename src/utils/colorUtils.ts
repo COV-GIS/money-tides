@@ -18,7 +18,7 @@ export const moneyColors = (byName('Red and Green 9') as esri.supportColorRampsC
 export const moneyTypeIndex = ['not-money', 'potentially-money', 'kinda-money', 'mostly-money', 'money'];
 
 export const getDocumentStyle = (style: string, colorOptions?: { opacity?: number; type: 'hex' | 'rgba' }): string => {
-  const value = getComputedStyle(document.documentElement).getPropertyValue(style);
+  const value = getComputedStyle(document.body).getPropertyValue(style);
 
   if (!colorOptions) return value;
 
