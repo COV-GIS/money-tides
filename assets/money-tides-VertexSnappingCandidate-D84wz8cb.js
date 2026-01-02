@@ -1,0 +1,1 @@
+import{e as r}from"./money-tides-hitTestSelectUtils-CHPw1JFL.js";import{b as e}from"./money-tides-SketchViewModel-DaL4M2k8.js";import{n as o}from"./money-tides-PointSnappingHint-CQx3SoO0.js";class m extends e{constructor(t){super({...t,constraint:new r(t.targetPoint)})}get hints(){return[new o(this.targetPoint,this.isDraped,this.domain)]}}export{m as r};
