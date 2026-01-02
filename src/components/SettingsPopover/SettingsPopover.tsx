@@ -74,7 +74,7 @@ export default class SettingsPopover extends Widget {
               scale={scale}
               afterCreate={(segmentedControl: HTMLCalciteSegmentedControlElement): void => {
                 segmentedControl.addEventListener('calciteSegmentedControlChange', (): void => {
-                  applicationSettings.setAndSaveSettings({ colorMode: segmentedControl.selectedItem.value });
+                  applicationSettings.updateSettings({ colorMode: segmentedControl.selectedItem.value });
                 });
               }}
             >
@@ -95,7 +95,7 @@ export default class SettingsPopover extends Widget {
               scale={scale}
               afterCreate={(segmentedControl: HTMLCalciteSegmentedControlElement): void => {
                 segmentedControl.addEventListener('calciteSegmentedControlChange', (): void => {
-                  applicationSettings.setAndSaveSettings({ scale: segmentedControl.selectedItem.value });
+                  applicationSettings.updateSettings({ scale: segmentedControl.selectedItem.value });
                 });
               }}
             >

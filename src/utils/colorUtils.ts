@@ -3,6 +3,7 @@ import type { MT } from '../interfaces';
 
 import { byName } from '@arcgis/core/smartMapping/symbology/support/colorRamps';
 import Color from '@arcgis/core/Color';
+import { applicationSettings } from '../app-config';
 
 /**
  * Array of money colors.
@@ -54,6 +55,10 @@ export const moneyTypeColors = (moneyType: MT.MoneyType): { primary: esri.Color;
 
   return {
     primary,
-    secondary: new Color(primary.isBright ? [0, 0, 0] : [255, 255, 255]),
+    secondary:
+      applicationSettings.colorType === 'dark' ||
+      (applicationSettings.colorType === 'light' && primary.toHex({ digits: 6 }) === '#ffffbf')
+        ? new Color([0, 0, 0])
+        : new Color([255, 255, 255]),
   };
 };

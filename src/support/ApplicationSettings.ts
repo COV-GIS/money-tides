@@ -11,10 +11,13 @@ const COOKIE = 'money-tides-user-settings';
 @subclass('ApplicationSettings')
 export default class ApplicationSettings extends Assessor {
   @property()
-  basemap: 'dark-gray-vector' | 'gray-vector' = 'gray-vector';
+  public basemap: 'dark-gray-vector' | 'gray-vector' = 'gray-vector';
 
   @property()
   public colorMode: ApplicationSettingsColorMode = 'auto';
+
+  @property()
+  public colorType: Omit<ApplicationSettingsColorMode, 'auto'> = 'light';
 
   @property()
   public date = setNoon(DateTime.now().setZone('America/Los_Angeles'));
@@ -22,25 +25,25 @@ export default class ApplicationSettings extends Assessor {
   @property()
   layout: 'end' | 'start' = 'end';
 
-  protected preferredColorMode: ApplicationSettingsColorMode =
+  private preferredColorMode: ApplicationSettingsColorMode =
     window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 
   @property()
   public scale: ApplicationSettingsScale = 's';
 
-  public loadSettings(): void {
+  public load(): void {
     const settings = JSON.parse(Cookies.get(COOKIE) || '{}');
 
     const { colorMode, scale } = settings;
 
+    if (colorMode) this.colorMode = colorMode;
+
+    this.colorModeUpdate(this.colorMode);
+
     if (scale) this.scale = scale;
-
-    this.setColorModeClass(colorMode || this.colorMode);
-
-    this.setBasemap(this.colorMode);
   }
 
-  public setAndSaveSettings(settings: {
+  public updateSettings(settings: {
     colorMode?: ApplicationSettingsColorMode;
     scale?: ApplicationSettingsScale;
   }): void {
@@ -49,9 +52,7 @@ export default class ApplicationSettings extends Assessor {
     if (colorMode) {
       this.colorMode = colorMode;
 
-      this.setColorModeClass(this.colorMode);
-
-      this.setBasemap(this.colorMode);
+      this.colorModeUpdate(this.colorMode);
     }
 
     if (scale) this.scale = scale;
@@ -65,11 +66,17 @@ export default class ApplicationSettings extends Assessor {
     );
   }
 
-  private setBasemap(mode: ApplicationSettingsColorMode): void {
-    this.basemap = (mode === 'auto' ? this.preferredColorMode : mode) === 'light' ? 'gray-vector' : 'dark-gray-vector';
-  }
+  private colorModeUpdate(mode: ApplicationSettingsColorMode): void {
+    if (mode === 'auto') {
+      this.colorType = this.preferredColorMode;
 
-  private setColorModeClass(mode: ApplicationSettingsColorMode): void {
+      this.basemap = this.preferredColorMode === 'light' ? 'gray-vector' : 'dark-gray-vector';
+    } else {
+      this.colorType = mode;
+
+      this.basemap = mode === 'light' ? 'gray-vector' : 'dark-gray-vector';
+    }
+
     document.body.classList.remove('calcite-mode-dark');
 
     document.body.classList.remove('calcite-mode-light');

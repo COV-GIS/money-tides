@@ -318,7 +318,7 @@ export const view = new MapView({
     ymax: 5844535,
   },
   map: new Map({
-    basemap: 'gray-vector',
+    basemap: applicationSettings.basemap,
   }),
 });
 

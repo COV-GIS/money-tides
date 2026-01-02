@@ -160,15 +160,19 @@ export default class TidesDialog extends Widget {
 
               const style = [
                 // money color
-                money !== 'not-money' ? `--calcite-table-row-background-color: ${moneyTypeColorHex(money)};` : '',
-                // `money` money text color
-                money === 'money' ? '--calcite-table-cell-text-color: #ffffff;' : '',
+                money !== 'not-money' ? `--calcite-table-cell-text-color: ${moneyTypeColorHex(money)};` : '',
                 // predictions
-                isPrediction ? 'font-weight: var(--calcite-font-weight-medium);' : '',
+                isPrediction ? 'font-weight: var(--calcite-font-weight-bold);' : '',
               ].join(' ');
 
               return (
-                <calcite-table-row key={KEY++} style={style}>
+                <calcite-table-row
+                  class={
+                    applicationSettings.colorType === 'light' && money === 'kinda-money' ? 'calcite-mode-dark' : ''
+                  }
+                  key={KEY++}
+                  style={style}
+                >
                   <calcite-table-cell alignment="center">{time}</calcite-table-cell>
                   <calcite-table-cell alignment="center">{type}</calcite-table-cell>
                   <calcite-table-cell alignment="center">{heightLabel}</calcite-table-cell>

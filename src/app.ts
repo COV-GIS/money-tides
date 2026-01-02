@@ -5,7 +5,7 @@ import MoneyTides from './components/MoneyTides/MoneyTides';
 import DisclaimerDialog, { isAccepted } from './components/DisclaimerDialog/DisclaimerDialog';
 import { applicationSettings } from './app-config';
 
-applicationSettings.loadSettings();
+applicationSettings.load();
 
 const loader = new Loader();
 

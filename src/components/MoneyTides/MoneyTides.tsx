@@ -146,7 +146,13 @@ export default class MoneyTides extends Widget {
 
     const { zoomToDropdownItems } = this;
 
-    this.addHandles(
+    this.addHandles([
+      watch(
+        () => applicationSettings.colorType,
+        (): void => {
+          this.stations.forEach(this.updateGraphics.bind(this));
+        },
+      ),
       zoomToDropdownItems.on('after-add', (): void => {
         zoomToDropdownItems.sort((a: MT.ZoomToItem, b: MT.ZoomToItem): number => {
           if (a.name < b.name) return -1;
@@ -156,7 +162,7 @@ export default class MoneyTides extends Widget {
           return 0;
         });
       }),
-    );
+    ]);
   }
 
   // override async postInitialize(): Promise<void> {}
