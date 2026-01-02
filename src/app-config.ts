@@ -323,9 +323,9 @@ export const view = new MapView({
 });
 
 watch(
-  (): 'dark' | 'light' => applicationSettings.colorMode,
-  (mode: 'dark' | 'light') => {
-    (view.map as esri.Map).basemap = mode === 'dark' ? 'dark-gray-vector' : 'gray-vector';
+  (): 'dark-gray-vector' | 'gray-vector' => applicationSettings.basemap,
+  (basemap: 'dark-gray-vector' | 'gray-vector') => {
+    (view.map as esri.Map).basemap = basemap;
   },
 );
 

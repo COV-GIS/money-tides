@@ -11,6 +11,9 @@ const COOKIE = 'money-tides-user-settings';
 @subclass('ApplicationSettings')
 export default class ApplicationSettings extends Assessor {
   @property()
+  basemap: 'dark-gray-vector' | 'gray-vector' = 'gray-vector';
+
+  @property()
   public colorMode: ApplicationSettingsColorMode = 'auto';
 
   @property()
@@ -33,6 +36,8 @@ export default class ApplicationSettings extends Assessor {
     if (scale) this.scale = scale;
 
     this.setColorModeClass(colorMode || this.colorMode);
+
+    this.setBasemap(this.colorMode);
   }
 
   public setAndSaveSettings(settings: {
@@ -45,6 +50,8 @@ export default class ApplicationSettings extends Assessor {
       this.colorMode = colorMode;
 
       this.setColorModeClass(this.colorMode);
+
+      this.setBasemap(this.colorMode);
     }
 
     if (scale) this.scale = scale;
@@ -56,6 +63,10 @@ export default class ApplicationSettings extends Assessor {
         scale: this.scale,
       }),
     );
+  }
+
+  private setBasemap(mode: ApplicationSettingsColorMode): void {
+    this.basemap = (mode === 'auto' ? this.preferredColorMode : mode) === 'light' ? 'gray-vector' : 'dark-gray-vector';
   }
 
   private setColorModeClass(mode: ApplicationSettingsColorMode): void {
