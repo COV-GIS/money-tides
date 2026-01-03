@@ -10,6 +10,11 @@ import {
 import DateTime from './dateAndTimeUtils';
 import createURL from './createURL';
 
+/**
+ * Return a bearing, e.g. `S 17° W`, from a celestial amizuth (south 0; to west positive, to east negative) in radians.
+ *
+ * @param azimuth - celestial amizuth in radians
+ */
 export const azimuthToBearing = (azimuth: number): string => {
   const _azimuth = Number(radiansToDegrees(azimuth).toFixed(0));
 
@@ -32,6 +37,13 @@ export const azimuthToBearing = (azimuth: number): string => {
                   : 'invalid azimuth';
 };
 
+/**
+ * Return magnetic declination at a given time and location.
+ *
+ * @param date - luxon DateTime
+ * @param latitude - latitude
+ * @param longitude - longitude
+ */
 export const magneticDeclination = async (
   date: DateTime,
   latitude: number,
@@ -74,6 +86,11 @@ export const magneticDeclination = async (
   }
 };
 
+/**
+ * Return the name of a phase of the moon.
+ *
+ * @param phase - moon phase 0 - 1
+ */
 export const moonPhaseName = (phase: number): string => {
   return phase <= 0.05
     ? 'New Moon'
@@ -94,10 +111,22 @@ export const moonPhaseName = (phase: number): string => {
                   : 'Invalid Phase';
 };
 
+/**
+ * Convert radians to degrees.
+ *
+ * @param radians
+ */
 export const radiansToDegrees = (radians: number): number => {
   return (radians * 180) / Math.PI;
 };
 
+/**
+ * Return sun and moon info (rise, set, etc) at a given time and location.
+ *
+ * @param date
+ * @param latitude
+ * @param longitude
+ */
 export const sunAndMoon = (date: DateTime, latitude: number, longitude: number): MT.SunAndMoon => {
   const _date = date.toJSDate();
 
@@ -129,6 +158,13 @@ export const sunAndMoon = (date: DateTime, latitude: number, longitude: number):
   };
 };
 
+/**
+ * Return sun and moon position at a given time and location.
+ *
+ * @param date
+ * @param latitude
+ * @param longitude
+ */
 export const sunAndMoonPosition = (
   date: DateTime,
   latitude: number,
@@ -177,6 +213,10 @@ export const sunAndMoonPosition = (
     },
   };
 };
+
+///////////////////////////////////////////////
+// working
+///////////////////////////////////////////////
 
 const celestialCoordinates = (azimuth: number, altitude: number, distance: number): { x: number; y: number } => {
   const r = distance * Math.cos(altitude);

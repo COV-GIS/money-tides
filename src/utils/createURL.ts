@@ -1,5 +1,5 @@
 /**
- * Create a URL.
+ * Return a URL from base and query string key/value pairs.
  *
  * @param base - base URL
  * @param params - query string params
