@@ -26,7 +26,7 @@ export default class AboutAction extends Widget {
 
   private _container!: HTMLCalciteActionElement;
 
-  get container() {
+  get container(): HTMLCalciteActionElement {
     return this._container;
   }
 
@@ -47,16 +47,14 @@ export default class AboutAction extends Widget {
 
     if (!shell) return;
 
-    const { declinationPopover } = this;
-
-    shell.appendChild(declinationPopover.container);
+    shell.appendChild(this.popover.container);
   }
 
   //#endregion
 
   //#region private properties
 
-  private declinationPopover = new DeclinationPopover({
+  private popover = new DeclinationPopover({
     container: document.createElement('calcite-popover'),
     referenceElementId: ID,
   });

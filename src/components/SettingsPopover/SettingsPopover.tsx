@@ -30,7 +30,7 @@ export default class SettingsPopover extends Widget {
 
   private _container!: HTMLCalcitePopoverElement;
 
-  get container() {
+  get container(): HTMLCalcitePopoverElement {
     return this._container;
   }
 

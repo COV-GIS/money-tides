@@ -30,7 +30,7 @@ export default class AboutDialog extends Widget {
 
   private _container = document.createElement('calcite-dialog');
 
-  get container() {
+  get container(): HTMLCalciteDialogElement {
     return this._container;
   }
 

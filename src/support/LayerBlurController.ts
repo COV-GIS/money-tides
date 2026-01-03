@@ -38,26 +38,5 @@ export default class LayerBlurController extends Assessor {
     }
 
     this.effect = `blur(${Math.floor(Math.log(zoom) * 3)}px)`;
-
-    // console.log(zoom, this.effect);
-
-    // this.effect =
-    //   zoom < 4
-    //     ? null
-    //     : zoom >= 4 && zoom < 6
-    //       ? `blur(0.75px)`
-    //       : zoom >= 6 && zoom < 8
-    //         ? `blur(1.5px)`
-    //         : zoom >= 8 && zoom < 10
-    //           ? `blur(4px)`
-    //           : zoom >= 10 && zoom < 12
-    //             ? `blur(3px)`
-    //             : zoom >= 12 && zoom < 14
-    //               ? `blur(3.75px)`
-    //               : zoom >= 14 && zoom < 16
-    //                 ? `blur(4.5px)`
-    //                 : zoom >= 16 && zoom < 18
-    //                   ? `blur(5.25px)`
-    //                   : `blur(6px)`;
   }
 }

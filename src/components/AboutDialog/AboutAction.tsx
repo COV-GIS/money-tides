@@ -19,7 +19,7 @@ export default class AboutAction extends Widget {
 
   private _container!: HTMLCalciteActionElement;
 
-  get container() {
+  get container(): HTMLCalciteActionElement {
     return this._container;
   }
 
@@ -31,18 +31,18 @@ export default class AboutAction extends Widget {
 
   //#region private properties
 
-  private aboutDialog?: AboutDialog;
+  private dialog?: AboutDialog;
 
   //#endregion
 
   //#region private methods
 
   private async open(): Promise<void> {
-    if (!this.aboutDialog) {
-      this.aboutDialog = new (await import('./AboutDialog')).default();
+    if (!this.dialog) {
+      this.dialog = new (await import('./AboutDialog')).default();
     }
 
-    this.aboutDialog.open();
+    this.dialog.open();
   }
 
   //#endregion

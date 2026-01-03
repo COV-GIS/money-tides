@@ -20,7 +20,7 @@ export default class Loader extends Widget {
 
   private _container = document.createElement('div');
 
-  get container() {
+  get container(): HTMLDivElement {
     return this._container;
   }
 
@@ -33,7 +33,7 @@ export default class Loader extends Widget {
 
     this.container = this._container;
 
-    document.body.appendChild(this._container);
+    document.body.appendChild(this.container);
   }
 
   //#endregion
@@ -68,7 +68,6 @@ export default class Loader extends Widget {
         <calcite-loader
           class={CSS.loader}
           label="Loading money tides..."
-          // text="Loading money tides..."
         ></calcite-loader>
       </div>
     );

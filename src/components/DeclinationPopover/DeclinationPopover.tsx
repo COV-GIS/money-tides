@@ -33,7 +33,7 @@ export default class DeclinationPopover extends Widget {
 
   private _container!: HTMLCalcitePopoverElement;
 
-  get container() {
+  get container(): HTMLCalcitePopoverElement {
     return this._container;
   }
 
@@ -53,13 +53,6 @@ export default class DeclinationPopover extends Widget {
 
   //#endregion
 
-  //#region public properties
-
-  @property()
-  public date = applicationSettings.date;
-
-  //#endregion
-
   //#region private properties
 
   @property()
@@ -73,7 +66,7 @@ export default class DeclinationPopover extends Widget {
 
   private async updateDeclination(): Promise<void> {
     try {
-      this.declination = `Set your compass to ${(await magneticDeclination(this.date, 44.927, -124.013)).bearing}.`;
+      this.declination = `Set your compass to ${(await magneticDeclination(applicationSettings.date, 44.927, -124.013)).bearing}.`;
     } catch (error) {
       console.log('declination update', error);
       this.declination = 'An error occurred computing declination.';

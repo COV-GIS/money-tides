@@ -36,7 +36,7 @@ export default class TidesDialog extends Widget {
 
   private _container!: HTMLCalciteDialogElement;
 
-  get container() {
+  get container(): HTMLCalciteDialogElement {
     return this._container;
   }
 

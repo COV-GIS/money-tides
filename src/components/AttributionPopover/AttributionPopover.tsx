@@ -31,7 +31,7 @@ export default class AttributionPopover extends Widget {
 
   private _container!: HTMLCalcitePopoverElement;
 
-  get container() {
+  get container(): HTMLCalcitePopoverElement {
     return this._container;
   }
 
@@ -53,10 +53,6 @@ export default class AttributionPopover extends Widget {
   private attributionItems!: esri.Collection<esri.AttributionItem>;
 
   private referenceElementId!: string;
-
-  //#endregion
-
-  //#region private methods
 
   //#endregion
 

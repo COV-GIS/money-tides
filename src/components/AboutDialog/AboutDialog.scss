@@ -1,21 +1,21 @@
-.about-dialog_content {
-  display: flex;
-  flex-direction: column;
-  line-height: var(--calcite-font-line-height-relative-normal);
+.about-dialog {
+  z-index: 1000;
 
-  strong {
+  .about-dialog_content {
+    display: flex;
+    flex-direction: column;
+    line-height: var(--calcite-font-line-height-relative-normal);
+
+    strong {
+      font-weight: var(--calcite-font-weight-medium);
+      color: var(--calcite-color-text-1);
+    }
+  }
+
+  .about-dialog_heading {
     font-weight: var(--calcite-font-weight-medium);
     color: var(--calcite-color-text-1);
   }
-}
-
-.about-dialog_heading {
-  font-weight: var(--calcite-font-weight-medium);
-  color: var(--calcite-color-text-1);
-}
-
-.about-dialog {
-  z-index: 1000;
 
   &[scale='s'] {
     .about-dialog_content {
@@ -36,17 +36,6 @@
 
     .about-dialog_heading {
       font-size: var(--calcite-font-size-md);
-    }
-  }
-
-  &[scale='l'] {
-    .about-dialog_content {
-      gap: 1rem;
-      font-size: var(--calcite-font-size-md);
-    }
-
-    .about-dialog_heading {
-      font-size: var(--calcite-font-size-lg);
     }
   }
 }

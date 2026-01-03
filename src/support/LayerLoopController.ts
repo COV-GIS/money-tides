@@ -5,7 +5,7 @@ import type { DurationLikeObject } from 'luxon';
 import { whenOnce } from '@arcgis/core/core/reactiveUtils';
 import { property, subclass } from '@arcgis/core/core/accessorSupport/decorators';
 import Assessor from '@arcgis/core/core/Accessor';
-import TimeExtent from '@arcgis/core/time/TimeExtent.js';
+import TimeExtent from '@arcgis/core/time/TimeExtent';
 import DateTime, { Duration, Interval } from '../utils/dateAndTimeUtils';
 
 @subclass('LayerLoopController')

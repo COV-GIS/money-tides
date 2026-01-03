@@ -13,7 +13,7 @@ export default class FullscreenAction extends Widget {
 
   private _container!: HTMLCalciteActionElement;
 
-  get container() {
+  get container(): HTMLCalciteActionElement {
     return this._container;
   }
 

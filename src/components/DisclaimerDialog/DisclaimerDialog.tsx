@@ -41,7 +41,7 @@ export default class DisclaimerDialog extends Widget {
 
   private _container = document.createElement('calcite-dialog');
 
-  get container() {
+  get container(): HTMLCalciteDialogElement {
     return this._container;
   }
 
