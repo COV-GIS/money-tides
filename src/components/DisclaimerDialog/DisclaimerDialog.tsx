@@ -27,14 +27,6 @@ const CSS = {
 
 //#endregion
 
-//#region exports
-
-export const isAccepted = (): boolean => {
-  return Cookies.get(COOKIE) ? true : false;
-};
-
-//#endregion
-
 @subclass('DisclaimerDialog')
 export default class DisclaimerDialog extends Widget {
   //#region lifecycle
@@ -55,6 +47,14 @@ export default class DisclaimerDialog extends Widget {
     this.container = this._container;
 
     document.body.appendChild(this.container);
+  }
+
+  //#endregion
+
+  //#region static methods
+
+  static isAccepted(): boolean {
+    return Cookies.get(COOKIE) ? true : false;
   }
 
   //#endregion

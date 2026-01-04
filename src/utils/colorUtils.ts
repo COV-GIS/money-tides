@@ -19,7 +19,7 @@ export const moneyTypeIndex = ['not-money', 'potentially-money', 'kinda-money', 
 
 /**
  * Return the value of any style of the document body.
- * 
+ *
  * @param style - stayle name
  * @param colorOptions - optional options to format style value as a color.
  */

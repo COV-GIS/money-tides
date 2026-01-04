@@ -1,18 +1,23 @@
 import './main.scss';
-import './components/components';
-import Loader from './components/Loader/Loader';
-import MoneyTides from './components/MoneyTides/MoneyTides';
-import DisclaimerDialog, { isAccepted } from './components/DisclaimerDialog/DisclaimerDialog';
-import { applicationSettings } from './app-config';
 
-applicationSettings.load();
+const loadApp = async (): Promise<void> => {
+  await import('./components/components');
 
-const loader = new Loader();
+  const { applicationSettings } = await import('./app-config');
 
-if (!isAccepted()) new DisclaimerDialog();
+  applicationSettings.load();
 
-const moneyTides = new MoneyTides();
+  const loader = new (await import('./components/Loader/Loader')).default();
 
-moneyTides.on('loaded', (): void => {
-  loader.end();
-});
+  const DisclaimerDialog = (await import('./components/DisclaimerDialog/DisclaimerDialog')).default;
+
+  if (!DisclaimerDialog.isAccepted()) new DisclaimerDialog();
+
+  const moneyTides = new (await import('./components/MoneyTides/MoneyTides')).default();
+
+  moneyTides.on('loaded', (): void => {
+    loader.end();
+  });
+};
+
+loadApp();

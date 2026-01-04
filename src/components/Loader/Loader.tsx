@@ -65,10 +65,7 @@ export default class Loader extends Widget {
           <div>Money</div>
           <div>Tides</div>
         </div>
-        <calcite-loader
-          class={CSS.loader}
-          label="Loading money tides..."
-        ></calcite-loader>
+        <calcite-loader class={CSS.loader} label="Loading money tides..."></calcite-loader>
       </div>
     );
   }

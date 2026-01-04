@@ -1,6 +1,7 @@
 .attribution-popover {
   .attribution-popover_content {
-    line-height: var(--calcite-font-line-height-relative-normal);
+    line-height: var(--calcite-font-line-height-relative-snug);
+    color: var(--calcite-color-text-2);
   }
 
   &[scale='s'] {
