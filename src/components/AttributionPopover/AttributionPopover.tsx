@@ -59,6 +59,14 @@ export default class AttributionPopover extends Widget {
   //#region render
 
   override render(): tsx.JSX.Element {
+    const attribution: string[] = [];
+
+    this.attributionItems.forEach((attributionItem: esri.AttributionItem): void => {
+      const { text } = attributionItem;
+
+      if (attribution.indexOf(text)) attribution.push(text);
+    });
+
     return (
       <calcite-popover
         auto-close=""
@@ -70,13 +78,7 @@ export default class AttributionPopover extends Widget {
         scale={applicationSettings.scale}
         reference-element={this.referenceElementId}
       >
-        <div class={CSS.content}>
-          {this.attributionItems
-            ?.map((item: esri.AttributionItem): string => {
-              return item.text;
-            })
-            .join(', ')}
-        </div>
+        <div class={CSS.content}>{attribution.join(', ')}</div>
       </calcite-popover>
     );
   }
