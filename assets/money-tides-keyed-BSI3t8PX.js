@@ -1,1 +1,0 @@
-import{e as s,a as i,E as o}from"./money-tides-runtime-BAFbAsol.js";import{m as n}from"./money-tides-ref-Btw-0wRC.js";const a=s(class extends i{constructor(){super(...arguments),this.key=o}render(r,e){return this.key=r,e}update(r,[e,t]){return e!==this.key&&(n(r),this.key=e),t}});export{a as i};

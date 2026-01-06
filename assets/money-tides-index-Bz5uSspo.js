@@ -1,0 +1,1 @@
+import{s}from"./money-tides-runtime-BTGwkf2p.js";import{g as P}from"./money-tides-runtime-BTGwkf2p.js";let e=!1;const o=t=>{e=!0,s(t)};export{e as assetPathChanged,P as getAssetPath,o as setAssetPath};
