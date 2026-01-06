@@ -1,6 +1,10 @@
 import './main.scss';
 
 const loadApp = async (): Promise<void> => {
+  (await import('@arcgis/core/config')).default.assetsPath = './arcgis';
+
+  (await import('@esri/calcite-components')).setAssetPath('./arcgis/components/assets');
+
   await import('./components/components');
 
   const { applicationSettings } = await import('./app-config');
