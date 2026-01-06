@@ -1,9 +1,3 @@
-//#region types
-
-import esri = __esri;
-
-//#endregion
-
 //#region modules
 
 import { subclass } from '@arcgis/core/core/accessorSupport/decorators';
@@ -34,15 +28,7 @@ export default class AboutAction extends Widget {
     this._container = value;
   }
 
-  constructor(properties?: esri.WidgetProperties & { onClick?: () => void }) {
-    super(properties);
-  }
-
   postInitialize(): void {
-    if (this.onClick) {
-      this.container.addEventListener('click', this.onClick);
-    }
-
     const shell = document.querySelector('calcite-shell');
 
     if (!shell) return;
@@ -58,8 +44,6 @@ export default class AboutAction extends Widget {
     container: document.createElement('calcite-popover'),
     referenceElementId: ID,
   });
-
-  private onClick?: () => void;
 
   //#endregion
 

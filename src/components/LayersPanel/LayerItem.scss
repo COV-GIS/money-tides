@@ -1,0 +1,16 @@
+.layer-item {
+  --calcite-list-background-color-hover: transparent;
+  --calcite-list-background-color-press: transparent;
+
+  &[scale="s"] {
+    .layer-item_content {
+      padding: 0.5rem;
+    }
+  }
+
+  &[scale="m"] {
+    .layer-item_content {
+      padding: 0.75rem;
+    }
+  }
+}

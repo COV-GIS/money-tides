@@ -1,6 +1,6 @@
 //#region modules
 
-import { subclass } from '@arcgis/core/core/accessorSupport/decorators';
+import { property, subclass } from '@arcgis/core/core/accessorSupport/decorators';
 import Widget from '@arcgis/core/widgets/Widget';
 import { tsx } from '@arcgis/core/widgets/support/widget';
 import { applicationSettings } from '../app-config';
@@ -25,7 +25,20 @@ export default class PanelBase extends Widget {
 
   //#region public properties
 
+  @property()
   public override visible = false;
+
+  //#endregion
+
+  //#region public methods
+
+  public hide(): void {
+    this.visible = false;
+  }
+
+  public show(): void {
+    this.visible = true;
+  }
 
   //#endregion
 
@@ -34,7 +47,7 @@ export default class PanelBase extends Widget {
   private close(): void {
     this.visible = false;
 
-    this.emit('hide');
+    this.emit('close');
   }
 
   //#endregion

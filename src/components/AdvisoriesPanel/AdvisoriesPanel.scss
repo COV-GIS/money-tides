@@ -1,0 +1,17 @@
+.advisories-panel {
+  calcite-notice {
+    width: 100%;
+  }
+
+  &[scale="s"] {
+    &.advisories-panel_content {
+      --calcite-panel-space: var(--calcite-spacing-sm);
+    }
+  }
+
+  &[scale="m"] {
+    &.advisories-panel_content {
+      --calcite-panel-space: var(--calcite-spacing-md);
+    }
+  }
+}

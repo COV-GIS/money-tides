@@ -2,7 +2,11 @@
 
 import esri = __esri;
 import type { MT } from '../../interfaces';
-type Panels = 'lunarPhase' | 'weather';
+import type AdvisoriesPanel from '../AdvisoriesPanel/AdvisoriesPanel';
+import type LayersPanel from '../LayersPanel/LayersPanel';
+import type LunarPhasePanel from '../LunarPhasePanel/LunarPhasePanel';
+type Panels = AdvisoriesPanel | LayersPanel | LunarPhasePanel | null;
+type PanelNames = 'advisoriesPanel' | 'layersPanel' | 'lunarPhasePanel';
 
 //#endregion
 
@@ -25,8 +29,6 @@ import { sunAndMoon, sunAndMoonPosition } from '../../utils/sunAndMoonUtils';
 import createURL from '../../utils/createURL';
 import TidesDialog from '../TidesDialog/TidesDialog';
 import PlotDialog from '../PlotDialog/PlotDialog';
-import WeatherPanel from '../WeatherPanel/WeatherPanel';
-import LunarPhasePanel from '../LunarPhasePanel/LunarPhasePanel';
 import { applicationSettings, stationInfos, view } from '../../app-config';
 
 //#endregion
@@ -171,23 +173,26 @@ export default class MoneyTides extends Widget {
 
   //#region private properties
 
+  private advisoriesPanel!: AdvisoriesPanel;
+
   private alerts: esri.Collection<tsx.JSX.Element> = new Collection();
 
   private datePicker!: HTMLCalciteInputDatePickerElement;
 
-  @property()
-  private panel: Panels | null = null;
+  private layersPanel!: LayersPanel;
 
-  private panels = {
-    lunarPhase: new LunarPhasePanel(),
-    weather: new WeatherPanel(),
-  };
+  private lunarPhasePanel!: LunarPhasePanel;
+
+  private panelHideMethods: Array<() => void> = [];
 
   private plotDialog = new PlotDialog();
 
   private stations: esri.Collection<MT.Station> = new Collection();
 
   private tidesDialog = new TidesDialog();
+
+  @property()
+  private visiblePanel: Panels = null;
 
   private zoomToDropdownItems: esri.Collection<MT.ZoomToItem> = new Collection();
 
@@ -614,7 +619,7 @@ export default class MoneyTides extends Widget {
         <calcite-alert
           auto-close=""
           auto-close-duration="fast"
-          icon="exclamation-mark-circle"
+          icon="exclamation-mark-triangle"
           id={alertId}
           key={KEY++}
           kind="danger"
@@ -792,7 +797,7 @@ export default class MoneyTides extends Widget {
         <calcite-alert
           auto-close=""
           auto-close-duration="fast"
-          icon="exclamation-mark-circle"
+          icon="exclamation-mark-triangle"
           id={alertId}
           key={KEY++}
           kind="danger"
@@ -834,29 +839,32 @@ export default class MoneyTides extends Widget {
     this.datePicker.dispatchEvent(new Event('calciteInputDatePickerChange'));
   }
 
-  private shellPanelActionClickEvent(panel: Panels | null): void {
-    if (panel === null) {
-      for (const _panel in this.panels) {
-        //@ts-expect-error TODO: fix typing
-        this.panels[_panel as Panel].visible = false;
+  private actionClickEvent(panel: Panels): void {
+    if (!panel) {
+      for (const hide of this.panelHideMethods) {
+        hide();
       }
 
-      this.panel = panel;
+      this.visiblePanel = null;
 
       return;
     }
 
-    if (this.panel === panel) {
-      this.panels[panel].visible = false;
+    if (panel && this.visiblePanel === panel) {
+      panel.hide();
 
-      this.panel = null;
-    } else {
-      this.tidesDialog.close();
+      this.visiblePanel = null;
 
-      this.panels[panel].visible = true;
-
-      this.panel = panel;
+      return;
     }
+
+    if (panel && this.visiblePanel !== panel) this.visiblePanel?.hide();
+
+    this.tidesDialog.close();
+
+    panel.show();
+
+    this.visiblePanel = panel;
   }
 
   private async viewClickEvent(event: esri.ViewClickEvent): Promise<void> {
@@ -878,7 +886,7 @@ export default class MoneyTides extends Widget {
 
     if (!station || (station && station.error)) return;
 
-    this.panel = null;
+    this.actionClickEvent(null);
 
     tidesDialog.open(station);
   }
@@ -890,9 +898,9 @@ export default class MoneyTides extends Widget {
   override render(): tsx.JSX.Element {
     const scale = applicationSettings.scale;
 
-    const { alerts, panel, zoomToDropdownItems } = this;
+    const { alerts, visiblePanel, zoomToDropdownItems } = this;
 
-    const shellPanelStyle = panel === 'lunarPhase' ? '--calcite-shell-panel-min-width: 260px;' : '';
+    const shellPanelStyle = visiblePanel === this.lunarPhasePanel ? '--calcite-shell-panel-min-width: 260px;' : '';
 
     return (
       <calcite-shell content-behind="">
@@ -916,7 +924,6 @@ export default class MoneyTides extends Widget {
             ></calcite-button>
           </div>
         </div>
-
         {/* shell panel */}
         <calcite-shell-panel
           display-mode="float-content"
@@ -924,11 +931,7 @@ export default class MoneyTides extends Widget {
           slot={`panel-${applicationSettings.layout}`}
           style={shellPanelStyle}
         >
-          <calcite-action-bar
-            scale={scale}
-            slot="action-bar"
-            afterCreate={this.shellPanelActionBarAfterCreate.bind(this)}
-          >
+          <calcite-action-bar scale={scale} slot="action-bar" afterCreate={this.actionBarAfterCreate.bind(this)}>
             {/* actions */}
             <calcite-action-group>
               <calcite-dropdown placement="left" offset-distance="10" offset-skidding="10" scale={scale}>
@@ -937,7 +940,7 @@ export default class MoneyTides extends Widget {
                   scale={scale}
                   slot="trigger"
                   text="Zoom To"
-                  onclick={this.shellPanelActionClickEvent.bind(this, null)}
+                  onclick={this.actionClickEvent.bind(this, null)}
                 ></calcite-action>
                 <calcite-dropdown-group group-title="Zoom to" selection-mode="none">
                   {zoomToDropdownItems
@@ -948,116 +951,75 @@ export default class MoneyTides extends Widget {
                 </calcite-dropdown-group>
               </calcite-dropdown>
               <calcite-action
-                active={panel === 'weather'}
-                icon="partly-cloudy"
+                active={this.layersPanel === visiblePanel}
+                icon="layers"
                 scale={scale}
-                text="Weather"
-                onclick={this.shellPanelActionClickEvent.bind(this, 'weather')}
+                text="Layers"
+                onclick={this.actionClickEvent.bind(this, this.layersPanel)}
               ></calcite-action>
               <calcite-action
-                active={panel === 'lunarPhase'}
+                active={this.advisoriesPanel === visiblePanel}
+                icon="exclamation-mark-triangle"
+                scale={scale}
+                text="Advisories"
+                onclick={this.actionClickEvent.bind(this, this.advisoriesPanel)}
+              ></calcite-action>
+              <calcite-action
+                active={this.lunarPhasePanel === visiblePanel}
                 icon="moon"
                 scale={scale}
                 text="Lunar Phase"
-                onclick={this.shellPanelActionClickEvent.bind(this, 'lunarPhase')}
+                onclick={this.actionClickEvent.bind(this, this.lunarPhasePanel)}
               ></calcite-action>
               <calcite-action
-                afterCreate={async (action: HTMLCalciteActionElement): Promise<void> => {
-                  new (await import('../DeclinationPopover/DeclinationAction')).default({
-                    container: action,
-                    onClick: this.shellPanelActionClickEvent.bind(this, null),
-                  });
-                }}
+                onclick={this.actionClickEvent.bind(this, null)}
+                afterCreate={this.actionAfterCreate.bind(this, '../DeclinationPopover/DeclinationAction')}
               ></calcite-action>
             </calcite-action-group>
-
             {/* actions end */}
             <calcite-action-group slot="actions-end">
               <calcite-action
-                afterCreate={async (action: HTMLCalciteActionElement): Promise<void> => {
-                  new (await import('../FullscreenAction/FullscreenAction')).default({
-                    container: action,
-                  });
-                }}
+                afterCreate={this.actionAfterCreate.bind(this, '../FullscreenAction/FullscreenAction')}
               ></calcite-action>
               <calcite-action
-                afterCreate={async (action: HTMLCalciteActionElement): Promise<void> => {
-                  new (await import('../SettingsPopover/SettingsAction')).default({
-                    container: action,
-                    onClick: this.shellPanelActionClickEvent.bind(this, null),
-                  });
-                }}
+                onclick={this.actionClickEvent.bind(this, null)}
+                afterCreate={this.actionAfterCreate.bind(this, '../SettingsPopover/SettingsAction')}
               ></calcite-action>
               <calcite-action
-                afterCreate={async (action: HTMLCalciteActionElement): Promise<void> => {
-                  new (await import('../AttributionPopover/AttributionAction')).default({
-                    container: action,
-                    onClick: this.shellPanelActionClickEvent.bind(this, null),
-                  });
-                }}
+                onclick={this.actionClickEvent.bind(this, null)}
+                afterCreate={this.actionAfterCreate.bind(this, '../AttributionPopover/AttributionAction')}
               ></calcite-action>
               <calcite-action
-                afterCreate={async (action: HTMLCalciteActionElement): Promise<void> => {
-                  new (await import('../AboutDialog/AboutAction')).default({
-                    container: action,
-                  });
-                }}
+                afterCreate={this.actionAfterCreate.bind(this, '../AboutDialog/AboutAction')}
               ></calcite-action>
             </calcite-action-group>
           </calcite-action-bar>
-
           {/* panels */}
           <calcite-panel
-            hidden={panel !== 'weather'}
-            afterCreate={this.panelAfterCreate.bind(this, 'weather')}
+            afterCreate={this.panelAfterCreate.bind(this, 'layersPanel', '../LayersPanel/LayersPanel')}
           ></calcite-panel>
           <calcite-panel
-            hidden={panel !== 'lunarPhase'}
-            afterCreate={this.panelAfterCreate.bind(this, 'lunarPhase')}
+            afterCreate={this.panelAfterCreate.bind(this, 'advisoriesPanel', '../AdvisoriesPanel/AdvisoriesPanel')}
+          ></calcite-panel>
+          <calcite-panel
+            afterCreate={this.panelAfterCreate.bind(this, 'lunarPhasePanel', '../LunarPhasePanel/LunarPhasePanel')}
           ></calcite-panel>
         </calcite-shell-panel>
-
         {/* alerts */}
         {alerts.toArray()}
-
         {/* tide dialog */}
         <calcite-dialog slot="dialogs" afterCreate={this.tidesDialogAfterCreate.bind(this)}></calcite-dialog>
-
         {/* view */}
         <div class={CSS.view} afterCreate={this.viewAfterCreate.bind(this)}></div>
       </calcite-shell>
     );
   }
 
-  private tidesDialogAfterCreate(dialog: HTMLCalciteDialogElement): void {
-    this.tidesDialog.container = dialog;
-
-    this.addHandles(this.tidesDialog.on('plot-tides', this.plotDialog.open.bind(this.plotDialog)));
+  private async actionAfterCreate(module: string, container: HTMLCalciteActionElement): Promise<void> {
+    new (await import(module)).default({ container });
   }
 
-  private datePickerAfterCreate(datePicker: HTMLCalciteInputDatePickerElement): void {
-    const today = applicationSettings.date.toISODate() as string;
-
-    datePicker.value = today;
-
-    datePicker.addEventListener('calciteInputDatePickerChange', this.dateChangeEvent.bind(this));
-
-    this.datePicker = datePicker;
-  }
-
-  private panelAfterCreate(type: Panels, panel: HTMLCalcitePanelElement): void {
-    const _panel = this.panels[`${type}`];
-
-    _panel.container = panel;
-
-    this.addHandles(
-      _panel.on('hide', (): void => {
-        this.panel = null;
-      }),
-    );
-  }
-
-  private shellPanelActionBarAfterCreate(actionBar: HTMLCalciteActionBarElement): void {
+  private actionBarAfterCreate(actionBar: HTMLCalciteActionBarElement): void {
     const setPadding = (): void => {
       const width = actionBar.getBoundingClientRect().width;
       view.padding = {
@@ -1071,6 +1033,36 @@ export default class MoneyTides extends Widget {
     new ResizeObserver((): void => {
       setPadding();
     }).observe(actionBar);
+  }
+
+  private datePickerAfterCreate(datePicker: HTMLCalciteInputDatePickerElement): void {
+    const today = applicationSettings.date.toISODate() as string;
+
+    datePicker.value = today;
+
+    datePicker.addEventListener('calciteInputDatePickerChange', this.dateChangeEvent.bind(this));
+
+    this.datePicker = datePicker;
+  }
+
+  private async panelAfterCreate(name: PanelNames, module: string, container: HTMLCalcitePanelElement): Promise<void> {
+    const panel = (this[name] = new (await import(module)).default({
+      container,
+    }));
+
+    this.panelHideMethods.push(panel.hide.bind(panel));
+
+    this.addHandles(
+      panel.on('close', (): void => {
+        this.visiblePanel = null;
+      }),
+    );
+  }
+
+  private tidesDialogAfterCreate(dialog: HTMLCalciteDialogElement): void {
+    this.tidesDialog.container = dialog;
+
+    this.addHandles(this.tidesDialog.on('plot-tides', this.plotDialog.open.bind(this.plotDialog)));
   }
 
   private async viewAfterCreate(container: HTMLDivElement): Promise<void> {

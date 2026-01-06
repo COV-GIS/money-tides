@@ -59,6 +59,10 @@ const radarGradientScaleOptions: MT.GradientScaleOptions = {
 
 export const URLs = {};
 
+export const ICONS = {
+  error: 'exclamation-mark-triangle',
+};
+
 export const applicationSettings = new ApplicationSettings();
 
 export const stationInfos: MT.StationInfo[] = [
