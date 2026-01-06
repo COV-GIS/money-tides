@@ -1,1 +1,0 @@
-import{_ as t,m as r,f as e}from"./money-tides-jsxFactory-Citpbvhe.js";import{cl as p,_ as i}from"./money-tides-app-config-DXx2__X3.js";let o=class extends p{constructor(s){super(s),this.sourcePoint=null,this.mapPoint=null}};t([r()],o.prototype,"sourcePoint",void 0),t([r({type:i})],o.prototype,"mapPoint",void 0),o=t([e("esri.layers.support.ControlPoint")],o);export{o as p};
