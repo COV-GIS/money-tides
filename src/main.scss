@@ -1,18 +1,20 @@
 // calcite
 @use "../node_modules/@esri/calcite-components/dist/calcite/calcite.css";
 
-// minimum arcgis view
-$font-family: var(--calcite-sans-family); // _View.scss
-@import "../node_modules/@arcgis/core/assets/esri/themes/base/_View.scss";
+@use "../node_modules/@arcgis/core/assets/esri/themes/base/fonts/fonts.scss" with (
+  $calcite-fonts-path: "../node_modules/@arcgis/core/assets/esri/themes/base/fonts/fonts/"
+);
+
+@use "../node_modules/@arcgis/core/assets/esri/themes/base/_View.scss";
 
 .esri-view .esri-view-surface::after {
   outline: none !important;
   outline-offset: 0;
 }
 
-* {
-  --calcite-color-focus: var(--calcite-color-transparent);
-}
+// * {
+//   --calcite-color-focus: var(--calcite-color-transparent);
+// }
 
 // .test-ramp {
 //   width: 100%;

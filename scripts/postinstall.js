@@ -3,6 +3,7 @@ import { fileURLToPath } from 'url';
 import fs from 'fs-extra';
 import { glob } from 'glob';
 import path from 'path';
+import { replaceInFile } from 'replace-in-file';
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
 const language = 'en';
@@ -110,6 +111,25 @@ const widgets = ['Attribution', 'Zoom'];
     await fs.copy(`${calciteSrc}/icon`, arcgisIcons);
 
     console.log(chalk.green('@esri/calcite-components copied'));
+
+    /**
+     * fix scss for `@use`
+     */
+    const scssFile = path.resolve(__dirname, './../node_modules/@arcgis/core/assets/esri/themes/base/_View.scss');
+
+    const textVariable = '$font-family: var(--calcite-sans-family) !default;';
+
+    const viewScss = await fs.readFile(scssFile, 'utf-8');
+
+    if (!viewScss.includes(textVariable)) {
+      await replaceInFile({
+        files: scssFile,
+        from: '.esri-view {',
+        to: `${textVariable}\n\n.esri-view {`,
+      });
+    }
+
+    console.log(chalk.green('_View.scss is @use compatible'));
   } catch (error) {
     console.log(error);
   }

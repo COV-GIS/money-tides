@@ -21,8 +21,8 @@ import { applicationSettings } from '../../app-config';
 const CSS_BASE = 'layer-item';
 
 const CSS = {
-  content: `${CSS_BASE}_content`
-}
+  content: `${CSS_BASE}_content`,
+};
 
 //#endregion
 

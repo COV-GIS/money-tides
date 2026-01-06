@@ -6,6 +6,7 @@
   .advisory-item_advisory {
     display: flex;
     flex-direction: column;
+    line-height: var(--calcite-font-line-height-relative-snug);
   }
 
   &[scale="s"] {
@@ -20,7 +21,7 @@
 
     .advisory-item_advisory {
       gap: var(--calcite-spacing-md);
-      font-size: var(--calcite-font-size-sm);
+      font-size: var(--calcite-font-size-xs);
     }
   }
 
@@ -36,7 +37,7 @@
 
     .advisory-item_advisory {
       gap: var(--calcite-spacing-lg);
-      font-size: var(--calcite-font-size);
+      font-size: var(--calcite-font-size-sm);
     }
   }
 }

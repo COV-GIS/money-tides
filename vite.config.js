@@ -19,4 +19,11 @@ export default defineConfig({
   esbuild: {
     jsxFactory: 'tsx',
   },
+  css: {
+    preprocessorOptions: {
+      scss: {
+        silenceDeprecations: ['import'],
+      },
+    },
+  },
 });

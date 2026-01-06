@@ -162,7 +162,7 @@ export default class TidesDialog extends Widget {
                 // money color
                 money !== 'not-money' ? `--calcite-table-cell-text-color: ${moneyTypeColorHex(money)};` : '',
                 // predictions
-                isPrediction ? 'font-weight: var(--calcite-font-weight-bold);' : '',
+                isPrediction ? 'font-weight: var(--calcite-font-weight-medium);' : '',
               ].join(' ');
 
               return (

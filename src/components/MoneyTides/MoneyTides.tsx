@@ -6,7 +6,6 @@ import type AdvisoriesPanel from '../AdvisoriesPanel/AdvisoriesPanel';
 import type LayersPanel from '../LayersPanel/LayersPanel';
 import type LunarPhasePanel from '../LunarPhasePanel/LunarPhasePanel';
 type Panels = AdvisoriesPanel | LayersPanel | LunarPhasePanel | null;
-type PanelNames = 'advisoriesPanel' | 'layersPanel' | 'lunarPhasePanel';
 
 //#endregion
 
@@ -92,6 +91,7 @@ const SYMBOL_NAME = new TextSymbol({
   font: {
     size: 12,
     weight: 'bold',
+    family: 'Avenir Next LT Pro Medium'
   },
   haloColor: 'white',
   haloSize: 1.5,
@@ -115,6 +115,7 @@ const SYMBOL_TIDES = new TextSymbol({
   font: {
     size: 12,
     weight: 'bold',
+    family: 'Avenir Next LT Pro Medium'
   },
   haloColor: 'white',
   haloSize: 1.5,
