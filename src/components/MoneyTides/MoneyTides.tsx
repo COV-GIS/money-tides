@@ -973,36 +973,82 @@ export default class MoneyTides extends Widget {
               ></calcite-action>
               <calcite-action
                 onclick={this.actionClickEvent.bind(this, null)}
-                afterCreate={this.actionAfterCreate.bind(this, '../DeclinationPopover/DeclinationAction')}
+                afterCreate={async (container: HTMLCalciteActionElement): Promise<void> => {
+                  new (await import('../DeclinationPopover/DeclinationAction')).default({ container });
+                }}
               ></calcite-action>
             </calcite-action-group>
             {/* actions end */}
             <calcite-action-group slot="actions-end">
               <calcite-action
-                afterCreate={this.actionAfterCreate.bind(this, '../FullscreenAction/FullscreenAction')}
+                afterCreate={async (container: HTMLCalciteActionElement): Promise<void> => {
+                  new (await import('../FullscreenAction/FullscreenAction')).default({ container });
+                }}
               ></calcite-action>
               <calcite-action
                 onclick={this.actionClickEvent.bind(this, null)}
-                afterCreate={this.actionAfterCreate.bind(this, '../SettingsPopover/SettingsAction')}
+                afterCreate={async (container: HTMLCalciteActionElement): Promise<void> => {
+                  new (await import('../SettingsPopover/SettingsAction')).default({ container });
+                }}
               ></calcite-action>
               <calcite-action
                 onclick={this.actionClickEvent.bind(this, null)}
-                afterCreate={this.actionAfterCreate.bind(this, '../AttributionPopover/AttributionAction')}
+                afterCreate={async (container: HTMLCalciteActionElement): Promise<void> => {
+                  new (await import('../AttributionPopover/AttributionAction')).default({ container });
+                }}
               ></calcite-action>
               <calcite-action
-                afterCreate={this.actionAfterCreate.bind(this, '../AboutDialog/AboutAction')}
+                afterCreate={async (container: HTMLCalciteActionElement): Promise<void> => {
+                  new (await import('../AboutDialog/AboutAction')).default({ container });
+                }}
               ></calcite-action>
             </calcite-action-group>
           </calcite-action-bar>
           {/* panels */}
           <calcite-panel
-            afterCreate={this.panelAfterCreate.bind(this, 'layersPanel', '../LayersPanel/LayersPanel')}
+            afterCreate={async (container: HTMLCalcitePanelElement): Promise<void> => {
+              const panel = (this.layersPanel = new (await import('../LayersPanel/LayersPanel')).default({
+                container,
+              }));
+
+              this.panelHideMethods.push(panel.hide.bind(panel));
+
+              this.addHandles(
+                panel.on('close', (): void => {
+                  this.visiblePanel = null;
+                }),
+              );
+            }}
           ></calcite-panel>
           <calcite-panel
-            afterCreate={this.panelAfterCreate.bind(this, 'advisoriesPanel', '../AdvisoriesPanel/AdvisoriesPanel')}
+            afterCreate={async (container: HTMLCalcitePanelElement): Promise<void> => {
+              const panel = (this.advisoriesPanel = new (await import('../AdvisoriesPanel/AdvisoriesPanel')).default({
+                container,
+              }));
+
+              this.panelHideMethods.push(panel.hide.bind(panel));
+
+              this.addHandles(
+                panel.on('close', (): void => {
+                  this.visiblePanel = null;
+                }),
+              );
+            }}
           ></calcite-panel>
           <calcite-panel
-            afterCreate={this.panelAfterCreate.bind(this, 'lunarPhasePanel', '../LunarPhasePanel/LunarPhasePanel')}
+            afterCreate={async (container: HTMLCalcitePanelElement): Promise<void> => {
+              const panel = (this.lunarPhasePanel = new (await import('../LunarPhasePanel/LunarPhasePanel')).default({
+                container,
+              }));
+
+              this.panelHideMethods.push(panel.hide.bind(panel));
+
+              this.addHandles(
+                panel.on('close', (): void => {
+                  this.visiblePanel = null;
+                }),
+              );
+            }}
           ></calcite-panel>
         </calcite-shell-panel>
         {/* alerts */}
@@ -1013,10 +1059,6 @@ export default class MoneyTides extends Widget {
         <div class={CSS.view} afterCreate={this.viewAfterCreate.bind(this)}></div>
       </calcite-shell>
     );
-  }
-
-  private async actionAfterCreate(module: string, container: HTMLCalciteActionElement): Promise<void> {
-    new (await import(module)).default({ container });
   }
 
   private actionBarAfterCreate(actionBar: HTMLCalciteActionBarElement): void {
@@ -1043,20 +1085,6 @@ export default class MoneyTides extends Widget {
     datePicker.addEventListener('calciteInputDatePickerChange', this.dateChangeEvent.bind(this));
 
     this.datePicker = datePicker;
-  }
-
-  private async panelAfterCreate(name: PanelNames, module: string, container: HTMLCalcitePanelElement): Promise<void> {
-    const panel = (this[name] = new (await import(module)).default({
-      container,
-    }));
-
-    this.panelHideMethods.push(panel.hide.bind(panel));
-
-    this.addHandles(
-      panel.on('close', (): void => {
-        this.visiblePanel = null;
-      }),
-    );
   }
 
   private tidesDialogAfterCreate(dialog: HTMLCalciteDialogElement): void {

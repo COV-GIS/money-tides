@@ -8,6 +8,7 @@
     "lint": "eslint",
     "postinstall": "node ./scripts/postinstall.js",
     "prettier": "prettier --write \"src/**/*.ts?(x)\"",
+    "serve": "npm run build && vite preview",
     "test": "npm run prettier && npm run lint"
   },
   "dependencies": {
