@@ -5,7 +5,6 @@ import type { MT } from '../../interfaces';
 import type AdvisoriesPanel from '../AdvisoriesPanel/AdvisoriesPanel';
 import type LayersPanel from '../LayersPanel/LayersPanel';
 import type LunarPhasePanel from '../LunarPhasePanel/LunarPhasePanel';
-import type PlotDialog from '../PlotDialog/PlotDialog';
 import type TidesDialog from '../TidesDialog/TidesDialog';
 type Panels = AdvisoriesPanel | LayersPanel | LunarPhasePanel | null;
 
@@ -127,9 +126,7 @@ export default class MoneyTides extends Widget {
     ]);
   }
 
-  override async postInitialize(): Promise<void> {
-    this.plotDialog = new (await import('../PlotDialog/PlotDialog')).default();
-  }
+  // override async postInitialize(): Promise<void> {}
 
   //#endregion
 
@@ -146,8 +143,6 @@ export default class MoneyTides extends Widget {
   private lunarPhasePanel!: LunarPhasePanel;
 
   private panelHideMethods: Array<() => void> = [];
-
-  private plotDialog!: PlotDialog;
 
   private stations: esri.Collection<MT.Station> = new Collection();
 
@@ -1053,7 +1048,9 @@ export default class MoneyTides extends Widget {
   private async tidesDialogAfterCreate(container: HTMLCalciteDialogElement): Promise<void> {
     this.tidesDialog = new (await import('../TidesDialog/TidesDialog')).default({ container });
 
-    this.addHandles(this.tidesDialog.on('plot-tides', this.plotDialog.open.bind(this.plotDialog)));
+    const plotDialog = new (await import('../PlotDialog/PlotDialog')).default();
+
+    this.addHandles(this.tidesDialog.on('plot-tides', plotDialog.open.bind(plotDialog)));
   }
 
   private async viewAfterCreate(container: HTMLDivElement): Promise<void> {
