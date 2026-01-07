@@ -12,8 +12,10 @@ import { property, subclass } from '@arcgis/core/core/accessorSupport/decorators
 import Widget from '@arcgis/core/widgets/Widget';
 import { tsx } from '@arcgis/core/widgets/support/widget';
 import DateTime from '../../utils/dateAndTimeUtils';
+import Color from '@arcgis/core/Color';
 import CIMSymbol from '@arcgis/core/symbols/CIMSymbol';
-import { ICONS, applicationSettings, weatherAdvisoryColors } from '../../app-config';
+import { getDocumentStyle } from '../../utils/colorUtils';
+import { ICONS, applicationSettings } from '../../app-config';
 
 //#endregion
 
@@ -51,7 +53,11 @@ export default class AdvisoryItem extends Widget {
   override postInitialize(): void {
     const { feature } = this;
 
-    feature.symbol = this.createSymbol(weatherAdvisoryColors[feature.attributes.prod_type]);
+    feature.symbol = this.createSymbol(feature.attributes.prod_type);
+
+    this.addHandles(
+      watch(() => applicationSettings.colorType, this.createSymbol.bind(this, feature.attributes.prod_type)),
+    );
 
     this.addHandles(
       watch(
@@ -101,8 +107,27 @@ export default class AdvisoryItem extends Widget {
 
   //#region private methods
 
-  private createSymbol(color: [number, number, number]): esri.CIMSymbol {
-    // const _color = new Color(color) as esri.Color & { isBright: boolean };
+  private createSymbol(prod_type: string): esri.CIMSymbol {
+    const type = prod_type.toLowerCase();
+
+    const colorValue =
+      type.includes('outage') ||
+      type.includes('advisory') ||
+      type.includes('statement') ||
+      type.includes('outlook') ||
+      type.includes('forecast')
+        ? getDocumentStyle('--calcite-color-status-info')
+        : type.includes('watch') || type.includes('alert')
+          ? getDocumentStyle('--calcite-color-status-warning')
+          : type.includes('outage') ||
+              type.includes('emergency') ||
+              type.includes('warning') ||
+              type.includes('immediate') ||
+              type.includes('danger')
+            ? getDocumentStyle('--calcite-color-status-danger')
+            : '#fff';
+
+    const color = new Color(colorValue).toRgb();
 
     return new CIMSymbol({
       data: {
@@ -113,7 +138,7 @@ export default class AdvisoryItem extends Widget {
             {
               type: 'CIMSolidFill',
               enable: true,
-              color: [...color, 128],
+              color: [...color, 64],
             },
             {
               type: 'CIMSolidStroke',
@@ -128,19 +153,9 @@ export default class AdvisoryItem extends Widget {
               enable: true,
               capStyle: 'Butt',
               joinStyle: 'Round',
-              width: 2.25,
-              // color: _color.isBright ? [0, 0, 0, 255] : [255, 255, 255, 255],
-              // color: [255, 255, 255, 255],
+              width: 1.5,
               color: [...color, 255],
             },
-            // {
-            //   type: 'CIMSolidStroke',
-            //   enable: true,
-            //   capStyle: 'Butt',
-            //   joinStyle: 'Round',
-            //   width: 2.25,
-            //   color: [...color, 255],
-            // },
           ],
         },
       },
@@ -184,26 +199,52 @@ export default class AdvisoryItem extends Widget {
     }
   }
 
+  private iconAndStyle(prod_type: string): { icon: string; style: string } {
+    const type = prod_type.toLowerCase();
+
+    const info: { icon: string; style: string } =
+      type.includes('outage') ||
+      type.includes('advisory') ||
+      type.includes('statement') ||
+      type.includes('outlook') ||
+      type.includes('forecast')
+        ? { icon: ICONS.info, style: '--calcite-color-status-info' }
+        : type.includes('watch') || type.includes('alert')
+          ? { icon: ICONS.alert, style: '--calcite-color-status-warning' }
+          : type.includes('outage') ||
+              type.includes('emergency') ||
+              type.includes('warning') ||
+              type.includes('immediate') ||
+              type.includes('danger')
+            ? { icon: ICONS.danger, style: '--calcite-color-status-danger' }
+            : { icon: '', style: '' };
+
+    return {
+      icon: info.icon,
+      style: `--calcite-list-label-text-color: var(${info.style}); --calcite-list-icon-color: var(${info.style});`,
+    };
+  }
+
   //#endregion
 
   private listItemSelectEvent(): void {
-    const { feature } = this;
-
     if (this.container.selected) {
-      this.emit('show-graphic', feature);
+      this.emit('show-graphic', this.feature);
 
       this.hidden = false;
     } else {
       this.emit('hide-graphic');
 
       this.hidden = true;
+
+      this.renderNow();
     }
   }
 
   //#region render
 
   override render(): tsx.JSX.Element {
-    const { scale } = applicationSettings;
+    const { colorType, scale } = applicationSettings;
 
     const {
       attributes: { expiration, prod_type },
@@ -219,8 +260,10 @@ export default class AdvisoryItem extends Widget {
       <calcite-list-item
         class={CSS_BASE}
         description={`Expires ${date.toFormat('ccc h:mm a')}`}
+        icon-start={this.iconAndStyle(prod_type).icon}
         label={prod_type}
         scale={scale}
+        style={colorType === 'dark' ? this.iconAndStyle(prod_type).style : this.iconAndStyle(prod_type).style} // hacky but will rerender on colorType change
         afterCreate={(listItem: HTMLCalciteListItemElement): void => {
           listItem.addEventListener('calciteListItemSelect', this.listItemSelectEvent.bind(this));
         }}
