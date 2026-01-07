@@ -24,7 +24,6 @@ import DateTime, { NOAADate, setNoon, setTime, twelveHourTime } from '../../util
 import { sunAndMoon, sunAndMoonPosition } from '../../utils/sunAndMoonUtils';
 import { getSymbols, updateSymbols } from '../../utils/symbolUtils';
 import createURL from '../../utils/createURL';
-
 import { applicationSettings, stationInfos, view } from '../../app-config';
 
 //#endregion

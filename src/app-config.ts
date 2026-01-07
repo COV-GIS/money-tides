@@ -320,10 +320,10 @@ export const view = new MapView({
     spatialReference: {
       wkid: 102100,
     },
-    xmin: -13927811,
-    ymin: 5308864,
-    xmax: -13626955,
-    ymax: 5844535,
+    xmin: -13855960,
+    ymin: 5497816,
+    xmax: -13715621,
+    ymax: 5765651,
   },
   map: new Map({
     basemap: applicationSettings.basemap,
