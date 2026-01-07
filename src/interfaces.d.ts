@@ -70,6 +70,11 @@ export namespace MT {
 
   type StationGraphics = {
     /**
+     * Crab graphic
+     */
+    crabGraphic: esri.Graphic;
+
+    /**
      * Marker graphic
      */
     markerGraphic: esri.Graphic;

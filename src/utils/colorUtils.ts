@@ -59,12 +59,15 @@ export const moneyTypeColorHex = (moneyType: MT.MoneyType, className?: string): 
 export const moneyTypeColors = (moneyType: MT.MoneyType): { primary: esri.Color; secondary: esri.Color } => {
   const primary = moneyColors[moneyTypeIndex.indexOf(moneyType)] as esri.Color & { isBright: boolean };
 
+  if (applicationSettings.colorType === 'light' && primary.toHex({ digits: 6 }) === '#ffffbf') {
+    return {
+      primary: new Color([64, 64, 64]),
+      secondary: primary,
+    };
+  }
+
   return {
     primary,
-    secondary:
-      applicationSettings.colorType === 'dark' ||
-      (applicationSettings.colorType === 'light' && primary.toHex({ digits: 6 }) === '#ffffbf')
-        ? new Color([0, 0, 0])
-        : new Color([255, 255, 255]),
+    secondary: applicationSettings.colorType === 'dark' ? new Color([32, 32, 32]) : new Color([255, 255, 255]),
   };
 };

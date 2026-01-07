@@ -5,6 +5,8 @@ import type { MT } from '../../interfaces';
 import type AdvisoriesPanel from '../AdvisoriesPanel/AdvisoriesPanel';
 import type LayersPanel from '../LayersPanel/LayersPanel';
 import type LunarPhasePanel from '../LunarPhasePanel/LunarPhasePanel';
+import type PlotDialog from '../PlotDialog/PlotDialog';
+import type TidesDialog from '../TidesDialog/TidesDialog';
 type Panels = AdvisoriesPanel | LayersPanel | LunarPhasePanel | null;
 
 //#endregion
@@ -18,16 +20,12 @@ import Widget from '@arcgis/core/widgets/Widget';
 import { tsx } from '@arcgis/core/widgets/support/widget';
 import Collection from '@arcgis/core/core/Collection';
 import Graphic from '@arcgis/core/Graphic';
-import Color from '@arcgis/core/Color';
-import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
-import TextSymbol from '@arcgis/core/symbols/TextSymbol';
 import Point from '@arcgis/core/geometry/Point';
-import { moneyTypeColors } from '../../utils/colorUtils';
 import DateTime, { NOAADate, setNoon, setTime, twelveHourTime } from '../../utils/dateAndTimeUtils';
 import { sunAndMoon, sunAndMoonPosition } from '../../utils/sunAndMoonUtils';
+import { getSymbols, updateSymbols } from '../../utils/symbolUtils';
 import createURL from '../../utils/createURL';
-import TidesDialog from '../TidesDialog/TidesDialog';
-import PlotDialog from '../PlotDialog/PlotDialog';
+
 import { applicationSettings, stationInfos, view } from '../../app-config';
 
 //#endregion
@@ -85,45 +83,6 @@ const CSS = {
 
 let KEY = 0;
 
-const SYMBOL_NAME = new TextSymbol({
-  text: '',
-  color: 'black',
-  font: {
-    size: 12,
-    weight: 'bold',
-    family: 'Avenir Next LT Pro Medium'
-  },
-  haloColor: 'white',
-  haloSize: 1.5,
-  horizontalAlignment: 'left',
-  xoffset: 10,
-});
-
-const SYMBOL_POINT = new SimpleMarkerSymbol({
-  style: 'circle',
-  color: 'black',
-  size: 10,
-  outline: {
-    color: 'white',
-    width: 1.25,
-  },
-});
-
-const SYMBOL_TIDES = new TextSymbol({
-  text: '',
-  color: 'black',
-  font: {
-    size: 12,
-    weight: 'bold',
-    family: 'Avenir Next LT Pro Medium'
-  },
-  haloColor: 'white',
-  haloSize: 1.5,
-  horizontalAlignment: 'left',
-  xoffset: 10,
-  yoffset: -14,
-});
-
 //#endregion
 
 @subclass('MoneyTides')
@@ -168,7 +127,9 @@ export default class MoneyTides extends Widget {
     ]);
   }
 
-  // override async postInitialize(): Promise<void> {}
+  override async postInitialize(): Promise<void> {
+    this.plotDialog = new (await import('../PlotDialog/PlotDialog')).default();
+  }
 
   //#endregion
 
@@ -186,11 +147,11 @@ export default class MoneyTides extends Widget {
 
   private panelHideMethods: Array<() => void> = [];
 
-  private plotDialog = new PlotDialog();
+  private plotDialog!: PlotDialog;
 
   private stations: esri.Collection<MT.Station> = new Collection();
 
-  private tidesDialog = new TidesDialog();
+  private tidesDialog!: TidesDialog;
 
   @property()
   private visiblePanel: Panels = null;
@@ -240,7 +201,9 @@ export default class MoneyTides extends Widget {
 
     const { id, latitude, longitude, money, name, tides } = params;
 
-    const { primary, secondary } = moneyTypeColors(money);
+    // const { primary, secondary } = moneyTypeColors(money);
+
+    const { crabSymbol, markerSymbol, stationSymbol, tidesSymbol } = getSymbols({ money, name, tides });
 
     const attributes = { id };
 
@@ -249,31 +212,56 @@ export default class MoneyTides extends Widget {
       longitude,
     });
 
-    const stationGraphic = new Graphic({
+    const crabGraphic = new Graphic({
       attributes,
       geometry,
-      symbol: Object.assign(SYMBOL_NAME.clone(), { color: primary, haloColor: secondary, text: name }),
+      symbol: crabSymbol,
     });
 
     const markerGraphic = new Graphic({
       attributes,
       geometry,
-      symbol: Object.assign(SYMBOL_POINT.clone(), {
-        color: primary,
-        outline: { color: secondary, width: SYMBOL_POINT.outline.width },
-      }),
+      symbol: markerSymbol,
+    });
+
+    const stationGraphic = new Graphic({
+      attributes,
+      geometry,
+      symbol: stationSymbol,
     });
 
     const tidesGraphic = new Graphic({
       attributes,
       geometry,
-      symbol: Object.assign(SYMBOL_TIDES.clone(), {
-        color: primary,
-        haloColor: secondary,
-        text: this.tidesSymbolText(tides),
-      }),
+      symbol: tidesSymbol,
       visible: view.scale < 240000,
     });
+
+    // const markerGraphic = new Graphic({
+    //   attributes,
+    //   geometry,
+    //   symbol: Object.assign(SYMBOL_POINT.clone(), {
+    //     color: primary,
+    //     outline: { color: secondary, width: SYMBOL_POINT.outline.width },
+    //   }),
+    // });
+
+    // const stationGraphic = new Graphic({
+    //   attributes,
+    //   geometry,
+    //   symbol: Object.assign(SYMBOL_NAME.clone(), { color: primary, haloColor: secondary, text: name }),
+    // });
+
+    // const tidesGraphic = new Graphic({
+    //   attributes,
+    //   geometry,
+    //   symbol: Object.assign(SYMBOL_TIDES.clone(), {
+    //     color: primary,
+    //     haloColor: secondary,
+    //     text: this.tidesSymbolText(tides),
+    //   }),
+    //   visible: view.scale < 240000,
+    // });
 
     this.addHandles(
       watch(
@@ -284,9 +272,9 @@ export default class MoneyTides extends Widget {
       ),
     );
 
-    graphics.addMany([markerGraphic, stationGraphic, tidesGraphic]);
+    graphics.addMany([markerGraphic, crabGraphic, stationGraphic, tidesGraphic]);
 
-    return { markerGraphic, stationGraphic, tidesGraphic };
+    return { crabGraphic, markerGraphic, stationGraphic, tidesGraphic };
   }
 
   private async getTides(
@@ -677,50 +665,24 @@ export default class MoneyTides extends Widget {
     return 'not-money';
   }
 
-  private tidesSymbolText(tides: MT.Tide[]): string {
-    return tides
-      .filter((tide: MT.Tide): boolean => {
-        return tide.isPrediction && tide.isDate;
-      })
-      .map((tide: MT.Tide): string => {
-        const { heightLabel, time, type } = tide;
-
-        return `${time} ${type} ${heightLabel}`;
-      })
-      .join('\n');
-  }
-
   private updateGraphics(station: MT.Station): void {
     const {
       error,
-      graphics: { markerGraphic, stationGraphic, tidesGraphic },
+      graphics: { crabGraphic, markerGraphic, stationGraphic, tidesGraphic },
       money,
+      name,
       tides,
     } = station;
 
-    let { primary, secondary } = moneyTypeColors(money);
+    const { crabSymbol, markerSymbol, stationSymbol, tidesSymbol } = updateSymbols({ error, money, name, tides });
 
-    if (error) {
-      primary = new Color('black');
+    crabGraphic.symbol = crabSymbol;
 
-      secondary = new Color('white');
-    }
+    markerGraphic.symbol = markerSymbol;
 
-    stationGraphic.symbol = Object.assign((stationGraphic.symbol as esri.TextSymbol).clone(), {
-      color: primary,
-      haloColor: secondary,
-    });
+    stationGraphic.symbol = stationSymbol;
 
-    markerGraphic.symbol = Object.assign((markerGraphic.symbol as esri.SimpleMarkerSymbol).clone(), {
-      color: primary,
-      outline: { color: secondary, width: SYMBOL_POINT.outline.width },
-    });
-
-    tidesGraphic.symbol = Object.assign((tidesGraphic.symbol as esri.TextSymbol).clone(), {
-      color: error ? null : primary,
-      haloColor: error ? null : secondary,
-      text: this.tidesSymbolText(tides),
-    });
+    tidesGraphic.symbol = tidesSymbol;
   }
 
   private async updateStation(station: MT.Station): Promise<void> {
@@ -1088,8 +1050,8 @@ export default class MoneyTides extends Widget {
     this.datePicker = datePicker;
   }
 
-  private tidesDialogAfterCreate(dialog: HTMLCalciteDialogElement): void {
-    this.tidesDialog.container = dialog;
+  private async tidesDialogAfterCreate(container: HTMLCalciteDialogElement): Promise<void> {
+    this.tidesDialog = new (await import('../TidesDialog/TidesDialog')).default({ container });
 
     this.addHandles(this.tidesDialog.on('plot-tides', this.plotDialog.open.bind(this.plotDialog)));
   }
