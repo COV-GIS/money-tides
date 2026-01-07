@@ -5,7 +5,7 @@ import Color from '@arcgis/core/Color';
 import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
 import TextSymbol from '@arcgis/core/symbols/TextSymbol';
 import { moneyTypeColors } from './colorUtils';
-import { crabPot21 } from 'calcite-point-symbols';
+import { crabPot21 } from 'calcite-point-symbols/js/crabPot21.js';
 
 const SYMBOL_CRAB = new SimpleMarkerSymbol({
   size: 12,
