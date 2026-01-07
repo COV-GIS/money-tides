@@ -1,15 +1,19 @@
 import esri = __esri;
 import type { MT } from '../interfaces';
 
-import { byName } from '@arcgis/core/smartMapping/symbology/support/colorRamps';
 import Color from '@arcgis/core/Color';
 import { applicationSettings } from '../app-config';
 
 /**
- * Array of money colors.
+ * Array of money colors. Esri 'Red and Green 9'.
  */
-export const moneyColors = (byName('Red and Green 9') as esri.supportColorRampsColorRamp).colors;
-
+export const moneyColors = [
+  new Color([215, 25, 28]),
+  new Color([253, 174, 97]),
+  new Color([255, 255, 191]),
+  new Color([166, 217, 106]),
+  new Color([26, 150, 65]),
+];
 /**
  * Array of money types by array index; `not-money = 0`, `potentially-money = 1`, etc.
  *
