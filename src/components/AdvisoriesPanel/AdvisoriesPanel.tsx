@@ -45,8 +45,14 @@ export default class AdvisoriesPanel extends PanelBase {
   override hide(): void {
     this.visible = false;
 
+    if (this.displayGraphic) {
+      view.graphics.remove(this.displayGraphic);
+
+      this.displayGraphic = null;
+    }
+
     this.items.forEach((item: AdvisoryItem): void => {
-      item.clear();
+      item.hidden = true;
     });
   }
 
@@ -101,10 +107,6 @@ export default class AdvisoriesPanel extends PanelBase {
             afterCreate={async (listItem: HTMLCalciteListItemElement): Promise<void> => {
               const item = new (await import('./AdvisoryItem')).default({ container: listItem, feature });
 
-              item.on('show-graphic', this.showGraphic.bind(this));
-
-              item.on('hide-graphic', this.hideGraphic.bind(this));
-
               this.items.add(item);
             }}
           ></calcite-list-item>,
@@ -123,22 +125,36 @@ export default class AdvisoriesPanel extends PanelBase {
     }
   }
 
-  private hideGraphic(): void {
+  //#endregion
+
+  //#region events
+
+  private listChangeEvent(list: HTMLCalciteListElement): void {
     if (this.displayGraphic) {
       view.graphics.remove(this.displayGraphic);
 
       this.displayGraphic = null;
     }
-  }
 
-  private showGraphic(graphic: esri.Graphic): void {
-    if (this.displayGraphic) view.graphics.remove(this.displayGraphic);
+    this.items.forEach((item: AdvisoryItem): void => {
+      item.hidden = true;
+    });
 
-    this.displayGraphic = graphic;
+    const item = this.items.find((item: AdvisoryItem): boolean => {
+      return item.container === list.selectedItems[0];
+    });
 
-    view.graphics.add(graphic, 0);
+    if (item) {
+      const { feature } = item;
 
-    view.goTo(graphic);
+      item.hidden = false;
+
+      this.displayGraphic = feature;
+
+      view.graphics.add(feature, 0);
+
+      view.goTo(feature);
+    }
   }
 
   //#endregion
@@ -159,7 +175,14 @@ export default class AdvisoriesPanel extends PanelBase {
           </calcite-link>
         </calcite-notice>
       ) : state === 'advisories' ? (
-        <calcite-list selection-appearance="border" selection-mode="single" scale={scale}>
+        <calcite-list
+          selection-appearance="border"
+          selection-mode="single"
+          scale={scale}
+          afterCreate={(list: HTMLCalciteListElement): void => {
+            list.addEventListener('calciteListChange', this.listChangeEvent.bind(this, list));
+          }}
+        >
           {itemElements.toArray()}
         </calcite-list>
       ) : (

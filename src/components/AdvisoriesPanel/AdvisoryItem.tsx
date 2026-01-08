@@ -78,17 +78,8 @@ export default class AdvisoryItem extends Widget {
 
   public feature!: esri.Graphic;
 
-  //#endregion
-
-  //#region public methods
-
-  public clear(): void {
-    this.emit('hide-graphic');
-
-    this.container.selected = false;
-
-    this.hidden = true;
-  }
+  @property()
+  public hidden = true;
 
   //#endregion
 
@@ -96,9 +87,6 @@ export default class AdvisoryItem extends Widget {
 
   @property({ aliasOf: 'feature.attributes' })
   private attributes: esri.Graphic['attributes'];
-
-  @property()
-  private hidden = true;
 
   @property()
   private content: tsx.JSX.Element | null = null;
@@ -227,20 +215,6 @@ export default class AdvisoryItem extends Widget {
 
   //#endregion
 
-  private listItemSelectEvent(): void {
-    if (this.container.selected) {
-      this.emit('show-graphic', this.feature);
-
-      this.hidden = false;
-    } else {
-      this.emit('hide-graphic');
-
-      this.hidden = true;
-
-      this.renderNow();
-    }
-  }
-
   //#region render
 
   override render(): tsx.JSX.Element {
@@ -264,9 +238,6 @@ export default class AdvisoryItem extends Widget {
         label={prod_type}
         scale={scale}
         style={colorType === 'dark' ? this.iconAndStyle(prod_type).style : this.iconAndStyle(prod_type).style} // hacky but will rerender on colorType change
-        afterCreate={(listItem: HTMLCalciteListItemElement): void => {
-          listItem.addEventListener('calciteListItemSelect', this.listItemSelectEvent.bind(this));
-        }}
       >
         <div class={CSS.content} hidden={hidden} slot="content-bottom">
           {content}
