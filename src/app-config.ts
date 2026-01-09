@@ -8,6 +8,8 @@ import GroupLayer from '@arcgis/core/layers/GroupLayer';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import MapImageLayer from '@arcgis/core/layers/MapImageLayer';
 import WMSLayer from '@arcgis/core/layers/WMSLayer';
+import TileLayer from '@arcgis/core/layers/TileLayer';
+import TrafficCamerasLayer from './layers/TrafficCamerasLayer';
 import Extent from '@arcgis/core/geometry/Extent';
 import Point from '@arcgis/core/geometry/Point';
 import Polygon from '@arcgis/core/geometry/Polygon';
@@ -333,7 +335,6 @@ export const view = new MapView({
   },
   map: new Map({
     basemap: applicationSettings.basemap,
-    layers: [trafficLayer],
   }),
 });
 
@@ -3457,7 +3458,17 @@ export let weatherAdvisoryQueryPolygon = new Polygon({
   ],
 });
 
+export const trafficCamerasLayer = new TrafficCamerasLayer();
+
 export const weatherLayers: MT.WeatherLayer[] = [
+  {
+    layer: new TileLayer({
+      title: 'Traffic',
+      url: 'https://www.tripcheck.com/Basemaps/Pseudo.MapServer/Inrix/MapServer',
+      visible: false,
+    }),
+    legend: false,
+  },
   {
     layer: new WMSLayer({
       opacity: 0.8,
@@ -3554,5 +3565,9 @@ export const weatherLayers: MT.WeatherLayer[] = [
       visible: false,
     }),
     legend: true,
+  },
+  {
+    layer: trafficCamerasLayer,
+    legend: false,
   },
 ];

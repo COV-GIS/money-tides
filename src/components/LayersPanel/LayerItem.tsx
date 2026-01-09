@@ -105,13 +105,15 @@ export default class LayerItem extends Widget {
         scale={applicationSettings.scale}
         afterCreate={this.listItemAfterCreate.bind(this)}
       >
-        <calcite-action
-          icon={contentHidden ? 'legend' : 'x'}
-          scale={applicationSettings.scale}
-          slot="actions-end"
-          text={contentHidden ? 'Expand' : 'Collapse'}
-          onclick={this.contentActionClick.bind(this)}
-        ></calcite-action>
+        {!gradientScaleOptions && legend === false ? null : (
+          <calcite-action
+            icon={contentHidden ? 'legend' : 'x'}
+            scale={applicationSettings.scale}
+            slot="actions-end"
+            text={contentHidden ? 'Expand' : 'Collapse'}
+            onclick={this.contentActionClick.bind(this)}
+          ></calcite-action>
+        )}
         <div hidden={contentHidden} slot="content-bottom">
           <div class={CSS.content}>
             {gradientScaleOptions ? (

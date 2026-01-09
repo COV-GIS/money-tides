@@ -6,8 +6,8 @@ import type AdvisoriesPanel from '../AdvisoriesPanel/AdvisoriesPanel';
 import type LayersPanel from '../LayersPanel/LayersPanel';
 import type LunarPhasePanel from '../LunarPhasePanel/LunarPhasePanel';
 import type TidesDialog from '../TidesDialog/TidesDialog';
-import type TrafficPanel from '../TrafficPanel/TrafficPanel';
-type Panels = AdvisoriesPanel | LayersPanel | LunarPhasePanel | TrafficPanel | null;
+import type TrafficCameraDialog from '../TrafficCameraDialog/TrafficCameraDialog';
+type Panels = AdvisoriesPanel | LayersPanel | LunarPhasePanel | null;
 
 //#endregion
 
@@ -25,7 +25,7 @@ import DateTime, { NOAADate, setNoon, setTime, twelveHourTime } from '../../util
 import { sunAndMoon, sunAndMoonPosition } from '../../utils/sunAndMoonUtils';
 import { getSymbols, updateSymbols } from '../../utils/symbolUtils';
 import createURL from '../../utils/createURL';
-import { applicationSettings, stationInfos, view } from '../../app-config';
+import { applicationSettings, stationInfos, trafficCamerasLayer, view } from '../../app-config';
 
 //#endregion
 
@@ -148,7 +148,7 @@ export default class MoneyTides extends Widget {
 
   private tidesDialog!: TidesDialog;
 
-  private trafficPanel!: TrafficPanel;
+  private trafficCameraDialog?: TrafficCameraDialog;
 
   @property()
   private visiblePanel: Panels = null;
@@ -832,23 +832,49 @@ export default class MoneyTides extends Widget {
 
     const { tidesDialog } = this;
 
-    const result = (await view.hitTest(event, { include: [view.graphics] })).results[0];
+    const results = (await view.hitTest(event, { include: [view.graphics, trafficCamerasLayer.graphics] })).results;
+
+    const result = results[0];
 
     if (!result || result.type !== 'graphic') {
       tidesDialog.close();
 
+      if (this.trafficCameraDialog) this.trafficCameraDialog.close();
+
       return;
     }
 
-    const station = this.stations.find((station: MT.Station): boolean => {
-      return station.id === result.graphic.attributes.id;
-    });
+    // view graphics, i.e. station graphics
+    if (!result.layer) {
+      if (this.trafficCameraDialog) this.trafficCameraDialog.close();
 
-    if (!station || (station && station.error)) return;
+      const station = this.stations.find((station: MT.Station): boolean => {
+        return station.id === result.graphic.attributes.id;
+      });
+
+      if (!station || (station && station.error)) return;
+
+      tidesDialog.open(station);
+    }
+
+    // traffic cameras
+    if (result.layer === trafficCamerasLayer) {
+      tidesDialog.close();
+
+      if (!this.trafficCameraDialog) {
+        const container = document.createElement('calcite-dialog');
+
+        this.container.appendChild(container);
+
+        this.trafficCameraDialog = new (await import('../TrafficCameraDialog/TrafficCameraDialog')).default({
+          container,
+        });
+      }
+
+      this.trafficCameraDialog.open(result.graphic.attributes.filename, result.graphic.attributes.title);
+    }
 
     this.actionClickEvent(null);
-
-    tidesDialog.open(station);
   }
 
   //#endregion
@@ -918,13 +944,6 @@ export default class MoneyTides extends Widget {
                 onclick={this.actionClickEvent.bind(this, this.layersPanel)}
               ></calcite-action>
               <calcite-action
-                active={this.trafficPanel === visiblePanel}
-                icon="car"
-                scale={scale}
-                text="Traffic"
-                onclick={this.actionClickEvent.bind(this, this.trafficPanel)}
-              ></calcite-action>
-              <calcite-action
                 active={this.advisoriesPanel === visiblePanel}
                 icon="exclamation-mark-triangle"
                 scale={scale}
@@ -975,21 +994,6 @@ export default class MoneyTides extends Widget {
           <calcite-panel
             afterCreate={async (container: HTMLCalcitePanelElement): Promise<void> => {
               const panel = (this.layersPanel = new (await import('../LayersPanel/LayersPanel')).default({
-                container,
-              }));
-
-              this.panelHideMethods.push(panel.hide.bind(panel));
-
-              this.addHandles(
-                panel.on('close', (): void => {
-                  this.visiblePanel = null;
-                }),
-              );
-            }}
-          ></calcite-panel>
-          <calcite-panel
-            afterCreate={async (container: HTMLCalcitePanelElement): Promise<void> => {
-              const panel = (this.trafficPanel = new (await import('../TrafficPanel/TrafficPanel')).default({
                 container,
               }));
 
