@@ -6,7 +6,8 @@ import type AdvisoriesPanel from '../AdvisoriesPanel/AdvisoriesPanel';
 import type LayersPanel from '../LayersPanel/LayersPanel';
 import type LunarPhasePanel from '../LunarPhasePanel/LunarPhasePanel';
 import type TidesDialog from '../TidesDialog/TidesDialog';
-type Panels = AdvisoriesPanel | LayersPanel | LunarPhasePanel | null;
+import type TrafficPanel from '../TrafficPanel/TrafficPanel';
+type Panels = AdvisoriesPanel | LayersPanel | LunarPhasePanel | TrafficPanel | null;
 
 //#endregion
 
@@ -146,6 +147,8 @@ export default class MoneyTides extends Widget {
   private stations: esri.Collection<MT.Station> = new Collection();
 
   private tidesDialog!: TidesDialog;
+
+  private trafficPanel!: TrafficPanel;
 
   @property()
   private visiblePanel: Panels = null;
@@ -915,6 +918,13 @@ export default class MoneyTides extends Widget {
                 onclick={this.actionClickEvent.bind(this, this.layersPanel)}
               ></calcite-action>
               <calcite-action
+                active={this.trafficPanel === visiblePanel}
+                icon="car"
+                scale={scale}
+                text="Traffic"
+                onclick={this.actionClickEvent.bind(this, this.trafficPanel)}
+              ></calcite-action>
+              <calcite-action
                 active={this.advisoriesPanel === visiblePanel}
                 icon="exclamation-mark-triangle"
                 scale={scale}
@@ -965,6 +975,21 @@ export default class MoneyTides extends Widget {
           <calcite-panel
             afterCreate={async (container: HTMLCalcitePanelElement): Promise<void> => {
               const panel = (this.layersPanel = new (await import('../LayersPanel/LayersPanel')).default({
+                container,
+              }));
+
+              this.panelHideMethods.push(panel.hide.bind(panel));
+
+              this.addHandles(
+                panel.on('close', (): void => {
+                  this.visiblePanel = null;
+                }),
+              );
+            }}
+          ></calcite-panel>
+          <calcite-panel
+            afterCreate={async (container: HTMLCalcitePanelElement): Promise<void> => {
+              const panel = (this.trafficPanel = new (await import('../TrafficPanel/TrafficPanel')).default({
                 container,
               }));
 

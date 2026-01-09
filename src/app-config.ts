@@ -4,9 +4,11 @@ import { MT } from './interfaces';
 import { watch } from '@arcgis/core/core/reactiveUtils';
 import Map from '@arcgis/core/Map';
 import MapView from '@arcgis/core/views/MapView';
+import GroupLayer from '@arcgis/core/layers/GroupLayer';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import MapImageLayer from '@arcgis/core/layers/MapImageLayer';
 import WMSLayer from '@arcgis/core/layers/WMSLayer';
+import Extent from '@arcgis/core/geometry/Extent';
 import Point from '@arcgis/core/geometry/Point';
 import Polygon from '@arcgis/core/geometry/Polygon';
 import ApplicationSettings from './support/ApplicationSettings';
@@ -312,6 +314,10 @@ export const stationInfos: MT.StationInfo[] = [
   },
 ];
 
+export const trafficLayer = new GroupLayer({
+  visible: false,
+});
+
 export const view = new MapView({
   constraints: {
     rotationEnabled: false,
@@ -327,6 +333,7 @@ export const view = new MapView({
   },
   map: new Map({
     basemap: applicationSettings.basemap,
+    layers: [trafficLayer],
   }),
 });
 
@@ -336,6 +343,16 @@ watch(
     (view.map as esri.Map).basemap = basemap;
   },
 );
+
+export const trafficExtent = Extent.fromJSON({
+  spatialReference: {
+    wkid: 4326,
+  },
+  xmin: -124.81002376060317,
+  ymin: 41.75321426465116,
+  xmax: -123.35099265734756,
+  ymax: 46.79154423016332,
+});
 
 export const weatherAdvisoryFeatureLayer = new FeatureLayer({
   outFields: ['*'],
