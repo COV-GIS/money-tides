@@ -1,1 +1,0 @@
-import{a1 as o}from"./money-tides-jsxFactory-B9QQWpgY.js";function i(e,r){return new Promise((a,t)=>{e.readyState>=HTMLMediaElement.HAVE_CURRENT_DATA?a():(r(o(e,"canplay",a)),r(o(e,"error",t)))})}export{i as r};
