@@ -25,7 +25,7 @@ import DateTime, { NOAADate, setNoon, setTime, twelveHourTime } from '../../util
 import { sunAndMoon, sunAndMoonPosition } from '../../utils/sunAndMoonUtils';
 import { getSymbols, updateSymbols } from '../../utils/symbolUtils';
 import createURL from '../../utils/createURL';
-import { applicationSettings, stationInfos, trafficCamerasLayer, view } from '../../app-config';
+import { applicationSettings, stationInfos, trafficLayers, view } from '../../app-config';
 
 //#endregion
 
@@ -832,7 +832,9 @@ export default class MoneyTides extends Widget {
 
     const { tidesDialog } = this;
 
-    const results = (await view.hitTest(event, { include: [view.graphics, trafficCamerasLayer.graphics] })).results;
+    const results = (
+      await view.hitTest(event, { include: [view.graphics, trafficLayers.graphicsLayers.cameras.graphics] })
+    ).results;
 
     const result = results[0];
 
@@ -858,13 +860,11 @@ export default class MoneyTides extends Widget {
     }
 
     // traffic cameras
-    if (result.layer === trafficCamerasLayer) {
+    if (result.layer === trafficLayers.graphicsLayers.cameras) {
       tidesDialog.close();
 
       if (!this.trafficCameraDialog) {
-        const container = document.createElement('calcite-dialog');
-
-        this.container.appendChild(container);
+        const container = document.getElementById('traffic-camera-dialog') as HTMLDivElement;
 
         this.trafficCameraDialog = new (await import('../TrafficCameraDialog/TrafficCameraDialog')).default({
           container,
@@ -889,7 +889,7 @@ export default class MoneyTides extends Widget {
     const shellPanelStyle = visiblePanel === this.lunarPhasePanel ? '--calcite-shell-panel-min-width: 260px;' : '';
 
     return (
-      <calcite-shell content-behind="">
+      <calcite-shell class={CSS_BASE} content-behind="">
         {/* header */}
         <div class={CSS.header} slot="header">
           <div class={CSS.headerDate}>
@@ -1040,6 +1040,7 @@ export default class MoneyTides extends Widget {
         {/* alerts */}
         {alerts.toArray()}
         {/* tide dialog */}
+        <calcite-dialog id="traffic-camera-dialog" slot="dialogs"></calcite-dialog>
         <calcite-dialog slot="dialogs" afterCreate={this.tidesDialogAfterCreate.bind(this)}></calcite-dialog>
         {/* view */}
         <div class={CSS.view} afterCreate={this.viewAfterCreate.bind(this)}></div>

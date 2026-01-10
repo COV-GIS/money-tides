@@ -8,8 +8,11 @@ import GroupLayer from '@arcgis/core/layers/GroupLayer';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import MapImageLayer from '@arcgis/core/layers/MapImageLayer';
 import WMSLayer from '@arcgis/core/layers/WMSLayer';
-import TileLayer from '@arcgis/core/layers/TileLayer';
+// import TileLayer from '@arcgis/core/layers/TileLayer';
+import RoadIncidentsEventsLayer from './layers/RoadIncidentsEventsLayer';
+import TrafficAccidentsLayer from './layers/TrafficAccidentsLayer';
 import TrafficCamerasLayer from './layers/TrafficCamerasLayer';
+import TrafficLayers from './layers/TrafficLayers';
 import Extent from '@arcgis/core/geometry/Extent';
 import Point from '@arcgis/core/geometry/Point';
 import Polygon from '@arcgis/core/geometry/Polygon';
@@ -3458,17 +3461,23 @@ export let weatherAdvisoryQueryPolygon = new Polygon({
   ],
 });
 
-export const trafficCamerasLayer = new TrafficCamerasLayer();
+// export const roadIncidentsEventsLayer = new RoadIncidentsEventsLayer();
+
+// export const trafficAccidentsLayer = new TrafficAccidentsLayer();
+
+// export const trafficCamerasLayer = new TrafficCamerasLayer();
+
+export const trafficLayers = new TrafficLayers();
 
 export const weatherLayers: MT.WeatherLayer[] = [
-  {
-    layer: new TileLayer({
-      title: 'Traffic',
-      url: 'https://www.tripcheck.com/Basemaps/Pseudo.MapServer/Inrix/MapServer',
-      visible: false,
-    }),
-    legend: false,
-  },
+  // {
+  //   layer: new TileLayer({
+  //     title: 'Traffic',
+  //     url: 'https://www.tripcheck.com/Basemaps/Pseudo.MapServer/Inrix/MapServer',
+  //     visible: false,
+  //   }),
+  //   legend: false,
+  // },
   {
     layer: new WMSLayer({
       opacity: 0.8,
@@ -3567,7 +3576,7 @@ export const weatherLayers: MT.WeatherLayer[] = [
     legend: true,
   },
   {
-    layer: trafficCamerasLayer,
+    layer: trafficLayers,
     legend: false,
   },
 ];
