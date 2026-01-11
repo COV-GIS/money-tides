@@ -835,20 +835,20 @@ export default class MoneyTides extends Widget {
     const result = results[0];
 
     if (!result || result.type !== 'graphic') {
-      if (tidesDialog) tidesDialog.close();
+      tidesDialog?.close();
 
-      if (trafficCameraDialog) trafficCameraDialog.close();
+      trafficCameraDialog?.close();
 
       return;
     }
 
     // view graphics, i.e. station graphics
     if (!result.layer) {
-      if (this.trafficCameraDialog) this.trafficCameraDialog.close();
+      this.trafficCameraDialog?.close();
 
       if (!tidesDialog) {
         this.tidesDialog = new (await import('../TidesDialog/TidesDialog')).default({
-          container: document.getElementById('traffic-camera-dialog') as HTMLDivElement,
+          container: document.getElementById('tides-dialog') as HTMLDivElement,
         });
 
         const plotDialog = new (await import('../PlotDialog/PlotDialog')).default();
@@ -860,22 +860,22 @@ export default class MoneyTides extends Widget {
         return station.id === result.graphic.attributes.id;
       });
 
-      if (!this.tidesDialog || !station || (station && station.error)) return;
+      if (!station || (station && station.error)) return;
 
-      this.tidesDialog.open(station);
+      this.tidesDialog?.open(station);
     }
 
     // traffic cameras
     if (result.layer === trafficLayers.graphicsLayers.cameras) {
-      if (tidesDialog) tidesDialog.close();
+      tidesDialog?.close();
 
-      if (!this.trafficCameraDialog) {
+      if (!trafficCameraDialog) {
         this.trafficCameraDialog = new (await import('../TrafficCameraDialog/TrafficCameraDialog')).default({
           container: document.getElementById('traffic-camera-dialog') as HTMLDivElement,
         });
       }
 
-      this.trafficCameraDialog.open(result.graphic.attributes.filename, result.graphic.attributes.title);
+      this.trafficCameraDialog?.open(result.graphic.attributes.filename, result.graphic.attributes.title);
     }
 
     this.actionClickEvent(null);
