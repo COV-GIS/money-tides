@@ -1,4 +1,29 @@
 .traffic-event-dialog {
   // --calcite-dialog-content-space: 0;
   --calcite-dialog-max-size-x: 295px;
+
+  .traffic-event-dialog_content {
+    display: flex;
+    flex-direction: column;
+    line-height: var(--calcite-font-line-height-relative-normal);
+
+    strong {
+      font-weight: var(--calcite-font-weight-medium);
+      color: var(--calcite-color-text-1);
+    }
+  }
+
+  &[scale="s"] {
+    .traffic-event-dialog_content {
+      gap: 0.5rem;
+      font-size: var(--calcite-font-size-sm);
+    }
+  }
+
+  &[scale="m"] {
+    .traffic-event-dialog_content {
+      gap: 0.75rem;
+      font-size: var(--calcite-font-size);
+    }
+  }
 }

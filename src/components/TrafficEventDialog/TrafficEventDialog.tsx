@@ -15,6 +15,10 @@ import { applicationSettings } from '../../app-config';
 
 const CSS_BASE = 'traffic-event-dialog';
 
+const CSS = {
+  content: `${CSS_BASE}_content`,
+};
+
 //#endregion
 
 @subclass('TrafficEventDialog')
@@ -48,7 +52,7 @@ export default class TrafficEventDialog extends Widget {
   open(attributes: esri.Graphic['attributes']): void {
     this.attributes = attributes;
 
-    console.log(attributes);
+    // console.log(attributes);
 
     this.renderNow();
 
@@ -80,7 +84,7 @@ export default class TrafficEventDialog extends Widget {
   //#region render
 
   override render(): tsx.JSX.Element {
-    if (!this.attributes.beginMP) return <calcite-dialog></calcite-dialog>;
+    if (this.attributes.beginMP === undefined) return <calcite-dialog></calcite-dialog>;
 
     const {
       attributes: { beginMP, comments, endMP, eventSubTypeName, lastUpdated, route },
@@ -91,7 +95,7 @@ export default class TrafficEventDialog extends Widget {
         <div>Milepost {beginMP}</div>
       ) : (
         <div>
-          Milepsost {beginMP} to {endMP}
+          Milepost {beginMP} to {endMP}
         </div>
       );
 
@@ -102,7 +106,7 @@ export default class TrafficEventDialog extends Widget {
         placement={`bottom-${applicationSettings.layout === 'end' ? 'start' : 'end'}`}
         scale={applicationSettings.scale}
       >
-        <div>
+        <div class={CSS.content}>
           <div>Route {route}</div>
           {mileposts}
           <div>{comments}</div>

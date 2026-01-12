@@ -17,7 +17,7 @@
     color: var(--calcite-color-text-1);
   }
 
-  &[scale='s'] {
+  &[scale="s"] {
     .about-dialog_content {
       gap: 0.5rem;
       font-size: var(--calcite-font-size-sm);
@@ -28,7 +28,7 @@
     }
   }
 
-  &[scale='m'] {
+  &[scale="m"] {
     .about-dialog_content {
       gap: 0.75rem;
       font-size: var(--calcite-font-size);
