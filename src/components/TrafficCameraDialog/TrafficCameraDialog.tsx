@@ -12,6 +12,10 @@ import { applicationSettings } from '../../app-config';
 
 const CSS_BASE = 'traffic-camera-dialog';
 
+const CSS = {
+  imageContainer: `${CSS_BASE}_image-container`,
+};
+
 //#endregion
 
 @subclass('TrafficCameraDialog')
@@ -67,8 +71,11 @@ export default class TrafficCameraDialog extends Widget {
         heading={title}
         placement={`bottom-${applicationSettings.layout === 'end' ? 'start' : 'end'}`}
         scale={applicationSettings.scale}
+        width="s"
       >
-        <img alt={title} src={`https://tripcheck.com/RoadCams/cams/${filename}?rand=${new Date().getTime()}`}></img>
+        <div class={CSS.imageContainer}>
+          <img alt={title} src={`https://tripcheck.com/RoadCams/cams/${filename}?rand=${new Date().getTime()}`}></img>
+        </div>
       </calcite-dialog>
     );
   }

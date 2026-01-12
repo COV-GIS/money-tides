@@ -503,6 +503,8 @@ class Events extends GraphicsLayer {
     'type: INCIDENT - type name: Vehicle Incident - subtype name: Disabled Vehicle - Hazard',
     'type: INCIDENT - type name: Obstruction - subtype name: Animal Struck - Hazard',
     'type: INCIDENT - type name: Disaster - subtype name: Fire',
+    'type: INCIDENT - type name: Obstruction - subtype name: Hazardous Tree or Vegetation',
+    'type: INCIDENT - type name: Weather Event - subtype name: Winter',
   ];
 
   public async addGraphics(data: FeatureSet): Promise<void> {

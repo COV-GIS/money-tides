@@ -2,6 +2,13 @@
   --calcite-dialog-content-space: 0;
   --calcite-dialog-max-size-x: 295px;
 
+  .traffic-camera-dialog_image-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    // height: 100%;
+  }
+
   img {
     width: 295px;
     height: 328px;

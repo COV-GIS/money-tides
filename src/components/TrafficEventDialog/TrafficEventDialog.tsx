@@ -80,6 +80,8 @@ export default class TrafficEventDialog extends Widget {
   //#region render
 
   override render(): tsx.JSX.Element {
+    if (!this.attributes.beginMP) return <calcite-dialog></calcite-dialog>;
+
     const {
       attributes: { beginMP, comments, endMP, eventSubTypeName, lastUpdated, route },
     } = this;
