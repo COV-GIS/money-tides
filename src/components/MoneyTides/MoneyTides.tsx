@@ -7,6 +7,7 @@ import type LayersPanel from '../LayersPanel/LayersPanel';
 import type LunarPhasePanel from '../LunarPhasePanel/LunarPhasePanel';
 import type TidesDialog from '../TidesDialog/TidesDialog';
 import type TrafficCameraDialog from '../TrafficCameraDialog/TrafficCameraDialog';
+import type TrafficEventDialog from '../TrafficEventDialog/TrafficEventDialog';
 type Panels = AdvisoriesPanel | LayersPanel | LunarPhasePanel | null;
 
 //#endregion
@@ -149,6 +150,8 @@ export default class MoneyTides extends Widget {
   private tidesDialog?: TidesDialog;
 
   private trafficCameraDialog?: TrafficCameraDialog;
+
+  private trafficEventDialog?: TrafficEventDialog;
 
   @property()
   private visiblePanel: Panels = null;
@@ -826,11 +829,12 @@ export default class MoneyTides extends Widget {
   private async viewClickEvent(event: esri.ViewClickEvent): Promise<void> {
     event.stopPropagation();
 
-    const { tidesDialog, trafficCameraDialog } = this;
+    const { tidesDialog, trafficCameraDialog, trafficEventDialog } = this;
 
-    const results = (
-      await view.hitTest(event, { include: [view.graphics, trafficLayers.graphicsLayers.cameras.graphics] })
-    ).results;
+    const { cameras, events } = trafficLayers.graphicsLayers;
+
+    const results = (await view.hitTest(event, { include: [view.graphics, cameras.graphics, events.graphics] }))
+      .results;
 
     const result = results[0];
 
@@ -839,12 +843,16 @@ export default class MoneyTides extends Widget {
 
       trafficCameraDialog?.close();
 
+      trafficEventDialog?.close();
+
       return;
     }
 
     // view graphics, i.e. station graphics
     if (!result.layer) {
-      this.trafficCameraDialog?.close();
+      trafficCameraDialog?.close();
+
+      trafficEventDialog?.close();
 
       if (!tidesDialog) {
         this.tidesDialog = new (await import('../TidesDialog/TidesDialog')).default({
@@ -866,8 +874,10 @@ export default class MoneyTides extends Widget {
     }
 
     // traffic cameras
-    if (result.layer === trafficLayers.graphicsLayers.cameras) {
+    if (result.layer === cameras) {
       tidesDialog?.close();
+
+      trafficEventDialog?.close();
 
       if (!trafficCameraDialog) {
         this.trafficCameraDialog = new (await import('../TrafficCameraDialog/TrafficCameraDialog')).default({
@@ -876,6 +886,21 @@ export default class MoneyTides extends Widget {
       }
 
       this.trafficCameraDialog?.open(result.graphic.attributes.filename, result.graphic.attributes.title);
+    }
+
+    // traffic events
+    if (result.layer === events) {
+      tidesDialog?.close();
+
+      trafficCameraDialog?.close();
+
+      if (!trafficEventDialog) {
+        this.trafficEventDialog = new (await import('../TrafficEventDialog/TrafficEventDialog')).default({
+          container: document.getElementById('traffic-event-dialog') as HTMLDivElement,
+        });
+      }
+
+      this.trafficEventDialog?.open(result.graphic.attributes);
     }
 
     this.actionClickEvent(null);
@@ -1044,8 +1069,9 @@ export default class MoneyTides extends Widget {
         {/* alerts */}
         {alerts.toArray()}
         {/* tide dialog */}
-        <calcite-dialog id="traffic-camera-dialog" slot="dialogs"></calcite-dialog>
         <calcite-dialog id="tides-dialog" slot="dialogs"></calcite-dialog>
+        <calcite-dialog id="traffic-camera-dialog" slot="dialogs"></calcite-dialog>
+        <calcite-dialog id="traffic-event-dialog" slot="dialogs"></calcite-dialog>
         {/* view */}
         <div class={CSS.view} afterCreate={this.viewAfterCreate.bind(this)}></div>
       </calcite-shell>

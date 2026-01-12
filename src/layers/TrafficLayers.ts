@@ -502,6 +502,7 @@ class Events extends GraphicsLayer {
     'type: INCIDENT - type name: Weather Event - subtype name: Chain Condition',
     'type: INCIDENT - type name: Vehicle Incident - subtype name: Disabled Vehicle - Hazard',
     'type: INCIDENT - type name: Obstruction - subtype name: Animal Struck - Hazard',
+    'type: INCIDENT - type name: Disaster - subtype name: Fire',
   ];
 
   public async addGraphics(data: FeatureSet): Promise<void> {
@@ -608,7 +609,7 @@ class Events extends GraphicsLayer {
 
   private getColors(eventTypeName: string): { primary: string; secondary: string } {
     const color =
-      eventTypeName === 'Vehicle Incident' || eventTypeName === 'Obstruction'
+      eventTypeName === 'Vehicle Incident' || eventTypeName === 'Obstruction' || eventTypeName === 'Disaster'
         ? getDocumentStyle('--calcite-color-status-danger-press')
         : eventTypeName === 'Road Work'
           ? getDocumentStyle('--calcite-color-status-warning-press')
