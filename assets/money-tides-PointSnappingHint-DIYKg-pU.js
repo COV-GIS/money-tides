@@ -1,0 +1,1 @@
+import{Z as i}from"./money-tides-app-config-BzZR01Jy.js";import{a as n}from"./money-tides-hitTestSelectUtils-v7kwCIHs.js";class o extends n{constructor(t,s,r){super(s,r),this.point=t}equals(t){return t instanceof o&&i(this.point,t.point)}}export{o as n};
