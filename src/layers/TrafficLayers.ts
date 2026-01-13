@@ -21,7 +21,7 @@ import { trafficAccident21 } from 'calcite-point-symbols/js/trafficAccident21';
 import { trafficCone21 } from 'calcite-point-symbols/js/trafficCone21';
 import { warning21 } from 'calcite-point-symbols/js/warning21';
 import { getDocumentStyle } from '../utils/colorUtils';
-import { applicationSettings, trafficExtent, view } from '../app-config';
+import { applicationSettings, view } from '../app-config';
 
 const LOAD_HANDLE = 'load-handle';
 
@@ -33,13 +33,13 @@ export default class TrafficLayers extends GroupLayer {
     this.addHandles(
       watch(
         (): boolean => this.visible,
-        (visble: boolean): void => {
-          if (visble) {
+        (visible: boolean): void => {
+          if (visible) {
             this.removeHandles(LOAD_HANDLE);
 
             this.loadData();
 
-            this.trafficOverlay();
+            this.loadLiveTraffic();
 
             setInterval(this.updateData.bind(this), 300000);
           }
@@ -48,23 +48,30 @@ export default class TrafficLayers extends GroupLayer {
       LOAD_HANDLE,
     );
 
-    const { cameras, events, weatherReoprts, weatherStations, eventLines } = this.graphicsLayers;
+    const { cameras, events, eventLines, weatherReports, weatherStations } = this.graphicsLayers;
 
-    this.addMany([eventLines, weatherStations, weatherReoprts, events, cameras]);
+    this.addMany([
+      weatherStations,
+      weatherReports,
+      new GroupLayer({ layers: [eventLines, events], title: 'Accidents, Construction and Closures' }),
+      cameras,
+    ]);
   }
 
   @property()
-  override title = 'Traffic';
+  public override title = 'Traffic';
+
+  public liveTraffic!: esri.TileLayer;
 
   @property()
-  override visible = false;
+  public override visible = false;
 
   public graphicsLayers = {
     cameras: new Cameras({ minScale: 600000, title: 'Traffic Cameras' }),
-    events: new Events({ minScale: 600000, title: 'Accidents, Construction and Closures' }),
-    weatherReoprts: new GraphicsLayer({ minScale: 600000, title: 'Weather Reports' }),
-    weatherStations: new GraphicsLayer({ minScale: 600000, title: 'Weather Stations' }),
+    events: new Events({ minScale: 600000, title: '' }),
     eventLines: new GraphicsLayer({ minScale: 600000, title: '' }),
+    weatherReports: new GraphicsLayer({ minScale: 600000, title: 'Weather Reports' }),
+    weatherStations: new GraphicsLayer({ minScale: 600000, title: 'Weather Stations' }),
   };
 
   private async fetchData(): Promise<Response> {
@@ -75,9 +82,9 @@ export default class TrafficLayers extends GroupLayer {
     try {
       const response = await this.fetchData();
 
-      console.log(response);
+      // console.log(response);
 
-      const { cameras, events, weatherReoprts, weatherStations, eventLines } = this.graphicsLayers;
+      const { cameras, events } = this.graphicsLayers;
 
       cameras.addGraphics(response.cameraPoints);
 
@@ -95,7 +102,7 @@ export default class TrafficLayers extends GroupLayer {
 
       //   console.log(response);
 
-      const { cameras, events, weatherReoprts, weatherStations, eventLines } = this.graphicsLayers;
+      const { cameras } = this.graphicsLayers;
 
       cameras.updateAttributes(response.cameraPoints);
     } catch (error) {
@@ -105,11 +112,14 @@ export default class TrafficLayers extends GroupLayer {
     }
   }
 
-  private async trafficOverlay(): Promise<void> {
-    const layer = new (await import('@arcgis/core/layers/TileLayer')).default({
+  private async loadLiveTraffic(): Promise<void> {
+    const layer = (this.liveTraffic = new (await import('@arcgis/core/layers/TileLayer')).default({
       url: 'https://www.tripcheck.com/Basemaps/Pseudo.MapServer/Inrix/MapServer',
       visible: this.visible,
-    });
+      customParameters: {
+        d: new Date().getTime(),
+      },
+    }));
 
     const map = view.map as esri.Map;
 
@@ -505,6 +515,8 @@ class Events extends GraphicsLayer {
     'type: INCIDENT - type name: Disaster - subtype name: Fire',
     'type: INCIDENT - type name: Obstruction - subtype name: Hazardous Tree or Vegetation',
     'type: INCIDENT - type name: Weather Event - subtype name: Winter',
+    'type: INCIDENT - type name: Weather Event - subtype name: Ice Warning',
+    'type: INCIDENT - type name: Obstruction - subtype name: Pothole',
   ];
 
   public async addGraphics(data: FeatureSet): Promise<void> {
@@ -599,12 +611,10 @@ class Events extends GraphicsLayer {
 
   //   public async updateAttributes(data: FeatureSet): Promise<void> {
   //     const { features } = data;
-
   //     this.graphics.forEach((graphic: esri.Graphic): void => {
   //       const updateFeature = features.find((feature: Feature): boolean => {
   //         return graphic.attributes[this.idField] === feature.attributes[this.idField];
   //       });
-
   //       if (updateFeature) graphic.attributes = updateFeature.attributes;
   //     });
   //   }

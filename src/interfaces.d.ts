@@ -102,7 +102,7 @@ export namespace MT {
     | 'sunrise'
     | 'sunset';
 
-  type WeatherLayer = {
+  type LayerInfo = {
     blur?: boolean;
     layer: esri.Layer;
     layerLoopControllerOptions?: Omit<LayerLoopControllerProperties, 'layer'>;

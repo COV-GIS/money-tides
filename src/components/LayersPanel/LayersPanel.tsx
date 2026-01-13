@@ -1,6 +1,7 @@
 //#region types
 
 import esri = __esri;
+import type GroupLayerItem from './GroupLayerItem';
 import type LayerItem from './LayerItem';
 
 //#endregion
@@ -11,7 +12,7 @@ import { subclass } from '@arcgis/core/core/accessorSupport/decorators';
 import PanelBase from '../PanelBase';
 import { tsx } from '@arcgis/core/widgets/support/widget';
 import Collection from '@arcgis/core/core/Collection';
-import { applicationSettings, view, weatherLayers } from '../../app-config';
+import { applicationSettings, layerInfos, view } from '../../app-config';
 
 //#endregion
 
@@ -26,8 +27,8 @@ export default class LayersPanel extends PanelBase {
   //#region lifecycle
 
   override async postInitialize(): Promise<void> {
-    for (const weatherLayer of weatherLayers) {
-      const { blur, gradientScaleOptions, layer, layerLoopControllerOptions, legend } = weatherLayer;
+    for (const layerInfo of layerInfos) {
+      const { blur, gradientScaleOptions, layer, layerLoopControllerOptions, legend } = layerInfo;
 
       view.map?.add(layer);
 
@@ -36,23 +37,41 @@ export default class LayersPanel extends PanelBase {
       if (layerLoopControllerOptions)
         new (await import('../../support/LayerLoopController')).default({ ...layerLoopControllerOptions, layer });
 
-      this.layerItemElements.add(
-        <calcite-list-item
-          key={KEY++}
-          scale={applicationSettings.scale}
-          afterCreate={async (listItem: HTMLCalciteListItemElement): Promise<void> => {
-            this.layerItems.add(
-              new (await import('./LayerItem')).default({
-                container: listItem,
-                gradientScaleOptions,
-                layer,
-                legend,
-              }),
-            );
-          }}
-        ></calcite-list-item>,
-        0,
-      );
+      if (layer.type === 'group') {
+        this.layerItemElements.add(
+          <calcite-list-item
+            key={KEY++}
+            scale={applicationSettings.scale}
+            afterCreate={async (listItem: HTMLCalciteListItemElement): Promise<void> => {
+              this.layerItems.add(
+                new (await import('./GroupLayerItem')).default({
+                  container: listItem,
+                  layer: layer as esri.GroupLayer,
+                }),
+              );
+            }}
+          ></calcite-list-item>,
+          0,
+        );
+      } else {
+        this.layerItemElements.add(
+          <calcite-list-item
+            key={KEY++}
+            scale={applicationSettings.scale}
+            afterCreate={async (listItem: HTMLCalciteListItemElement): Promise<void> => {
+              this.layerItems.add(
+                new (await import('./LayerItem')).default({
+                  container: listItem,
+                  gradientScaleOptions,
+                  layer,
+                  legend,
+                }),
+              );
+            }}
+          ></calcite-list-item>,
+          0,
+        );
+      }
     }
   }
 
@@ -61,7 +80,7 @@ export default class LayersPanel extends PanelBase {
   override hide(): void {
     this.visible = false;
 
-    this.layerItems.forEach((layerItem: LayerItem): void => {
+    this.layerItems.forEach((layerItem: GroupLayerItem | LayerItem): void => {
       layerItem.collapse();
     });
   }
@@ -70,7 +89,7 @@ export default class LayersPanel extends PanelBase {
 
   private layerItemElements: esri.Collection<tsx.JSX.Element> = new Collection();
 
-  private layerItems: esri.Collection<LayerItem> = new Collection();
+  private layerItems: esri.Collection<GroupLayerItem | LayerItem> = new Collection();
 
   //#endregion
 

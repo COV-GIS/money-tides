@@ -4,14 +4,9 @@ import { MT } from './interfaces';
 import { watch } from '@arcgis/core/core/reactiveUtils';
 import Map from '@arcgis/core/Map';
 import MapView from '@arcgis/core/views/MapView';
-import GroupLayer from '@arcgis/core/layers/GroupLayer';
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import MapImageLayer from '@arcgis/core/layers/MapImageLayer';
 import WMSLayer from '@arcgis/core/layers/WMSLayer';
-// import TileLayer from '@arcgis/core/layers/TileLayer';
-import RoadIncidentsEventsLayer from './layers/RoadIncidentsEventsLayer';
-import TrafficAccidentsLayer from './layers/TrafficAccidentsLayer';
-import TrafficCamerasLayer from './layers/TrafficCamerasLayer';
 import TrafficLayers from './layers/TrafficLayers';
 import Extent from '@arcgis/core/geometry/Extent';
 import Point from '@arcgis/core/geometry/Point';
@@ -319,9 +314,6 @@ export const stationInfos: MT.StationInfo[] = [
   },
 ];
 
-export const trafficLayer = new GroupLayer({
-  visible: false,
-});
 
 export const view = new MapView({
   constraints: {
@@ -3461,15 +3453,9 @@ export let weatherAdvisoryQueryPolygon = new Polygon({
   ],
 });
 
-// export const roadIncidentsEventsLayer = new RoadIncidentsEventsLayer();
-
-// export const trafficAccidentsLayer = new TrafficAccidentsLayer();
-
-// export const trafficCamerasLayer = new TrafficCamerasLayer();
-
 export const trafficLayers = new TrafficLayers();
 
-export const weatherLayers: MT.WeatherLayer[] = [
+export const layerInfos: MT.LayerInfo[] = [
   // {
   //   layer: new TileLayer({
   //     title: 'Traffic',
